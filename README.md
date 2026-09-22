@@ -10,10 +10,9 @@
 «порог HP → ванильный спавн», но с расширенным набором механик и под группу
 игроков с активными способностями `../WeaponArts`.
 
-**Состояние: только замысел.** Кода нет; каталог механик, раскладка по
-каждому боссу и вопросы для обсуждения — в `ROADMAP.md`. Скрипты сборки и
-заготовка Thunderstore лежат готовыми на будущее, как в остальных модах
-(`HardMobs`, `WeaponArts`, `BossMeter`, `HostOwner`).
+**Состояние: 0.1.0 — каркас и Эйктюр, в игре ещё не проверено.** Каталог
+механик, раскладка по боссам и принятые решения — в `ROADMAP.md`, история —
+в `CHANGELOG.md`.
 
 ## Принцип
 
@@ -53,7 +52,7 @@ G — принятые решения и открытые вопросы.
 | Пакет Thunderstore | `thunderstore\` (manifest, icon, README) |
 | Лицензия | `LICENSE`, MIT |
 
-## Сборка (когда появится код)
+## Установка и сборка
 
 ```
 powershell -ExecutionPolicy Bypass -File .\build.ps1            # собрать и проверить ссылки
@@ -71,3 +70,30 @@ This mod is being designed with the help of an AI assistant (Claude by
 Anthropic). Prefab names and game hooks were checked against the game's asset
 manifest and IL; the design decisions, in-game testing and releases are the
 author's.
+
+`build\ExtendedBosses.dll` → `BepInEx\plugins\ExtendedBosses\` (или
+`build.ps1 -Install`). Ставится на **хост**; гостям не нужен. Чтобы хост
+владел боссом, кто бы его ни бил, в `j1ga.hostowner.cfg` нужно
+`Bosses = true`.
+
+## Настройки
+
+`BepInEx\config\j1ga.extendedbosses.cfg`, или окно ConfigurationManager (F11)
+— всё применяется сразу, без перезахода:
+
+| Секция | Что |
+|---|---|
+| 01 General | вкл/выкл, профиль `Light / Raid / Hard`, куда писать объявления |
+| 02 Scaling | HP за игрока (0.5), потолок игроков (8), множители, звёзды от N |
+| 03 Mechanics | переключатели волн, гнёзд, лейтенантов, меток, способностей; очистка |
+| 04 Marks | задержка удара, интервал, множитель урона |
+| 05 Rewards | награда: качество вещей, вещей на игрока, шанс следующего биома |
+| 06 Reset | сброс боя (по умолчанию выкл) |
+| 07 Client | круги меток на земле (только у себя, не синкается) |
+| 08 Sync | сервер раздаёт свои настройки модовым клиентам |
+| 10 Eikthyr | `Mode = Mod / Vanilla`, профиль, тотем, молния, рывок |
+
+Консоль (F5, нужен `devcommands` или сервер): `eb status` — боссы рядом, фазы,
+группа, множитель урона; `eb phase <n>` — форсировать фазу; `eb reset`;
+`eb probe <prefab>` — из чего сделан префаб; `eb players <n>` — подменить
+размер группы для проверки (0 — считать по-настоящему).
