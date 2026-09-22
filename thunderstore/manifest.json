@@ -1,0 +1,9 @@
+{
+  "name": "ExtendedBosses",
+  "version_number": "0.0.0",
+  "website_url": "https://github.com/TBSjiga/ExtendedBosses",
+  "description": "Raid-style boss fights from vanilla parts only: HP phases, add waves, nests, lieutenants, shields, burn windows, enrage - seen by every player, mod or not.",
+  "dependencies": [
+    "denikson-BepInExPack_Valheim-5.4.2350"
+  ]
+}
