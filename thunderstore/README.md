@@ -2,7 +2,7 @@
 
 Raid-style boss fights for a group: HP phases, waves of adds, destructible
 nests, biome mini-bosses as lieutenants, shields that drop when the adds die,
-burn windows, marks, ground hazards, enrage and wipe reset - built only from
+burn windows, marks, ground hazards, resistance shifts and threat - built only from
 vanilla prefabs, animations and RPCs, so players without the mod see and feel
 the same fight.
 
