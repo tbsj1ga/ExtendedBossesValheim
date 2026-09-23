@@ -8,7 +8,7 @@ namespace ExtendedBosses
     // A fight is data: phases at HP thresholds, each a list of actions (the "bricks" of
     // ROADMAP.md, section A). The fight controller knows how to run each kind of action; a boss
     // is only a table here.
-    internal enum ActKind { Wave, Lieutenant, Nest, Totem, Marks, Charge, Shield, Resist }
+    internal enum ActKind { Wave, Lieutenant, Nest, Totem, Marks, Charge, Shield, Resist, Bark }
 
     internal class Act
     {
@@ -29,8 +29,12 @@ namespace ExtendedBosses
         public string Creature;         // Marks: creature summoned around the mark instead of an AoE (roots)
         public int CreatureCount = 4;   // Marks: how many, in a ring
         public float RingRadius = 3f;   // Marks: ring radius around the marked player
-        public float Duration;          // Resist: seconds (0 = while the shield holds)
-        public Dictionary<HitData.DamageType, float> Mods; // Resist: damage multipliers by type
+        public float Duration;          // Resist: seconds (0 = while the shield holds); Bark: seconds it lasts
+        public Dictionary<HitData.DamageType, float> Mods; // Resist, Bark (Sap): damage multipliers by type; missing types use Other
+        public float Other = 1f;        // Bark (Sap): multiplier of every type not in Mods; Bark (Back): multiplier from the front
+        public float CooldownMin;       // Bark: seconds between barks, random in [min, max]
+        public float CooldownMax;
+        public float Delay;             // Bark: first bark this long after the phase if no burn window came first
     }
 
     internal class PhaseDef
@@ -79,11 +83,20 @@ namespace ExtendedBosses
         public ConfigEntry<float> CfgChargeInterval;
         public ConfigEntry<float> CfgChargeSpeed;
         public ConfigEntry<float> CfgChargeDuration;
+        public ConfigEntry<string> CfgBarkVariant;
+        public ConfigEntry<float> CfgBarkDuration;
+        public ConfigEntry<float> CfgBarkCdMin;
+        public ConfigEntry<float> CfgBarkCdMax;
+        public ConfigEntry<float> CfgBarkDelay;
+        public ConfigEntry<float> CfgBackArc;
     }
 
     public partial class ExtendedBossesPlugin
     {
         internal const int RoleHealer = 1;
+        internal const string BarkSap = "Sap";
+        internal const string BarkBack = "Back";
+        internal const string BarkAuto = "Auto";
 
         private readonly List<BossDef> _bosses = new List<BossDef>();
         private readonly Dictionary<int, BossDef> _bossByHash = new Dictionary<int, BossDef>();
@@ -184,10 +197,14 @@ namespace ExtendedBosses
             p = Phase(b, 55f, "elder.55");
             p.Acts.Add(new Act { Kind = ActKind.Nest, Prefabs = new[] { nest }, Count = 3f });
             p.Acts.Add(new Act { Kind = ActKind.Shield });
+            // Living bark: after the burn window ends (or 60 s after this phase if the window never
+            // came), 30 s of bark, then 50-70 s cooldown, repeat. Sap: fire x0.25 (its usual
+            // weakness is gone), slash x1.25 (chop the tree), everything else x0.25. Back: from
+            // the front x0.25, from behind full damage.
             p.Acts.Add(new Act
             {
-                Kind = ActKind.Resist, Duration = 0f,
-                Mods = new Dictionary<HitData.DamageType, float> { { HitData.DamageType.Pierce, 0.25f }, { HitData.DamageType.Fire, 2f } }
+                Kind = ActKind.Bark, Duration = 30f, CooldownMin = 50f, CooldownMax = 70f, Delay = 60f, Other = 0.25f,
+                Mods = new Dictionary<HitData.DamageType, float> { { HitData.DamageType.Slash, 1.25f }, { HitData.DamageType.Fire, 0.25f } }
             });
 
             Phase(b, 45f, "elder.45").Acts.Add(new Act { Kind = ActKind.Lieutenant, Prefabs = new[] { "Troll" }, ExtraFrom = 3 });
@@ -219,6 +236,18 @@ namespace ExtendedBosses
                     "Creature summoned in a ring around the marked player from 70%.", "Существо, которое появляется кольцом вокруг отмеченного игрока с 70 %.");
                 d.CfgMarkEffect = pl.S(d.Section, "MarkEffect", "vfx_prespawn",
                     "Vanilla effect on the marked player before the roots (players with the mod).", "Ванильный эффект на отмеченном игроке до корней (у игроков с модом).");
+                d.CfgBarkVariant = pl.S(d.Section, "BarkVariant", BarkSap,
+                    "Living bark from 55%. Sap: fire x0.25, slash x1.25, the rest x0.25 - chop with axes. Back: from the front x0.25, full damage only from behind - the tank holds the Elder facing them. Auto: Back for a group of 3+, Sap otherwise.",
+                    "Живая кора с 55 %. Sap — огонь ×0.25, рубящий ×1.25, остальное ×0.25: рубите топорами. Back — спереди ×0.25, полный урон только в спину: танк держит Древнего лицом к себе. Auto — Back для группы от 3 игроков, иначе Sap.",
+                    BarkSap, BarkBack, BarkAuto);
+                d.CfgBarkDuration = pl.F(d.Section, "BarkDuration", 30f, 5f, 120f, "Seconds the bark lasts.", "Длительность коры, секунд.");
+                d.CfgBarkCdMin = pl.F(d.Section, "BarkCooldownMin", 50f, 5f, 300f, "Cooldown between barks: from...", "КД между корами: от…");
+                d.CfgBarkCdMax = pl.F(d.Section, "BarkCooldownMax", 70f, 5f, 300f, "...to (random each time).", "…до (случайно каждый раз).");
+                d.CfgBarkDelay = pl.F(d.Section, "BarkStartDelay", 60f, 0f, 300f,
+                    "The first bark comes when the stagger after the fallen shield ends; if the nests still stand this long after 55%, it starts anyway.",
+                    "Первая кора — когда кончается оглушение после падения щита; если гнёзда стоят дольше этого после 55 %, кора начинается всё равно.");
+                d.CfgBackArc = pl.F(d.Section, "BackArc", 120f, 30f, 270f,
+                    "Back variant: width of the arc behind the Elder that counts as 'the back', degrees.", "Вариант Back: ширина дуги позади Древнего, которая считается спиной, градусов.");
             };
             return b;
         }

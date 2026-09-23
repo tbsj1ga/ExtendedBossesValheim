@@ -17,6 +17,12 @@ namespace ExtendedBosses
         internal static readonly int KResistAct = "j1ga.extendedbosses.resist".GetStableHashCode();   // boss: act code + 1 of the resist phase
         internal static readonly int KResistUntil = "j1ga.extendedbosses.resistuntil".GetStableHashCode(); // boss: net ticks, 0 = while shielded
         internal static readonly int KWindowUntil = "j1ga.extendedbosses.window".GetStableHashCode(); // boss: net ticks the burn window ends
+        internal static readonly int KBarkAct = "j1ga.extendedbosses.bark".GetStableHashCode();       // boss: act code + 1 of the bark cycle
+        internal static readonly int KBarkStartAt = "j1ga.extendedbosses.barkstart".GetStableHashCode(); // boss: net ticks of the first bark (until it starts)
+        internal static readonly int KBarkStarted = "j1ga.extendedbosses.barkon".GetStableHashCode(); // boss: 1 once the cycle runs
+        internal static readonly int KBarkUntil = "j1ga.extendedbosses.barkuntil".GetStableHashCode(); // boss: net ticks the current bark ends
+        internal static readonly int KBarkNext = "j1ga.extendedbosses.barknext".GetStableHashCode();  // boss: net ticks the next bark starts
+        internal static readonly int KBarkKind = "j1ga.extendedbosses.barkkind".GetStableHashCode();  // boss: 1 = Sap, 2 = Back (fixed per bark)
         internal const string KBoss = "j1ga.extendedbosses.boss";                                      // add/totem: ZDOID of its boss
         internal static readonly int KHpMul = "j1ga.extendedbosses.hpmul".GetStableHashCode();        // add: effective HP multiplier
         internal static readonly int KSrc = "j1ga.extendedbosses.src".GetStableHashCode();            // add: totem slot + 1 (0 = none)
@@ -55,6 +61,8 @@ namespace ExtendedBosses
             public bool ShieldActive;
             public bool WindowActive;
             public Act ResistAct;
+            public Act BarkAct;             // non-null while a bark is up
+            public bool BarkBack;           // its variant: Back (true) or Sap
             public int TotemsAlive;
             public int Healers;
 
@@ -147,6 +155,7 @@ namespace ExtendedBosses
                 rt.Strikes.Clear();
                 rt.ShieldActive = rt.WindowActive = false;
                 rt.ResistAct = null;
+                rt.BarkAct = null;
                 rt.Threat.Clear();
                 SetBossGroup(boss, false);
                 if (!rt.CleanedForVanilla)
@@ -183,6 +192,7 @@ namespace ExtendedBosses
             TickAdds(boss, rt, net);
             TickTotems(boss, rt, z, players, now);
             TickShield(boss, rt, z, net);
+            TickBark(boss, rt, z, net, players);
             TickHeal(boss, rt);
             TickMarks(boss, rt, mask, players, now);
             TickCharge(boss, rt, mask, now);
@@ -256,6 +266,11 @@ namespace ExtendedBosses
                 case ActKind.Resist:
                     z.Set(KResistAct, code + 1);
                     z.Set(KResistUntil, act.Duration > 0f ? NetTicks() + Seconds(act.Duration) : 0L);
+                    return true;
+                case ActKind.Bark:
+                    z.Set(KBarkAct, code + 1);
+                    z.Set(KBarkStarted, 0);
+                    z.Set(KBarkStartAt, NetTicks() + Seconds(rt.Def.CfgBarkDelay != null ? Sv(rt.Def.CfgBarkDelay) : act.Delay));
                     return true;
             }
             return false;
@@ -407,7 +422,19 @@ namespace ExtendedBosses
                 z.Set(KShieldAct, 0);
                 if (MechanicOn(rt.Def, ActKind.Shield) && Sv(_cfgWindowSeconds) > 0f)
                 {
-                    z.Set(KWindowUntil, net + Seconds(Sv(_cfgWindowSeconds)));
+                    long windowEnd = net + Seconds(Sv(_cfgWindowSeconds));
+                    z.Set(KWindowUntil, windowEnd);
+                    // the bark waits for the stagger to end: first bark right after the window;
+                    // a bark already up is cut so the window gets full damage
+                    if (z.GetInt(KBarkAct) > 0)
+                    {
+                        if (z.GetInt(KBarkStarted) == 0) z.Set(KBarkStartAt, windowEnd);
+                        else if (net < z.GetLong(KBarkUntil, 0L))
+                        {
+                            z.Set(KBarkUntil, net);
+                            z.Set(KBarkNext, windowEnd + Seconds(BarkCooldown(rt.Def, ActByCode(rt.Def, z.GetInt(KBarkAct) - 1))));
+                        }
+                    }
                     boss.Stagger(-boss.transform.forward);
                     Announce("window", NameToken(boss));
                     Debug(rt.Def.Prefab + ": shield down, burn window " + F1(Sv(_cfgWindowSeconds)) + " s");
@@ -426,6 +453,119 @@ namespace ExtendedBosses
                 if (!on) z.Set(KResistAct, 0);
                 else if (MechanicOn(rt.Def, ActKind.Resist)) rt.ResistAct = ActByCode(rt.Def, rc - 1);
             }
+        }
+
+        // ------------------------------------------------------------------
+        // living bark (Elder): a repeating resist phase, Sap or Back variant
+        // ------------------------------------------------------------------
+        private void TickBark(Character boss, FightRt rt, ZDO z, long net, int players)
+        {
+            rt.BarkAct = null;
+            int code = z.GetInt(KBarkAct);
+            if (code <= 0) return;
+            Act act = ActByCode(rt.Def, code - 1);
+            if (act == null) return;
+            bool on = MechanicOn(rt.Def, ActKind.Resist);
+
+            if (z.GetInt(KBarkStarted) == 0)
+            {
+                // first bark: after the burn window, or after the delay if no window came
+                if (rt.WindowActive || net < z.GetLong(KBarkStartAt, 0L)) return;
+                z.Set(KBarkStarted, 1);
+                StartBark(boss, rt, z, act, net, players, on);
+            }
+            else
+            {
+                long until = z.GetLong(KBarkUntil, 0L);
+                long next = z.GetLong(KBarkNext, 0L);
+                if (net >= until && next == 0L)
+                {
+                    // just ended: announce and roll the cooldown
+                    z.Set(KBarkNext, until + Seconds(BarkCooldown(rt.Def, act)));
+                    if (on) Announce("elder.bark.end", NameToken(boss));
+                    Debug(rt.Def.Prefab + ": bark ended");
+                }
+                else if (next > 0L && net >= next && !rt.WindowActive) StartBark(boss, rt, z, act, net, players, on);
+            }
+
+            if (on && net < z.GetLong(KBarkUntil, 0L))
+            {
+                rt.BarkAct = act;
+                rt.BarkBack = z.GetInt(KBarkKind) == 2;
+            }
+        }
+
+        private void StartBark(Character boss, FightRt rt, ZDO z, Act act, long net, int players, bool on)
+        {
+            string v = rt.Def.CfgBarkVariant != null ? Ss(rt.Def.CfgBarkVariant) : BarkSap;
+            if (v == BarkAuto) v = players >= 3 ? BarkBack : BarkSap;
+            float dur = rt.Def.CfgBarkDuration != null ? Sv(rt.Def.CfgBarkDuration) : act.Duration;
+            z.Set(KBarkKind, v == BarkBack ? 2 : 1);
+            z.Set(KBarkUntil, net + Seconds(dur));
+            z.Set(KBarkNext, 0L);
+            if (on) Announce(v == BarkBack ? "elder.bark.back" : "elder.bark.sap", NameToken(boss));
+            Debug(rt.Def.Prefab + ": bark (" + v + ") for " + F1(dur) + " s");
+        }
+
+        private float BarkCooldown(BossDef def, Act act)
+        {
+            float a = def.CfgBarkCdMin != null ? Sv(def.CfgBarkCdMin) : (act != null ? act.CooldownMin : 60f);
+            float b = def.CfgBarkCdMax != null ? Sv(def.CfgBarkCdMax) : (act != null ? act.CooldownMax : 60f);
+            if (b < a) b = a;
+            return UnityEngine.Random.Range(a, b);
+        }
+
+        // Applied to a hit on the boss while a bark is up.
+        internal void ApplyBark(Character boss, HitData hit)
+        {
+            FightRt rt = RtIfRunning(boss);
+            if (rt == null || rt.BarkAct == null) return;
+            Act act = rt.BarkAct;
+            if (rt.BarkBack)
+            {
+                if (FromBehind(boss, hit, rt.Def.CfgBackArc != null ? Sv(rt.Def.CfgBackArc) : 120f)) return;
+                hit.ApplyModifier(act.Other);
+                return;
+            }
+            float o = act.Other;
+            float blunt = o, slash = o, pierce = o, fire = o, frost = o, lightning = o, poison = o, spirit = o;
+            if (act.Mods != null)
+                foreach (KeyValuePair<HitData.DamageType, float> kv in act.Mods)
+                    switch (kv.Key)
+                    {
+                        case HitData.DamageType.Blunt: blunt = kv.Value; break;
+                        case HitData.DamageType.Slash: slash = kv.Value; break;
+                        case HitData.DamageType.Pierce: pierce = kv.Value; break;
+                        case HitData.DamageType.Fire: fire = kv.Value; break;
+                        case HitData.DamageType.Frost: frost = kv.Value; break;
+                        case HitData.DamageType.Lightning: lightning = kv.Value; break;
+                        case HitData.DamageType.Poison: poison = kv.Value; break;
+                        case HitData.DamageType.Spirit: spirit = kv.Value; break;
+                    }
+            hit.m_damage.m_blunt *= blunt;
+            hit.m_damage.m_slash *= slash;
+            hit.m_damage.m_pierce *= pierce;
+            hit.m_damage.m_fire *= fire;
+            hit.m_damage.m_frost *= frost;
+            hit.m_damage.m_lightning *= lightning;
+            hit.m_damage.m_poison *= poison;
+            hit.m_damage.m_spirit *= spirit;
+            hit.m_damage.m_chop *= slash;       // axes chop the tree too
+        }
+
+        // Is the attacker within the arc behind the boss? No attacker (DoT, environment): front.
+        private static bool FromBehind(Character boss, HitData hit, float arc)
+        {
+            Character a = hit.GetAttacker();
+            Vector3 from = a != null ? a.transform.position : hit.m_point;
+            if (a == null) return false;
+            Vector3 to = from - boss.transform.position;
+            to.y = 0f;
+            if (to.sqrMagnitude < 0.01f) return false;
+            Vector3 fwd = boss.transform.forward;
+            fwd.y = 0f;
+            float angle = Vector3.Angle(fwd, to);          // 0 = in front, 180 = straight behind
+            return angle >= 180f - arc * 0.5f;
         }
 
         private int TotemsAlive(ZDO bz)
@@ -694,7 +834,12 @@ namespace ExtendedBosses
                 z.Set(KShieldAct, 0);
                 z.Set(KResistAct, 0);
                 z.Set(KWindowUntil, 0L);
+                z.Set(KBarkAct, 0);
+                z.Set(KBarkStarted, 0);
+                z.Set(KBarkUntil, 0L);
+                z.Set(KBarkNext, 0L);
             }
+            rt.BarkAct = null;
             boss.SetHealth(boss.GetMaxHealth());
             StopCharge(rt);
             rt.Strikes.Clear();

@@ -30,7 +30,10 @@ namespace ExtendedBosses
             // ---- The Elder
             { "elder.85", new[] { "{0}: Forest, hear me! (destroy the nest)", "{0}: Лес, услышь меня! (разрушьте гнездо)" } },
             { "elder.70", new[] { "{0}: More of my children! (nests - and roots stir underfoot)", "{0}: Ещё мои дети! (гнёзда — и корни под ногами)" } },
-            { "elder.55", new[] { "{0}: Living bark shields me! (arrows are useless, the nests hold the shield - destroy them; fire burns the bark)", "{0}: Живая кора укроет меня! (стрелы бесполезны, щит держат гнёзда — разрушьте их; огонь жжёт кору)" } },
+            { "elder.55", new[] { "{0}: My nests shield me! (destroy them all)", "{0}: Гнёзда укроют меня! (разрушьте их все)" } },
+            { "elder.bark.sap", new[] { "{0}: the bark swells with sap - fire is useless, chop with axes!", "{0}: кора набухла соком — огонь бесполезен, рубите топорами!" } },
+            { "elder.bark.back", new[] { "{0} is covered in living bark - only blows to the back hurt! Tank, hold it facing you!", "{0}: живая кора — ранят только удары в спину! Танк, держите босса лицом к себе!" } },
+            { "elder.bark.end", new[] { "{0}: the bark cracks - hit with anything!", "{0}: кора трескается — бейте чем угодно!" } },
             { "elder.45", new[] { "{0} calls a troll!", "{0} призывает тролля!" } },
             { "elder.30", new[] { "{0} wakes a bear!", "{0} будит медведя!" } },
             { "elder.20", new[] { "{0} calls the elite - kill the shamans first, they heal the boss!", "{0} зовёт элиту — сначала убейте шаманов, они лечат босса!" } },
@@ -60,6 +63,8 @@ namespace ExtendedBosses
             { "cmd.shield", new[] { ", SHIELD", ", ЩИТ" } },
             { "cmd.window", new[] { ", WINDOW", ", ОКНО" } },
             { "cmd.resist", new[] { ", RESIST", ", СОПРОТИВЛЕНИЕ" } },
+            { "cmd.barksap", new[] { ", BARK (sap)", ", КОРА (сок)" } },
+            { "cmd.barkback", new[] { ", BARK (back)", ", КОРА (спина)" } },
             { "cmd.checkdone", new[] { "Self-check: {0} prefab(s) OK, {1} problem(s) - details in the log.", "Самопроверка: {0} префаб(ов) в порядке, проблем: {1} — подробности в логе." } },
         };
 

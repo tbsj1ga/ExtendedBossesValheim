@@ -113,6 +113,7 @@ namespace ExtendedBosses
                 if (rt != null && rt.ShieldActive) flags += L("cmd.shield");
                 if (rt != null && rt.WindowActive) flags += L("cmd.window");
                 if (rt != null && rt.ResistAct != null) flags += L("cmd.resist");
+                if (rt != null && rt.BarkAct != null) flags += L(rt.BarkBack ? "cmd.barkback" : "cmd.barksap");
                 sb.Append(L("cmd.status",
                     def.Prefab, Ss(def.CfgMode), ProfileOf(def),
                     F1(c.GetHealthPercentage() * 100f), fired.ToString(), def.Phases.Count.ToString(),
@@ -137,6 +138,13 @@ namespace ExtendedBosses
             Character ch = pf.GetComponent<Character>();
             if (ch != null) sb.Append("  Character '").Append(ch.m_name).Append("' hp ").Append(ch.m_health).Append(" faction ").Append(ch.m_faction)
                               .Append(" group '").Append(ch.m_group).Append("' boss ").Append(ch.m_boss).Append("\n");
+            if (ch != null)
+            {
+                HitData.DamageModifiers dm = ch.m_damageModifiers;
+                sb.Append("  resist: blunt ").Append(dm.m_blunt).Append(", slash ").Append(dm.m_slash).Append(", pierce ").Append(dm.m_pierce)
+                  .Append(", chop ").Append(dm.m_chop).Append(", fire ").Append(dm.m_fire).Append(", frost ").Append(dm.m_frost)
+                  .Append(", lightning ").Append(dm.m_lightning).Append(", poison ").Append(dm.m_poison).Append(", spirit ").Append(dm.m_spirit).Append("\n");
+            }
             Humanoid hu = pf.GetComponent<Humanoid>();
             if (hu != null && hu.m_defaultItems != null)
             {

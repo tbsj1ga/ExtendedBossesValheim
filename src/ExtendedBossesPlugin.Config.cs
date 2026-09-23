@@ -255,7 +255,8 @@ namespace ExtendedBosses
                 case ActKind.Marks: return Sb(_cfgMarks) && full;
                 case ActKind.Charge: return Sb(_cfgSpecials) && full;
                 case ActKind.Shield: return Sb(_cfgShield) && Sb(_cfgNests) && full;
-                case ActKind.Resist: return Sb(_cfgResist) && full;
+                case ActKind.Resist:
+                case ActKind.Bark: return Sb(_cfgResist) && full;
             }
             return false;
         }
