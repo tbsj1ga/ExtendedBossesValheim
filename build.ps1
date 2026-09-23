@@ -34,7 +34,7 @@ if (-not (Test-Path $managed)) { throw "Game assemblies not found: $managed (edi
 if (-not (Test-Path $core))    { throw "BepInEx core not found: $core (edit `$profile in build.ps1)" }
 
 $refs = @(
-    "assembly_valheim", "assembly_utils", "SoftReferenceableAssets",
+    "assembly_valheim", "assembly_utils", "assembly_guiutils", "SoftReferenceableAssets",
     "UnityEngine", "UnityEngine.CoreModule",
     "netstandard", "mscorlib", "System", "System.Core"
 ) | ForEach-Object { "/r:$managed\$_.dll" }

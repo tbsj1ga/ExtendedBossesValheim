@@ -14,13 +14,13 @@ namespace ExtendedBosses
     // relog and a world save. Players without the mod see all of it through the vanilla sync:
     // creatures, props, AoE, HP from the ZDO and centre-screen messages (MessageHud.MessageAll).
     //
-    // ROADMAP.md holds the design; 0.1 is the framework plus Eikthyr.
+    // ROADMAP.md holds the design; 0.2: the framework, Eikthyr and the Elder.
     [BepInPlugin(Guid, Name, Version)]
     public partial class ExtendedBossesPlugin : BaseUnityPlugin
     {
         public const string Guid = "j1ga.extendedbosses";
         public const string Name = "Extended Bosses";
-        public const string Version = "0.1.0";
+        public const string Version = "0.2.0";
 
         public static ExtendedBossesPlugin Instance;
 
@@ -75,6 +75,7 @@ namespace ExtendedBosses
             {
                 if (_syncDirty) FlushSync();
                 UpdateCircles(Time.time);
+                TickHello();
                 if (!Active) return;
                 float now = Time.time;
                 if (now >= _nextTick)

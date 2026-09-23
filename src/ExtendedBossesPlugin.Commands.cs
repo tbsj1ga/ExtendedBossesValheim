@@ -8,12 +8,12 @@ namespace ExtendedBosses
     public partial class ExtendedBossesPlugin
     {
         // ------------------------------------------------------------------
-        // console: eb status | phase <n> | reset | probe <prefab> | players <n>
+        // console: eb status | check | phase <n> | reset | probe <prefab> | players <n>
+        // (answers in the client's language; probe output is technical and stays English)
         // ------------------------------------------------------------------
         private void RegisterCommands()
         {
-            new Terminal.ConsoleCommand("eb",
-                "Extended Bosses: 'eb status', 'eb phase <n>', 'eb reset', 'eb probe <prefab>', 'eb players <n|0>'",
+            new Terminal.ConsoleCommand("eb", "Extended Bosses: eb status | check | phase <n> | reset | probe <prefab> | players <n|0>",
                 delegate(Terminal.ConsoleEventArgs args) { RunCommand(args); });
         }
 
@@ -30,30 +30,38 @@ namespace ExtendedBosses
                 string arg = args.Args.Length > 2 ? args.Args[2] : "";
                 if (sub == "status") { Say(args, Status()); return; }
                 if (sub == "probe") { Say(args, Probe(arg)); return; }
+                if (sub == "check")
+                {
+                    if (ZNetScene.instance == null) { Say(args, L("cmd.noworld")); return; }
+                    SelfCheck();
+                    Say(args, L("cmd.checkdone", _checkOk.ToString(), _checkProblems.Count.ToString()));
+                    for (int i = 0; i < _checkProblems.Count; i++) Say(args, "  " + _checkProblems[i]);
+                    return;
+                }
                 if (sub == "players")
                 {
                     int n;
-                    if (!int.TryParse(arg, out n) || n < 0) { Say(args, "eb players <n>  (0 = count real players)"); return; }
+                    if (!int.TryParse(arg, out n) || n < 0) { Say(args, L("cmd.players")); return; }
                     _forcePlayers = n;
-                    Say(args, n == 0 ? "Group size: counted." : "Group size forced to " + n + " (this client only).");
+                    Say(args, n == 0 ? L("cmd.playerscount") : L("cmd.playersforced", n.ToString()));
                     return;
                 }
                 if (sub == "phase" || sub == "reset")
                 {
                     Character boss = NearestOwnedBoss();
-                    if (boss == null) { Say(args, "No boss owned by this client nearby (the mechanics run on the owner)."); return; }
+                    if (boss == null) { Say(args, L("cmd.noboss")); return; }
                     BossDef def = BossOf(Zdo(boss));
                     FightRt rt = Rt(boss, def);
-                    if (sub == "reset") { ResetFight(boss, rt); Say(args, def.Prefab + ": fight reset."); return; }
+                    if (sub == "reset") { ResetFight(boss, rt); Say(args, L("cmd.reset", def.Prefab)); return; }
                     int i;
-                    if (!int.TryParse(arg, out i) || i < 0 || i >= def.Phases.Count) { Say(args, "eb phase <0.." + (def.Phases.Count - 1) + ">"); return; }
+                    if (!int.TryParse(arg, out i) || i < 0 || i >= def.Phases.Count) { Say(args, L("cmd.phaseusage", (def.Phases.Count - 1).ToString())); return; }
                     ZDO z = Zdo(boss);
                     z.Set(KPhase, z.GetInt(KPhase) | (1 << i));
                     RunPhase(boss, rt, i, GroupSize(boss), Time.time);
-                    Say(args, def.Prefab + ": phase " + i + " (" + def.Phases[i].Pct + "%) forced.");
+                    Say(args, L("cmd.phase", def.Prefab, i.ToString(), def.Phases[i].Pct.ToString()));
                     return;
                 }
-                Say(args, "eb status | phase <n> | reset | probe <prefab> | players <n|0>");
+                Say(args, L("cmd.help"));
             }
             catch (Exception e)
             {
@@ -81,11 +89,11 @@ namespace ExtendedBosses
 
         private string Status()
         {
-            if (_disabledByErrors) return Name + " is inert after errors (see the log).";
+            if (_disabledByErrors) return L("cmd.inert", Name);
             StringBuilder sb = new StringBuilder();
             sb.Append(Name).Append(" ").Append(Version).Append(Sb(_cfgEnabled) ? "" : " (disabled)")
               .Append(", profile ").Append(Ss(_cfgProfile)).Append(_serverSynced ? ", server settings" : ", local settings");
-            if (_forcePlayers > 0) sb.Append(", players forced to ").Append(_forcePlayers);
+            if (_forcePlayers > 0) sb.Append(", players = ").Append(_forcePlayers);
             sb.Append("\n");
             int shown = 0;
             List<Character> all = Character.GetAllCharacters();
@@ -100,25 +108,27 @@ namespace ExtendedBosses
                 int mask = z.GetInt(KPhase);
                 int fired = 0;
                 for (int k = 0; k < def.Phases.Count; k++) if ((mask & (1 << k)) != 0) fired++;
-                sb.Append(def.Prefab).Append(": ").Append(Ss(def.CfgMode)).Append("/").Append(ProfileOf(def))
-                  .Append(", HP ").Append(F1(c.GetHealthPercentage() * 100f)).Append("%")
-                  .Append(", phases ").Append(fired).Append("/").Append(def.Phases.Count)
-                  .Append(", ").Append(IsOwner(c) ? "owned here" : "owned by another client")
-                  .Append(", group ").Append(GroupSize(c))
-                  .Append(", damage x").Append(F2(IsModMode(def) ? BossDamageFactor(c, def) : 1f))
-                  .Append(", adds ").Append(CountAdds(c.GetZDOID(), 0))
-                  .Append(", totem slots ").Append(z.GetInt(KTotems))
-                  .Append("\n");
+                FightRt rt = RtIfRunning(c);
+                string flags = "";
+                if (rt != null && rt.ShieldActive) flags += L("cmd.shield");
+                if (rt != null && rt.WindowActive) flags += L("cmd.window");
+                if (rt != null && rt.ResistAct != null) flags += L("cmd.resist");
+                sb.Append(L("cmd.status",
+                    def.Prefab, Ss(def.CfgMode), ProfileOf(def),
+                    F1(c.GetHealthPercentage() * 100f), fired.ToString(), def.Phases.Count.ToString(),
+                    IsOwner(c) ? L("cmd.ownedhere") : L("cmd.ownedother"),
+                    GroupSize(c).ToString(), F2(IsModMode(def) ? BossDamageFactor(c, def) : 1f),
+                    CountAdds(c.GetZDOID(), 0).ToString(), (rt != null ? rt.TotemsAlive : z.GetInt(KTotems)).ToString(), flags)).Append("\n");
             }
-            if (shown == 0) sb.Append("No known boss loaded nearby.");
-            return sb.ToString();
+            if (shown == 0) sb.Append(L("cmd.nobosses"));
+            return sb.ToString().TrimEnd();
         }
 
-        // What a prefab is made of - for the "(проверить)" items of the roadmap.
+        // What a prefab is made of - for the "(check)" items of the roadmap.
         private static string Probe(string prefab)
         {
             if (string.IsNullOrEmpty(prefab)) return "eb probe <prefab>";
-            if (ZNetScene.instance == null) return "Not in a world.";
+            if (ZNetScene.instance == null) return L("cmd.noworld");
             GameObject pf = ZNetScene.instance.GetPrefab(prefab);
             if (pf == null) return "Prefab '" + prefab + "' not found.";
             StringBuilder sb = new StringBuilder();

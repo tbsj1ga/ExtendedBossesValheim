@@ -25,8 +25,9 @@ namespace ExtendedBosses
 
         private void BindSyncConfig()
         {
-            _cfgSync = Config.Bind("08 Sync", "SyncConfig", true,
-                "The server sends its settings to every client with the mod on connect and on change; the client uses them while connected. Off on the server: everyone uses their own file. No effect on a client. Section 07 Client is never synced.");
+            _cfgSync = B("08 Sync", "SyncConfig", true,
+                "The server sends its settings to every client with the mod on connect and on change; the client uses them while connected. Off on the server: everyone uses their own file. No effect on a client. Section 07 Client is never synced.",
+                "Сервер раздаёт свои настройки всем клиентам с модом при входе и при изменении; клиент использует их, пока подключён. Выкл на сервере — каждый со своим файлом. На клиенте не влияет. Секция 07 Client не синкается никогда.");
             Config.SettingChanged += delegate { _syncDirty = true; };
         }
 
@@ -74,6 +75,7 @@ namespace ExtendedBosses
             if (ZRoutedRpc.instance == null) return;
             ZRoutedRpc.instance.Register<ZPackage>(SyncRpc, new Action<long, ZPackage>(OnConfigPacket));
             ZRoutedRpc.instance.Register<ZPackage>(FxRpc, new Action<long, ZPackage>(OnFxPacket));
+            RegisterTextRpcs();
         }
 
         private void FlushSync()
@@ -223,6 +225,8 @@ namespace ExtendedBosses
                     p.RestoreAllCharges();
                     p._fights.Clear();
                     p.ClearCircles();
+                    p._helloSent = false;
+                    p._moddedPeers.Clear();
                 }
                 catch (Exception e) { p.Fail("ZNet.OnDestroy", e); }
             }

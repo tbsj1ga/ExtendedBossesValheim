@@ -31,13 +31,9 @@ namespace ExtendedBosses
         }
 
         // A vanilla creature tied to the boss: its ZDO carries the boss id (cleanup, orphan
-        // scan, the raid group on every client) and optionally an HP multiplier and totem slot.
-        internal Character SpawnCreature(ZDOID bossId, string prefab, int level, float hpMul, Vector3 center, int src)
-        {
-            return SpawnCreature(bossId, prefab, level, hpMul, center, src, Sv(_cfgSpawnRadiusMin), Sv(_cfgSpawnRadiusMax));
-        }
-
-        internal Character SpawnCreature(ZDOID bossId, string prefab, int level, float hpMul, Vector3 center, int src, float rMin, float rMax)
+        // scan, the raid group on every client) and optionally an HP multiplier, totem slot, role
+        // (healer) and lifetime (roots).
+        internal Character SpawnCreature(ZDOID bossId, string prefab, int level, float hpMul, Vector3 center, int src, float rMin, float rMax, int role, float lifetime)
         {
             GameObject pf = ZNetScene.instance.GetPrefab(prefab);
             if (pf == null || pf.GetComponent<Character>() == null) { Warn("creature prefab '" + prefab + "' not found."); return null; }
@@ -49,6 +45,8 @@ namespace ExtendedBosses
                 z.Set(KBoss, bossId);
                 if (hpMul > 1.001f) z.Set(KHpMul, hpMul);
                 if (src != 0) z.Set(KSrc, src);
+                if (role != 0) z.Set(KRole, role);
+                if (lifetime > 0f) z.Set(KExpire, NetTicks() + Seconds(lifetime));
             }
             if (level > 1) c.SetLevel(level);
             c.m_group = RaidGroup;

@@ -8,7 +8,7 @@ namespace ExtendedBosses
 {
     // Every value is read at the moment it is used (through Sv/Sb/Ss/Si, which also honour the
     // server's copy), nothing is cached, so a change in the file or in ConfigurationManager (F11)
-    // takes effect on the next tick - no relog.
+    // takes effect on the next tick - no relog. Descriptions are in English and Russian.
     public partial class ExtendedBossesPlugin
     {
         internal const string ProfileLight = "Light";
@@ -42,6 +42,10 @@ namespace ExtendedBosses
         private ConfigEntry<bool> _cfgLieutenants;
         private ConfigEntry<bool> _cfgMarks;
         private ConfigEntry<bool> _cfgSpecials;
+        private ConfigEntry<bool> _cfgShield;
+        private ConfigEntry<bool> _cfgHealers;
+        private ConfigEntry<bool> _cfgResist;
+        private ConfigEntry<bool> _cfgThreat;
         private ConfigEntry<bool> _cfgCleanupOnDeath;
         private ConfigEntry<bool> _cfgCleanupOnDisable;
         private ConfigEntry<float> _cfgSpawnRadiusMin;
@@ -68,80 +72,144 @@ namespace ExtendedBosses
         // 07 Client (never synced: how this client draws things)
         private ConfigEntry<bool> _cfgShowCircles;
 
+        // 09 Raid
+        private ConfigEntry<float> _cfgShieldFactor;
+        private ConfigEntry<float> _cfgHardShieldFactor;
+        private ConfigEntry<float> _cfgWindowSeconds;
+        private ConfigEntry<float> _cfgWindowMultiplier;
+        private ConfigEntry<float> _cfgHealPercent;
+        private ConfigEntry<float> _cfgHealRange;
+        private ConfigEntry<float> _cfgLeash;
+        private ConfigEntry<float> _cfgSwitchMargin;
+        private ConfigEntry<float> _cfgHoldSeconds;
+        private ConfigEntry<float> _cfgThreatDecay;
+        private ConfigEntry<float> _cfgOutOfLeashHalfLife;
+
         private static readonly string[] Profiles = { ProfileLight, ProfileRaid, ProfileHard };
         private static readonly string[] BossProfiles = { ProfileDefault, ProfileLight, ProfileRaid, ProfileHard };
         private static readonly string[] Modes = { ModeMod, ModeVanilla };
 
+        internal static string D(string en, string ru) { return en + "\n" + ru; }
+
+        private ConfigEntry<float> F(string section, string key, float def, float min, float max, string en, string ru)
+        {
+            return Config.Bind(section, key, def, new ConfigDescription(D(en, ru), new AcceptableValueRange<float>(min, max)));
+        }
+
+        private ConfigEntry<int> I(string section, string key, int def, int min, int max, string en, string ru)
+        {
+            return Config.Bind(section, key, def, new ConfigDescription(D(en, ru), new AcceptableValueRange<int>(min, max)));
+        }
+
+        private ConfigEntry<bool> B(string section, string key, bool def, string en, string ru)
+        {
+            return Config.Bind(section, key, def, D(en, ru));
+        }
+
+        private ConfigEntry<string> S(string section, string key, string def, string en, string ru, params string[] allowed)
+        {
+            return allowed != null && allowed.Length > 0
+                ? Config.Bind(section, key, def, new ConfigDescription(D(en, ru), new AcceptableValueList<string>(allowed)))
+                : Config.Bind(section, key, def, D(en, ru));
+        }
+
         private void BindConfig()
         {
-            _cfgEnabled = Config.Bind("01 General", "Enabled", true, "Master switch. Off: every boss is vanilla.");
-            _cfgDebug = Config.Bind("01 General", "Debug", false, "Log phases, spawns, marks and scaling.");
-            _cfgProfile = Config.Bind("01 General", "Profile", ProfileRaid,
-                new ConfigDescription("Difficulty profile for every boss whose own Profile is Default. Light: adds, nests and lieutenants only. Raid: everything. Hard: Raid with more adds and stars, faster marks, more HP.",
-                    new AcceptableValueList<string>(Profiles)));
-            _cfgAnnounce = Config.Bind("01 General", "Announce", "Center",
-                new ConfigDescription("Where phase messages go. Center: middle of the screen for every player (vanilla ShowMessage, players without the mod see it). Chat: a chat line from the owner of the boss. Off: nothing.",
-                    new AcceptableValueList<string>("Center", "Chat", "Off")));
+            const string G = "01 General";
+            _cfgEnabled = B(G, "Enabled", true, "Master switch. Off: every boss is vanilla.", "Главный выключатель. Выкл — все боссы ванильные.");
+            _cfgDebug = B(G, "Debug", false, "Log phases, spawns, marks, scaling and the self-check details.", "Писать в лог фазы, спавны, метки, масштаб и подробности самопроверки.");
+            _cfgProfile = S(G, "Profile", ProfileRaid,
+                "Difficulty for every boss whose own Profile is Default. Light: adds, nests and lieutenants only. Raid: everything. Hard: Raid with more adds and stars, faster marks, more HP, stronger shield.",
+                "Сложность для всех боссов с Profile = Default. Light — только адды, гнёзда и лейтенанты. Raid — всё. Hard — Raid с большим числом аддов и звёзд, частыми метками, большим HP и сильным щитом.",
+                Profiles);
+            _cfgAnnounce = S(G, "Announce", "Center",
+                "Where phase messages go. Center: middle of the screen for every player, each in their language (players without the mod: see GuestLanguage). Chat: a chat line from the boss owner. Off: nothing.",
+                "Куда писать сообщения фаз. Center — в центр экрана всем, каждому на его языке (игрокам без мода — см. GuestLanguage). Chat — строкой в чат от владельца босса. Off — никуда.",
+                "Center", "Chat", "Off");
+            _cfgGuestLanguage = S(G, "GuestLanguage", "Russian",
+                "Language of messages for players WITHOUT the mod (their game language is unknown to the server). Boss and creature names are still shown in their own language.",
+                "Язык сообщений для игроков БЕЗ мода (сервер не знает язык их игры). Имена боссов и мобов у них всё равно на их языке.",
+                "Russian", "English", "Both");
 
-            _cfgScalingRange = Config.Bind("02 Scaling", "Range", 100f,
-                new ConfigDescription("Players within this distance of the boss count as the group (vanilla uses 100 m).", new AcceptableValueRange<float>(20f, 300f)));
-            _cfgHealthPerPlayer = Config.Bind("02 Scaling", "HealthPerPlayer", 0.5f,
-                new ConfigDescription("Effective boss HP grows by this per player beyond the first. Vanilla already gives 0.3 up to 5 players; the mod replaces that with this value up to MaxPlayers (0.3 and 5 = vanilla).", new AcceptableValueRange<float>(0f, 2f)));
-            _cfgMaxScalingPlayers = Config.Bind("02 Scaling", "MaxPlayers", 8,
-                new ConfigDescription("Players counted for scaling at most.", new AcceptableValueRange<int>(1, 20)));
-            _cfgBaseHealth = Config.Bind("02 Scaling", "BaseHealthMultiplier", 1f,
-                new ConfigDescription("Overall multiplier of effective boss HP (for tuning against WeaponArts).", new AcceptableValueRange<float>(0.25f, 5f)));
-            _cfgHardHealth = Config.Bind("02 Scaling", "HardHealthMultiplier", 1.25f,
-                new ConfigDescription("Extra effective HP in the Hard profile.", new AcceptableValueRange<float>(1f, 5f)));
-            _cfgSoloAdds = Config.Bind("02 Scaling", "SoloAddsFactor", 0.5f,
-                new ConfigDescription("Adds multiplier for a single player (rounded, at least 1).", new AcceptableValueRange<float>(0.1f, 2f)));
-            _cfgAddsPerPlayer = Config.Bind("02 Scaling", "AddsPerPlayer", 0.5f,
-                new ConfigDescription("Adds multiplier per player in a group: 4 players x 0.5 = x2.", new AcceptableValueRange<float>(0.1f, 2f)));
-            _cfgHardAdds = Config.Bind("02 Scaling", "HardAddsMultiplier", 1.5f,
-                new ConfigDescription("Extra adds in the Hard profile.", new AcceptableValueRange<float>(1f, 4f)));
-            _cfgLieutenantStarPlayers = Config.Bind("02 Scaling", "LieutenantStarPlayers", 4,
-                new ConfigDescription("From this many players lieutenants get +1 star.", new AcceptableValueRange<int>(1, 20)));
-            _cfgAddStarPlayers = Config.Bind("02 Scaling", "AddStarPlayers", 7,
-                new ConfigDescription("From this many players ordinary adds get +1 star.", new AcceptableValueRange<int>(1, 20)));
+            const string Sc = "02 Scaling";
+            _cfgScalingRange = F(Sc, "Range", 100f, 20f, 300f,
+                "Players within this distance of the boss count as the group (vanilla uses 100 m).",
+                "Игроки ближе этого расстояния к боссу считаются группой (в ванили 100 м).");
+            _cfgHealthPerPlayer = F(Sc, "HealthPerPlayer", 0.5f, 0f, 2f,
+                "Effective boss HP grows by this per player beyond the first. Vanilla gives 0.3 up to 5 players; the mod replaces that with this value up to MaxPlayers (0.3 and 5 = vanilla).",
+                "Эффективное HP босса растёт на столько за каждого игрока сверх первого. В ванили 0.3 до 5 игроков; мод заменяет это своим значением до MaxPlayers (0.3 и 5 — как в ванили).");
+            _cfgMaxScalingPlayers = I(Sc, "MaxPlayers", 8, 1, 20, "Players counted for scaling at most.", "Сколько игроков максимум учитывается в масштабе.");
+            _cfgBaseHealth = F(Sc, "BaseHealthMultiplier", 1f, 0.25f, 5f,
+                "Overall multiplier of effective boss HP (for tuning against WeaponArts).", "Общий множитель эффективного HP босса (подстройка под WeaponArts).");
+            _cfgHardHealth = F(Sc, "HardHealthMultiplier", 1.25f, 1f, 5f, "Extra effective HP in the Hard profile.", "Доп. множитель HP в профиле Hard.");
+            _cfgSoloAdds = F(Sc, "SoloAddsFactor", 0.5f, 0.1f, 2f,
+                "Adds multiplier for a single player (rounded, at least 1).", "Множитель аддов для одного игрока (с округлением, не меньше 1).");
+            _cfgAddsPerPlayer = F(Sc, "AddsPerPlayer", 0.5f, 0.1f, 2f,
+                "Adds multiplier per player in a group: 4 players x 0.5 = x2.", "Множитель аддов на игрока в группе: 4 игрока × 0.5 = ×2.");
+            _cfgHardAdds = F(Sc, "HardAddsMultiplier", 1.5f, 1f, 4f, "Extra adds in the Hard profile.", "Доп. множитель аддов в профиле Hard.");
+            _cfgLieutenantStarPlayers = I(Sc, "LieutenantStarPlayers", 4, 1, 20,
+                "From this many players lieutenants get +1 star.", "С этого числа игроков лейтенанты получают +1 звезду.");
+            _cfgAddStarPlayers = I(Sc, "AddStarPlayers", 7, 1, 20,
+                "From this many players ordinary adds get +1 star.", "С этого числа игроков обычные адды получают +1 звезду.");
 
-            _cfgWaves = Config.Bind("03 Mechanics", "Waves", true, "Waves of adds at HP thresholds.");
-            _cfgNests = Config.Bind("03 Mechanics", "Nests", true, "Destructible spawners (vanilla nests and totems).");
-            _cfgLieutenants = Config.Bind("03 Mechanics", "Lieutenants", true, "Big biome creatures as mini-bosses.");
-            _cfgMarks = Config.Bind("03 Mechanics", "Marks", true, "Marks on players followed by an AoE (spread out). Off in the Light profile.");
-            _cfgSpecials = Config.Bind("03 Mechanics", "Specials", true, "Boss-specific abilities (Eikthyr's charge). Off in the Light profile.");
-            _cfgCleanupOnDeath = Config.Bind("03 Mechanics", "CleanupOnDeath", true, "Remove the boss's adds and nests when it dies.");
-            _cfgCleanupOnDisable = Config.Bind("03 Mechanics", "CleanupOnDisable", true, "Remove the adds and nests of a fight when its boss is switched to Vanilla.");
-            _cfgSpawnRadiusMin = Config.Bind("03 Mechanics", "SpawnRadiusMin", 6f,
-                new ConfigDescription("Adds and nests appear in a ring around the boss from this distance...", new AcceptableValueRange<float>(2f, 40f)));
-            _cfgSpawnRadiusMax = Config.Bind("03 Mechanics", "SpawnRadiusMax", 14f,
-                new ConfigDescription("...to this distance.", new AcceptableValueRange<float>(3f, 60f)));
+            const string M = "03 Mechanics";
+            _cfgWaves = B(M, "Waves", true, "Waves of adds at HP thresholds.", "Волны аддов на порогах HP.");
+            _cfgNests = B(M, "Nests", true, "Destructible spawners (vanilla nests and totems).", "Разрушаемые спавнеры (ванильные гнёзда и тотемы).");
+            _cfgLieutenants = B(M, "Lieutenants", true, "Big biome creatures as mini-bosses.", "Крупные мобы биома как мини-боссы.");
+            _cfgMarks = B(M, "Marks", true, "Marks on players followed by an AoE or roots (spread out). Off in Light.", "Метки на игроках, затем удар или корни (разбегитесь). Выкл в Light.");
+            _cfgSpecials = B(M, "Specials", true, "Boss-specific abilities (Eikthyr's charge). Off in Light.", "Особые способности босса (рывок Эйктюра). Выкл в Light.");
+            _cfgShield = B(M, "Shield", true, "The boss takes little damage while its nests stand; destroying them opens a burn window. Off in Light.", "Босс почти не получает урона, пока стоят его гнёзда; их разрушение открывает окно уязвимости. Выкл в Light.");
+            _cfgHealers = B(M, "Healers", true, "Healer adds (shamans) heal the boss while alive and near. Off in Light.", "Адды-лекари (шаманы) лечат босса, пока живы и рядом. Выкл в Light.");
+            _cfgResist = B(M, "Resistances", true, "Phases that change what hurts the boss (Elder's living bark). Off in Light.", "Фазы смены сопротивлений (живая кора Древнего). Выкл в Light.");
+            _cfgThreat = B(M, "Threat", true, "Threat table: the boss attacks whoever angered it most within the leash radius. Off in Light.", "Таблица угрозы: босс бьёт того, кто разозлил его больше всех в радиусе привязи. Выкл в Light.");
+            _cfgCleanupOnDeath = B(M, "CleanupOnDeath", true, "Remove the boss's adds and nests when it dies.", "Убирать аддов и гнёзда босса после его смерти.");
+            _cfgCleanupOnDisable = B(M, "CleanupOnDisable", true, "Remove the adds and nests of a fight when its boss is switched to Vanilla.", "Убирать аддов и гнёзда боя, когда босс переключён в Vanilla.");
+            _cfgSpawnRadiusMin = F(M, "SpawnRadiusMin", 6f, 2f, 40f, "Adds and nests appear in a ring around the boss from this distance...", "Адды и гнёзда появляются кольцом вокруг босса от этого расстояния…");
+            _cfgSpawnRadiusMax = F(M, "SpawnRadiusMax", 14f, 3f, 60f, "...to this distance.", "…до этого.");
 
-            _cfgMarkDelay = Config.Bind("04 Marks", "Delay", 3f,
-                new ConfigDescription("Seconds between the mark and the strike.", new AcceptableValueRange<float>(1f, 10f)));
-            _cfgMarkInterval = Config.Bind("04 Marks", "Interval", 20f,
-                new ConfigDescription("Seconds between marks (x0.75 in the Hard profile).", new AcceptableValueRange<float>(5f, 120f)));
-            _cfgMarkDamage = Config.Bind("04 Marks", "DamageMultiplier", 1f,
-                new ConfigDescription("Multiplier of every boss's mark damage.", new AcceptableValueRange<float>(0f, 5f)));
+            const string Mk = "04 Marks";
+            _cfgMarkDelay = F(Mk, "Delay", 3f, 1f, 10f, "Seconds between the mark and the strike.", "Секунд между меткой и ударом.");
+            _cfgMarkInterval = F(Mk, "Interval", 20f, 5f, 120f, "Seconds between marks (x0.75 in Hard).", "Секунд между метками (×0.75 в Hard).");
+            _cfgMarkDamage = F(Mk, "DamageMultiplier", 1f, 0f, 5f, "Multiplier of every boss's mark damage.", "Множитель урона меток всех боссов.");
 
-            _cfgRewards = Config.Bind("05 Rewards", "Enabled", true, "Extra loot on top of the vanilla drop: valuables of the biome and upgraded gear, more with a bigger group.");
-            _cfgQualityMin = Config.Bind("05 Rewards", "QualityMin", 2,
-                new ConfigDescription("Gear drops already upgraded to at least this level...", new AcceptableValueRange<int>(1, 4)));
-            _cfgQualityMax = Config.Bind("05 Rewards", "QualityMax", 3,
-                new ConfigDescription("...and at most this level (capped by the item's own max).", new AcceptableValueRange<int>(1, 4)));
-            _cfgPlayersPerItem = Config.Bind("05 Rewards", "PlayersPerItem", 2.5f,
-                new ConfigDescription("One piece of gear per this many players (3 players = 1, 5 = 2, 8 = 3).", new AcceptableValueRange<float>(1f, 10f)));
-            _cfgNextBiomeChance = Config.Bind("05 Rewards", "NextBiomeChance", 0.15f,
-                new ConfigDescription("Chance per piece of gear to be from the next biome; also the chance of each next-biome resource.", new AcceptableValueRange<float>(0f, 1f)));
-            _cfgValuables = Config.Bind("05 Rewards", "ValuablesMultiplier", 1f,
-                new ConfigDescription("Multiplier of coins, gems and ore.", new AcceptableValueRange<float>(0f, 10f)));
+            const string R = "05 Rewards";
+            _cfgRewards = B(R, "Enabled", true,
+                "Extra loot on top of the vanilla drop: valuables of the biome and upgraded gear, more with a bigger group.",
+                "Доп. добыча поверх ванильного дропа: ценности биома и улучшенная экипировка, больше для большей группы.");
+            _cfgQualityMin = I(R, "QualityMin", 2, 1, 4, "Gear drops already upgraded to at least this level...", "Экипировка выпадает уже улучшенной минимум до этого уровня…");
+            _cfgQualityMax = I(R, "QualityMax", 3, 1, 4, "...and at most this level (capped by the item's own max).", "…и максимум до этого (не выше предела самого предмета).");
+            _cfgPlayersPerItem = F(R, "PlayersPerItem", 2.5f, 1f, 10f,
+                "One piece of gear per this many players (3 players = 1, 5 = 2, 8 = 3).", "Одна вещь на столько игроков (3 игрока — 1, 5 — 2, 8 — 3).");
+            _cfgNextBiomeChance = F(R, "NextBiomeChance", 0.15f, 0f, 1f,
+                "Chance per piece of gear to be from the next biome; also the chance of each next-biome resource.",
+                "Шанс, что вещь будет из следующего биома; и шанс каждого ресурса следующего биома.");
+            _cfgValuables = F(R, "ValuablesMultiplier", 1f, 0f, 10f, "Multiplier of coins, gems and ore.", "Множитель монет, камней и руды.");
 
-            _cfgReset = Config.Bind("06 Reset", "Enabled", false, "Reset the fight (full HP, phases, adds and nests removed) when no living player is near the boss for a while.");
-            _cfgResetRadius = Config.Bind("06 Reset", "Radius", 50f,
-                new ConfigDescription("Players within this distance keep the fight going.", new AcceptableValueRange<float>(10f, 200f)));
-            _cfgResetSeconds = Config.Bind("06 Reset", "Seconds", 60f,
-                new ConfigDescription("Seconds without players before the reset.", new AcceptableValueRange<float>(10f, 600f)));
+            const string Rs = "06 Reset";
+            _cfgReset = B(Rs, "Enabled", false,
+                "Reset the fight (full HP, phases, adds and nests removed) when no living player is near the boss for a while.",
+                "Сбрасывать бой (полное HP, фазы, адды и гнёзда убираются), если рядом с боссом долго нет живых игроков.");
+            _cfgResetRadius = F(Rs, "Radius", 50f, 10f, 200f, "Players within this distance keep the fight going.", "Игроки ближе этого расстояния удерживают бой.");
+            _cfgResetSeconds = F(Rs, "Seconds", 60f, 10f, 600f, "Seconds without players before the reset.", "Секунд без игроков до сброса.");
 
-            _cfgShowCircles = Config.Bind("07 Client", "ShowMarkCircles", true, "Draw the exact AoE radius of a mark on the ground (only players with the mod see it; not synced).");
+            _cfgShowCircles = B("07 Client", "ShowMarkCircles", true,
+                "Draw the exact AoE radius of a mark on the ground (only players with the mod see it; not synced).",
+                "Рисовать на земле точный радиус удара метки (видят только игроки с модом; не синкается).");
+
+            const string Rd = "09 Raid";
+            _cfgShieldFactor = F(Rd, "ShieldDamageFactor", 0.2f, 0f, 1f, "Damage the boss takes while shielded (x).", "Урон по боссу под щитом (×).");
+            _cfgHardShieldFactor = F(Rd, "HardShieldDamageFactor", 0.1f, 0f, 1f, "Same in the Hard profile.", "То же в профиле Hard.");
+            _cfgWindowSeconds = F(Rd, "WindowSeconds", 10f, 0f, 60f, "Burn window after the shield falls, seconds (the boss is staggered).", "Окно уязвимости после падения щита, секунд (босс оглушён).");
+            _cfgWindowMultiplier = F(Rd, "WindowDamageMultiplier", 1.5f, 1f, 5f, "Damage the boss takes during the window (x).", "Урон по боссу в окне уязвимости (×).");
+            _cfgHealPercent = F(Rd, "HealPercentPerSecond", 0.5f, 0f, 10f, "Boss max HP healed per second by each living healer (%, at most 2 healers count).", "Сколько % макс. HP босса в секунду лечит каждый живой лекарь (учитываются не больше 2).");
+            _cfgHealRange = F(Rd, "HealRange", 40f, 5f, 150f, "Healers farther than this from the boss do not heal it.", "Лекари дальше этого от босса его не лечат.");
+            _cfgLeash = F(Rd, "ThreatLeash", 25f, 5f, 100f,
+                "Threat: only players within this distance of the boss can hold it; one who runs out loses the boss to the nearest.",
+                "Угроза: удерживать босса могут только игроки ближе этого; убежавший теряет босса, тот переключается на ближайшего.");
+            _cfgSwitchMargin = F(Rd, "ThreatSwitchMargin", 0.1f, 0f, 1f, "The boss switches only to a threat this much higher (0.1 = 110%).", "Босс переключается, только если угроза выше на столько (0.1 = 110 %).");
+            _cfgHoldSeconds = F(Rd, "ThreatHoldSeconds", 3.5f, 0f, 15f, "Minimum seconds on a new target.", "Минимум секунд на новой цели.");
+            _cfgThreatDecay = F(Rd, "ThreatDecayPerSecond", 0.05f, 0f, 1f, "Share of threat forgotten per second.", "Доля угрозы, которая забывается за секунду.");
+            _cfgOutOfLeashHalfLife = F(Rd, "ThreatOutOfLeashHalfLife", 3f, 0.5f, 30f, "Outside the leash threat halves every this many seconds.", "Вне радиуса привязи угроза вдвое падает за столько секунд.");
         }
 
         // ------------------------------------------------------------------
@@ -152,11 +220,12 @@ namespace ExtendedBosses
             for (int i = 0; i < _bosses.Count; i++)
             {
                 BossDef b = _bosses[i];
-                b.CfgMode = Config.Bind(b.Section, "Mode", ModeMod,
-                    new ConfigDescription("Mod: extended fight. Vanilla: the mod leaves this boss alone. Takes effect immediately, mid-fight too.",
-                        new AcceptableValueList<string>(Modes)));
-                b.CfgProfile = Config.Bind(b.Section, "Profile", ProfileDefault,
-                    new ConfigDescription("Default: the global profile from 01 General.", new AcceptableValueList<string>(BossProfiles)));
+                b.CfgMode = S(b.Section, "Mode", ModeMod,
+                    "Mod: extended fight. Vanilla: the mod leaves this boss alone. Takes effect immediately, mid-fight too.",
+                    "Mod — расширенный бой. Vanilla — мод не трогает этого босса. Действует сразу, в том числе посреди боя.",
+                    Modes);
+                b.CfgProfile = S(b.Section, "Profile", ProfileDefault,
+                    "Default: the global profile from 01 General.", "Default — общий профиль из 01 General.", BossProfiles);
                 if (b.BindExtra != null) b.BindExtra(this, b);
             }
         }
@@ -176,17 +245,22 @@ namespace ExtendedBosses
         // Mechanic toggles combined with the profile: Light keeps only adds, nests and lieutenants.
         internal bool MechanicOn(BossDef b, ActKind kind)
         {
-            string prof = ProfileOf(b);
+            bool full = ProfileOf(b) != ProfileLight;
             switch (kind)
             {
                 case ActKind.Wave: return Sb(_cfgWaves);
                 case ActKind.Lieutenant: return Sb(_cfgLieutenants);
                 case ActKind.Nest:
                 case ActKind.Totem: return Sb(_cfgNests);
-                case ActKind.Marks: return Sb(_cfgMarks) && prof != ProfileLight;
-                case ActKind.Charge: return Sb(_cfgSpecials) && prof != ProfileLight;
+                case ActKind.Marks: return Sb(_cfgMarks) && full;
+                case ActKind.Charge: return Sb(_cfgSpecials) && full;
+                case ActKind.Shield: return Sb(_cfgShield) && Sb(_cfgNests) && full;
+                case ActKind.Resist: return Sb(_cfgResist) && full;
             }
             return false;
         }
+
+        internal bool HealersOn(BossDef b) { return Sb(_cfgHealers) && ProfileOf(b) != ProfileLight; }
+        internal bool ThreatOn(BossDef b) { return Sb(_cfgThreat) && ProfileOf(b) != ProfileLight; }
     }
 }
