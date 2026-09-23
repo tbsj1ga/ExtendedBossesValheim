@@ -97,6 +97,7 @@ namespace ExtendedBosses
         internal const string BarkSap = "Sap";
         internal const string BarkBack = "Back";
         internal const string BarkAuto = "Auto";
+        internal const string BarkRandom = "Random";
 
         private readonly List<BossDef> _bosses = new List<BossDef>();
         private readonly Dictionary<int, BossDef> _bossByHash = new Dictionary<int, BossDef>();
@@ -236,10 +237,10 @@ namespace ExtendedBosses
                     "Creature summoned in a ring around the marked player from 70%.", "Существо, которое появляется кольцом вокруг отмеченного игрока с 70 %.");
                 d.CfgMarkEffect = pl.S(d.Section, "MarkEffect", "vfx_prespawn",
                     "Vanilla effect on the marked player before the roots (players with the mod).", "Ванильный эффект на отмеченном игроке до корней (у игроков с модом).");
-                d.CfgBarkVariant = pl.S(d.Section, "BarkVariant", BarkSap,
-                    "Living bark from 55%. Sap: fire x0.25, slash x1.25, the rest x0.25 - chop with axes. Back: from the front x0.25, full damage only from behind - the tank holds the Elder facing them. Auto: Back for a group of 3+, Sap otherwise.",
-                    "Живая кора с 55 %. Sap — огонь ×0.25, рубящий ×1.25, остальное ×0.25: рубите топорами. Back — спереди ×0.25, полный урон только в спину: танк держит Древнего лицом к себе. Auto — Back для группы от 3 игроков, иначе Sap.",
-                    BarkSap, BarkBack, BarkAuto);
+                d.CfgBarkVariant = pl.S(d.Section, "BarkVariant", BarkRandom,
+                    "Living bark from 55%. Random: Sap or Back, chosen anew for every bark. Sap: fire x0.25, slash x1.25, the rest x0.25 - chop with axes. Back: from the front x0.25, full damage only from behind - the tank holds the Elder facing them. Auto: Back for a group of 3+, Sap otherwise.",
+                    "Живая кора с 55 %. Random — Sap или Back, заново для каждой коры. Sap — огонь ×0.25, рубящий ×1.25, остальное ×0.25: рубите топорами. Back — спереди ×0.25, полный урон только в спину: танк держит Древнего лицом к себе. Auto — Back для группы от 3 игроков, иначе Sap.",
+                    BarkRandom, BarkSap, BarkBack, BarkAuto);
                 d.CfgBarkDuration = pl.F(d.Section, "BarkDuration", 30f, 5f, 120f, "Seconds the bark lasts.", "Длительность коры, секунд.");
                 d.CfgBarkCdMin = pl.F(d.Section, "BarkCooldownMin", 50f, 5f, 300f, "Cooldown between barks: from...", "КД между корами: от…");
                 d.CfgBarkCdMax = pl.F(d.Section, "BarkCooldownMax", 70f, 5f, 300f, "...to (random each time).", "…до (случайно каждый раз).");

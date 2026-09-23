@@ -497,8 +497,9 @@ namespace ExtendedBosses
 
         private void StartBark(Character boss, FightRt rt, ZDO z, Act act, long net, int players, bool on)
         {
-            string v = rt.Def.CfgBarkVariant != null ? Ss(rt.Def.CfgBarkVariant) : BarkSap;
+            string v = rt.Def.CfgBarkVariant != null ? Ss(rt.Def.CfgBarkVariant) : BarkRandom;
             if (v == BarkAuto) v = players >= 3 ? BarkBack : BarkSap;
+            else if (v != BarkSap && v != BarkBack) v = UnityEngine.Random.value < 0.5f ? BarkSap : BarkBack;
             float dur = rt.Def.CfgBarkDuration != null ? Sv(rt.Def.CfgBarkDuration) : act.Duration;
             z.Set(KBarkKind, v == BarkBack ? 2 : 1);
             z.Set(KBarkUntil, net + Seconds(dur));
