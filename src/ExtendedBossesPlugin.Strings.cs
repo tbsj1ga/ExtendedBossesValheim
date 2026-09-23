@@ -97,6 +97,20 @@ namespace ExtendedBosses
             { "queen.20", new[] { "{0}: All my brood, devour them!", "{0}: Весь выводок — пожрите их!" } },
             { "queen.mark", new[] { "{0} spits acid at {1} - spread out!", "{0} плюёт кислотой в игрока {1} — разойдитесь!" } },
 
+            // ---- Fader
+            { "fader.85", new[] { "{0}: Rise, charred! (break the spawner stone)", "{0}: Встаньте, обугленные! (разбейте камень-спавнер)" } },
+            { "fader.70", new[] { "{0}: The sky burns! (more stones - meteors fall on the marked)", "{0}: Небо горит! (ещё камни — метеоры падают на отмеченных)" } },
+            { "fader.55", new[] { "{0}: The stones shield me! (break them all)", "{0}: Камни укроют меня! (разбейте их все)" } },
+            { "fader.molten", new[] { "{0}: molten armor - close blows sink in and burn you, strike from afar!", "{0}: раскалённая броня — удары вблизи вязнут и обжигают, бейте издалека!" } },
+            { "fader.molten.end", new[] { "{0}: the armor cools", "{0}: броня остывает" } },
+            { "fader.ash", new[] { "{0}: ash veil - arrows and spells get lost, fight up close!", "{0}: пепельная завеса — стрелы и заклинания теряются, бейте вблизи!" } },
+            { "fader.ash.end", new[] { "{0}: the ash settles", "{0}: пепел оседает" } },
+            { "fader.45", new[] { "{0} wakes a morgen!", "{0} будит моргена!" } },
+            { "fader.30", new[] { "{0} calls a fallen valkyrie!", "{0} призывает падшую валькирию!" } },
+            { "fader.20", new[] { "{0} calls Lord Reto!", "{0} призывает лорда Рето!" } },
+            { "fader.10", new[] { "{0}: Ashlands, devour them!", "{0}: Пепельные земли, пожрите их!" } },
+            { "fader.mark", new[] { "{0} calls meteors on {1} - run!", "{0} зовёт метеоры на игрока {1} — бегите!" } },
+
             // ---- common
             { "window", new[] { "{0}: the shield has fallen - strike now!", "{0}: защита пала — бейте!" } },
             { "reset", new[] { "{0} regains strength...", "{0} восстанавливает силы…" } },
@@ -130,6 +144,8 @@ namespace ExtendedBosses
             { "cmd.cycle.adapt", new[] { ", ADAPTED", ", АДАПТАЦИЯ" } },
             { "cmd.cycle.bloodthirst", new[] { ", BLOODTHIRST", ", КРОВОЖАДНОСТЬ" } },
             { "cmd.cycle.acidthorns", new[] { ", ACID THORNS", ", КИСЛОТНЫЕ ШИПЫ" } },
+            { "cmd.cycle.molten", new[] { ", MOLTEN ARMOR", ", РАСКАЛЁННАЯ БРОНЯ" } },
+            { "cmd.cycle.ashveil", new[] { ", ASH VEIL", ", ПЕПЕЛЬНАЯ ЗАВЕСА" } },
             { "cmd.checkdone", new[] { "Self-check: {0} prefab(s) OK, {1} problem(s) - details in the log.", "Самопроверка: {0} префаб(ов) в порядке, проблем: {1} — подробности в логе." } },
         };
 
