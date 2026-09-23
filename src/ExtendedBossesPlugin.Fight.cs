@@ -17,12 +17,12 @@ namespace ExtendedBosses
         internal static readonly int KResistAct = "j1ga.extendedbosses.resist".GetStableHashCode();   // boss: act code + 1 of the resist phase
         internal static readonly int KResistUntil = "j1ga.extendedbosses.resistuntil".GetStableHashCode(); // boss: net ticks, 0 = while shielded
         internal static readonly int KWindowUntil = "j1ga.extendedbosses.window".GetStableHashCode(); // boss: net ticks the burn window ends
-        internal static readonly int KBarkAct = "j1ga.extendedbosses.bark".GetStableHashCode();       // boss: act code + 1 of the bark cycle
-        internal static readonly int KBarkStartAt = "j1ga.extendedbosses.barkstart".GetStableHashCode(); // boss: net ticks of the first bark (until it starts)
-        internal static readonly int KBarkStarted = "j1ga.extendedbosses.barkon".GetStableHashCode(); // boss: 1 once the cycle runs
-        internal static readonly int KBarkUntil = "j1ga.extendedbosses.barkuntil".GetStableHashCode(); // boss: net ticks the current bark ends
-        internal static readonly int KBarkNext = "j1ga.extendedbosses.barknext".GetStableHashCode();  // boss: net ticks the next bark starts
-        internal static readonly int KBarkKind = "j1ga.extendedbosses.barkkind".GetStableHashCode();  // boss: 1 = Sap, 2 = Back (fixed per bark)
+        internal static readonly int KCycleAct = "j1ga.extendedbosses.cycle".GetStableHashCode();       // boss: act code + 1 of the bark cycle
+        internal static readonly int KCycleStartAt = "j1ga.extendedbosses.cyclestart".GetStableHashCode(); // boss: net ticks of the first bark (until it starts)
+        internal static readonly int KCycleStarted = "j1ga.extendedbosses.cycleon".GetStableHashCode(); // boss: 1 once the cycle runs
+        internal static readonly int KCycleUntil = "j1ga.extendedbosses.cycleuntil".GetStableHashCode(); // boss: net ticks the current bark ends
+        internal static readonly int KCycleNext = "j1ga.extendedbosses.cyclenext".GetStableHashCode();  // boss: net ticks the next bark starts
+        internal static readonly int KCycleKind = "j1ga.extendedbosses.cyclekind".GetStableHashCode();  // boss: 1 = Sap, 2 = Back (fixed per bark)
         internal const string KBoss = "j1ga.extendedbosses.boss";                                      // add/totem: ZDOID of its boss
         internal static readonly int KHpMul = "j1ga.extendedbosses.hpmul".GetStableHashCode();        // add: effective HP multiplier
         internal static readonly int KSrc = "j1ga.extendedbosses.src".GetStableHashCode();            // add: totem slot + 1 (0 = none)
@@ -61,8 +61,9 @@ namespace ExtendedBosses
             public bool ShieldActive;
             public bool WindowActive;
             public Act ResistAct;
-            public Act BarkAct;             // non-null while a bark is up
-            public bool BarkBack;           // its variant: Back (true) or Sap
+            public Act CycleAct;            // non-null while a resistance cycle is up
+            public CycleVariant CycleVar;   // and its variant
+            public float NextFusion;        // Fusion: next slime wave (local time)
             public int TotemsAlive;
             public int Healers;
 
@@ -155,7 +156,7 @@ namespace ExtendedBosses
                 rt.Strikes.Clear();
                 rt.ShieldActive = rt.WindowActive = false;
                 rt.ResistAct = null;
-                rt.BarkAct = null;
+                rt.CycleAct = null;
                 rt.Threat.Clear();
                 SetBossGroup(boss, false);
                 if (!rt.CleanedForVanilla)
@@ -192,8 +193,9 @@ namespace ExtendedBosses
             TickAdds(boss, rt, net);
             TickTotems(boss, rt, z, players, now);
             TickShield(boss, rt, z, net);
-            TickBark(boss, rt, z, net, players);
+            TickCycle(boss, rt, z, net, players);
             TickHeal(boss, rt);
+            TickFusion(boss, rt, mask, players, now);
             TickMarks(boss, rt, mask, players, now);
             TickCharge(boss, rt, mask, now);
             TickThreat(boss, rt);
@@ -232,7 +234,18 @@ namespace ExtendedBosses
                     int spawned = 0;
                     for (int p = 0; p < act.Prefabs.Length; p++)
                         for (int k = 0; k < count; k++)
-                            if (SpawnCreature(rt.BossId, act.Prefabs[p], level, act.HpMul, center, 0, Sv(_cfgSpawnRadiusMin), Sv(_cfgSpawnRadiusMax), act.Role, act.Lifetime) != null) spawned++;
+                        {
+                            Character c;
+                            if (act.InWater)
+                            {
+                                Vector3 wp;
+                                if (!WaterPoint(center, Sv(_cfgSpawnRadiusMin), Sv(_cfgSpawnRadiusMax), out wp)) continue;
+                                c = SpawnCreatureAt(rt.BossId, act.Prefabs[p], level, act.HpMul, wp, 0, act.Role, act.Lifetime);
+                            }
+                            else c = SpawnCreature(rt.BossId, act.Prefabs[p], level, act.HpMul, center, 0, Sv(_cfgSpawnRadiusMin), Sv(_cfgSpawnRadiusMax), act.Role, act.Lifetime);
+                            if (c != null) spawned++;
+                        }
+                    if (act.InWater && spawned == 0) Debug(rt.Def.Prefab + ": no water around for " + act.Prefabs[0]);
                     return spawned > 0;
                 }
                 case ActKind.Lieutenant:
@@ -260,6 +273,9 @@ namespace ExtendedBosses
                 case ActKind.Charge:
                     rt.NextCharge = now + 2f;
                     return true;
+                case ActKind.Fusion:
+                    rt.NextFusion = now + 5f;
+                    return true;
                 case ActKind.Shield:
                     z.Set(KShieldAct, code + 1);
                     return true;
@@ -267,10 +283,10 @@ namespace ExtendedBosses
                     z.Set(KResistAct, code + 1);
                     z.Set(KResistUntil, act.Duration > 0f ? NetTicks() + Seconds(act.Duration) : 0L);
                     return true;
-                case ActKind.Bark:
-                    z.Set(KBarkAct, code + 1);
-                    z.Set(KBarkStarted, 0);
-                    z.Set(KBarkStartAt, NetTicks() + Seconds(rt.Def.CfgBarkDelay != null ? Sv(rt.Def.CfgBarkDelay) : act.Delay));
+                case ActKind.Cycle:
+                    z.Set(KCycleAct, code + 1);
+                    z.Set(KCycleStarted, 0);
+                    z.Set(KCycleStartAt, NetTicks() + Seconds(rt.Def.CfgCycleDelay != null ? Sv(rt.Def.CfgCycleDelay) : act.Delay));
                     return true;
             }
             return false;
@@ -395,7 +411,9 @@ namespace ExtendedBosses
                 if (z == null || z.GetZDOID(KBoss) != rt.BossId) continue;
                 long exp = z.GetLong(KExpire, 0L);
                 if (exp > 0L && net >= exp) { _tmpExpired.Add(c.gameObject); continue; }
-                if (z.GetInt(KRole) == RoleHealer && Vector3.Distance(c.transform.position, bp) <= healRange) healers++;
+                int role = z.GetInt(KRole);
+                if (role == RoleHealer && Vector3.Distance(c.transform.position, bp) <= healRange) healers++;
+                else if (role == RoleFuse && TryFuse(boss, rt, c)) _tmpExpired.Add(c.gameObject);
             }
             for (int i = 0; i < _tmpExpired.Count; i++) DestroyNetObject(_tmpExpired[i]);
             rt.Healers = healers;
@@ -408,6 +426,62 @@ namespace ExtendedBosses
             if (boss.GetHealth() >= max) return;
             float amount = max * Sv(_cfgHealPercent) / 100f * Mathf.Min(rt.Healers, 2) * TickInterval;
             if (amount > 0f) boss.Heal(amount, false);
+        }
+
+        // ------------------------------------------------------------------
+        // fusion (Bonemass): slime crawls to the boss from afar; what reaches it heals it
+        // ------------------------------------------------------------------
+        private const float FuseReach = 3.5f;
+
+        private void TickFusion(Character boss, FightRt rt, int mask, int players, float now)
+        {
+            Act act = ActiveAct(rt.Def, mask, ActKind.Fusion);
+            if (act == null || !MechanicOn(rt.Def, ActKind.Fusion)) return;
+            if (rt.NextFusion <= 0f) rt.NextFusion = now + 5f;
+            if (now < rt.NextFusion) return;
+            rt.NextFusion = now + (rt.Def.CfgFusionInterval != null ? Sv(rt.Def.CfgFusionInterval) : act.Interval);
+
+            int count = ScaledCount(rt.Def, act.Count, players);
+            int level = AddLevel(rt.Def, act.Level, players);
+            int spawned = 0;
+            for (int k = 0; k < count; k++)
+            {
+                string prefab = act.Prefabs[UnityEngine.Random.Range(0, act.Prefabs.Length)];
+                Character c = SpawnCreature(rt.BossId, prefab, level, 1f, boss.transform.position, 0, 20f, 26f, RoleFuse, 0f);
+                if (c == null) continue;
+                FollowBoss(c, boss);
+                spawned++;
+            }
+            if (spawned > 0 && !string.IsNullOrEmpty(act.MarkKey)) Announce(act.MarkKey, NameToken(boss));
+        }
+
+        // A fusing creature walks to the boss instead of hunting players (it still fights back).
+        private static void FollowBoss(Character c, Character boss)
+        {
+            MonsterAI ai = c.GetComponent<MonsterAI>();
+            if (ai == null) return;
+            ai.SetHuntPlayer(false);
+            if (ai.GetFollowTarget() != boss.gameObject) ai.SetFollowTarget(boss.gameObject);
+        }
+
+        // Called from TickAdds for every living fusing creature of the boss (we own the boss).
+        private bool TryFuse(Character boss, FightRt rt, Character c)
+        {
+            if (!IsOwner(c)) return false;
+            if (Vector3.Distance(c.transform.position, boss.transform.position) > FuseReach + boss.GetRadius())
+            {
+                FollowBoss(c, boss);        // follow target is not saved: re-apply after a handover
+                return false;
+            }
+            if (MechanicOn(rt.Def, ActKind.Fusion))
+            {
+                Act act = ActiveAct(rt.Def, Zdo(boss).GetInt(KPhase), ActKind.Fusion);
+                float pct = rt.Def.CfgFusionHeal != null ? Sv(rt.Def.CfgFusionHeal) : (act != null ? act.Heal : 0f);
+                float amount = boss.GetMaxHealth() * pct / 100f;
+                if (amount > 0f) boss.Heal(amount, true);
+                Debug(rt.Def.Prefab + ": " + c.m_name + " fused, healed " + F1(amount));
+            }
+            return true;
         }
 
         // ------------------------------------------------------------------
@@ -426,13 +500,13 @@ namespace ExtendedBosses
                     z.Set(KWindowUntil, windowEnd);
                     // the bark waits for the stagger to end: first bark right after the window;
                     // a bark already up is cut so the window gets full damage
-                    if (z.GetInt(KBarkAct) > 0)
+                    if (z.GetInt(KCycleAct) > 0)
                     {
-                        if (z.GetInt(KBarkStarted) == 0) z.Set(KBarkStartAt, windowEnd);
-                        else if (net < z.GetLong(KBarkUntil, 0L))
+                        if (z.GetInt(KCycleStarted) == 0) z.Set(KCycleStartAt, windowEnd);
+                        else if (net < z.GetLong(KCycleUntil, 0L))
                         {
-                            z.Set(KBarkUntil, net);
-                            z.Set(KBarkNext, windowEnd + Seconds(BarkCooldown(rt.Def, ActByCode(rt.Def, z.GetInt(KBarkAct) - 1))));
+                            z.Set(KCycleUntil, net);
+                            z.Set(KCycleNext, windowEnd + Seconds(CycleCooldown(rt.Def, ActByCode(rt.Def, z.GetInt(KCycleAct) - 1))));
                         }
                     }
                     boss.Stagger(-boss.transform.forward);
@@ -456,82 +530,107 @@ namespace ExtendedBosses
         }
 
         // ------------------------------------------------------------------
-        // living bark (Elder): a repeating resist phase, Sap or Back variant
+        // resistance cycle (Elder's bark, Bonemass's hardening): repeats until death, one of the
+        // act's variants each time (random, pinned by config, or Auto); positional variants are
+        // never picked for a single player
         // ------------------------------------------------------------------
-        private void TickBark(Character boss, FightRt rt, ZDO z, long net, int players)
+        private void TickCycle(Character boss, FightRt rt, ZDO z, long net, int players)
         {
-            rt.BarkAct = null;
-            int code = z.GetInt(KBarkAct);
+            rt.CycleAct = null;
+            int code = z.GetInt(KCycleAct);
             if (code <= 0) return;
             Act act = ActByCode(rt.Def, code - 1);
             if (act == null) return;
             bool on = MechanicOn(rt.Def, ActKind.Resist);
 
-            if (z.GetInt(KBarkStarted) == 0)
+            if (z.GetInt(KCycleStarted) == 0)
             {
                 // first bark: after the burn window, or after the delay if no window came
-                if (rt.WindowActive || net < z.GetLong(KBarkStartAt, 0L)) return;
-                z.Set(KBarkStarted, 1);
-                StartBark(boss, rt, z, act, net, players, on);
+                if (rt.WindowActive || net < z.GetLong(KCycleStartAt, 0L)) return;
+                z.Set(KCycleStarted, 1);
+                StartCycle(boss, rt, z, act, net, players, on);
             }
             else
             {
-                long until = z.GetLong(KBarkUntil, 0L);
-                long next = z.GetLong(KBarkNext, 0L);
+                long until = z.GetLong(KCycleUntil, 0L);
+                long next = z.GetLong(KCycleNext, 0L);
                 if (net >= until && next == 0L)
                 {
                     // just ended: announce and roll the cooldown
-                    z.Set(KBarkNext, until + Seconds(BarkCooldown(rt.Def, act)));
-                    if (on) Announce("elder.bark.end", NameToken(boss));
-                    Debug(rt.Def.Prefab + ": bark ended");
+                    z.Set(KCycleNext, until + Seconds(CycleCooldown(rt.Def, act)));
+                    if (on && !string.IsNullOrEmpty(act.EndKey)) Announce(act.EndKey, NameToken(boss));
+                    Debug(rt.Def.Prefab + ": cycle ended");
                 }
-                else if (next > 0L && net >= next && !rt.WindowActive) StartBark(boss, rt, z, act, net, players, on);
+                else if (next > 0L && net >= next && !rt.WindowActive) StartCycle(boss, rt, z, act, net, players, on);
             }
 
-            if (on && net < z.GetLong(KBarkUntil, 0L))
+            if (on && net < z.GetLong(KCycleUntil, 0L) && act.Variants != null)
             {
-                rt.BarkAct = act;
-                rt.BarkBack = z.GetInt(KBarkKind) == 2;
+                int vi = z.GetInt(KCycleKind) - 1;
+                if (vi >= 0 && vi < act.Variants.Count)
+                {
+                    rt.CycleAct = act;
+                    rt.CycleVar = act.Variants[vi];
+                }
             }
         }
 
-        private void StartBark(Character boss, FightRt rt, ZDO z, Act act, long net, int players, bool on)
+        private void StartCycle(Character boss, FightRt rt, ZDO z, Act act, long net, int players, bool on)
         {
-            string v = rt.Def.CfgBarkVariant != null ? Ss(rt.Def.CfgBarkVariant) : BarkRandom;
-            if (v == BarkAuto) v = players >= 3 ? BarkBack : BarkSap;
-            else if (v != BarkSap && v != BarkBack) v = UnityEngine.Random.value < 0.5f ? BarkSap : BarkBack;
-            float dur = rt.Def.CfgBarkDuration != null ? Sv(rt.Def.CfgBarkDuration) : act.Duration;
-            z.Set(KBarkKind, v == BarkBack ? 2 : 1);
-            z.Set(KBarkUntil, net + Seconds(dur));
-            z.Set(KBarkNext, 0L);
-            if (on) Announce(v == BarkBack ? "elder.bark.back" : "elder.bark.sap", NameToken(boss));
-            Debug(rt.Def.Prefab + ": bark (" + v + ") for " + F1(dur) + " s");
+            if (act.Variants == null || act.Variants.Count == 0) return;
+            int vi = PickVariant(rt.Def, act, players);
+            CycleVariant v = act.Variants[vi];
+            float dur = rt.Def.CfgCycleDuration != null ? Sv(rt.Def.CfgCycleDuration) : act.Duration;
+            z.Set(KCycleKind, vi + 1);
+            z.Set(KCycleUntil, net + Seconds(dur));
+            z.Set(KCycleNext, 0L);
+            if (on && !string.IsNullOrEmpty(v.Say)) Announce(v.Say, NameToken(boss));
+            Debug(rt.Def.Prefab + ": cycle " + v.Id + " for " + F1(dur) + " s");
         }
 
-        private float BarkCooldown(BossDef def, Act act)
+        private int PickVariant(BossDef def, Act act, int players)
         {
-            float a = def.CfgBarkCdMin != null ? Sv(def.CfgBarkCdMin) : (act != null ? act.CooldownMin : 60f);
-            float b = def.CfgBarkCdMax != null ? Sv(def.CfgBarkCdMax) : (act != null ? act.CooldownMax : 60f);
+            List<int> allowed = new List<int>();
+            for (int i = 0; i < act.Variants.Count; i++)
+                if (!(act.Variants[i].Back && players <= 1)) allowed.Add(i);     // solo: never positional
+            if (allowed.Count == 0) allowed.Add(0);
+
+            string want = def.CfgCycleVariant != null ? Ss(def.CfgCycleVariant) : CycleRandom;
+            if (want == CycleAuto)
+            {
+                for (int k = 0; k < allowed.Count; k++)
+                    if (act.Variants[allowed[k]].Back == (players >= 3)) return allowed[k];
+                return allowed[0];
+            }
+            for (int k = 0; k < allowed.Count; k++)
+                if (act.Variants[allowed[k]].Id == want) return allowed[k];
+            return allowed[UnityEngine.Random.Range(0, allowed.Count)];          // Random, or a pinned one not allowed now
+        }
+
+        private float CycleCooldown(BossDef def, Act act)
+        {
+            float a = def.CfgCycleCdMin != null ? Sv(def.CfgCycleCdMin) : (act != null ? act.CooldownMin : 60f);
+            float b = def.CfgCycleCdMax != null ? Sv(def.CfgCycleCdMax) : (act != null ? act.CooldownMax : 60f);
             if (b < a) b = a;
             return UnityEngine.Random.Range(a, b);
         }
 
-        // Applied to a hit on the boss while a bark is up.
-        internal void ApplyBark(Character boss, HitData hit)
+        // Applied to a hit on the boss while a cycle is up.
+        internal void ApplyCycle(Character boss, HitData hit)
         {
             FightRt rt = RtIfRunning(boss);
-            if (rt == null || rt.BarkAct == null) return;
-            Act act = rt.BarkAct;
-            if (rt.BarkBack)
+            if (rt == null || rt.CycleAct == null || rt.CycleVar == null) return;
+            CycleVariant v = rt.CycleVar;
+            if (v.Back)
             {
                 if (FromBehind(boss, hit, rt.Def.CfgBackArc != null ? Sv(rt.Def.CfgBackArc) : 120f)) return;
-                hit.ApplyModifier(act.Other);
+                hit.ApplyModifier(v.Other);
                 return;
             }
-            float o = act.Other;
+            float o = v.Other;
             float blunt = o, slash = o, pierce = o, fire = o, frost = o, lightning = o, poison = o, spirit = o;
-            if (act.Mods != null)
-                foreach (KeyValuePair<HitData.DamageType, float> kv in act.Mods)
+            if (v.Mods != null)
+                foreach (KeyValuePair<HitData.DamageType, float> kv in v.Mods)
                     switch (kv.Key)
                     {
                         case HitData.DamageType.Blunt: blunt = kv.Value; break;
@@ -835,12 +934,12 @@ namespace ExtendedBosses
                 z.Set(KShieldAct, 0);
                 z.Set(KResistAct, 0);
                 z.Set(KWindowUntil, 0L);
-                z.Set(KBarkAct, 0);
-                z.Set(KBarkStarted, 0);
-                z.Set(KBarkUntil, 0L);
-                z.Set(KBarkNext, 0L);
+                z.Set(KCycleAct, 0);
+                z.Set(KCycleStarted, 0);
+                z.Set(KCycleUntil, 0L);
+                z.Set(KCycleNext, 0L);
             }
-            rt.BarkAct = null;
+            rt.CycleAct = null;
             boss.SetHealth(boss.GetMaxHealth());
             StopCharge(rt);
             rt.Strikes.Clear();

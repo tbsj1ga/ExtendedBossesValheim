@@ -35,9 +35,36 @@ namespace ExtendedBosses
         // (healer) and lifetime (roots).
         internal Character SpawnCreature(ZDOID bossId, string prefab, int level, float hpMul, Vector3 center, int src, float rMin, float rMax, int role, float lifetime)
         {
+            return SpawnCreatureAt(bossId, prefab, level, hpMul, RingPoint(center, rMin, rMax), src, role, lifetime);
+        }
+
+        // A spot under water in the ring (for leeches); false if there is no water around.
+        internal bool WaterPoint(Vector3 center, float rMin, float rMax, out Vector3 pos)
+        {
+            pos = center;
+            ZoneSystem zs = ZoneSystem.instance;
+            if (zs == null) return false;
+            float water = zs.m_waterLevel;
+            for (int i = 0; i < 16; i++)
+            {
+                float ang = UnityEngine.Random.Range(0f, Mathf.PI * 2f);
+                float dist = UnityEngine.Random.Range(rMin, rMax * 1.5f);
+                Vector3 p = center + new Vector3(Mathf.Cos(ang) * dist, 0f, Mathf.Sin(ang) * dist);
+                if (zs.GetGroundHeight(p) < water - 0.6f)
+                {
+                    p.y = water - 0.3f;
+                    pos = p;
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        internal Character SpawnCreatureAt(ZDOID bossId, string prefab, int level, float hpMul, Vector3 pos, int src, int role, float lifetime)
+        {
             GameObject pf = ZNetScene.instance.GetPrefab(prefab);
             if (pf == null || pf.GetComponent<Character>() == null) { Warn("creature prefab '" + prefab + "' not found."); return null; }
-            GameObject go = SpawnObject(pf, RingPoint(center, rMin, rMax));
+            GameObject go = SpawnObject(pf, pos);
             Character c = go.GetComponent<Character>();
             ZDO z = Zdo(c);
             if (z != null)

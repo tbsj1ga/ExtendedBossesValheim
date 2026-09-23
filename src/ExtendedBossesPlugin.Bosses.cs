@@ -8,33 +8,46 @@ namespace ExtendedBosses
     // A fight is data: phases at HP thresholds, each a list of actions (the "bricks" of
     // ROADMAP.md, section A). The fight controller knows how to run each kind of action; a boss
     // is only a table here.
-    internal enum ActKind { Wave, Lieutenant, Nest, Totem, Marks, Charge, Shield, Resist, Bark }
+    internal enum ActKind { Wave, Lieutenant, Nest, Totem, Marks, Charge, Shield, Resist, Cycle, Fusion }
+
+    // One variant of a resistance cycle (Elder's sap/back bark, Bonemass's hardening).
+    internal class CycleVariant
+    {
+        public string Id;               // "Sap", "Back", "Harden" - also the config value that pins it
+        public string Say;              // announced when it starts ({0} = boss)
+        public Dictionary<HitData.DamageType, float> Mods;  // multipliers by type
+        public float Other = 1f;        // multiplier of every type not in Mods (Back: from the front)
+        public bool Back;               // positional: full damage only from behind; never picked solo
+    }
 
     internal class Act
     {
         public ActKind Kind;
-        public string[] Prefabs;        // creatures (Wave, Lieutenant, Totem spawns), the nest (Nest), the AoE (Marks)
-        public float Count = 1f;        // Wave/Lieutenant: base count of each prefab; Nest/Totem: objects; Marks: players per cast
+        public string[] Prefabs;        // creatures (Wave, Lieutenant, Totem, Fusion), the nest (Nest), the AoE (Marks)
+        public float Count = 1f;        // Wave/Lieutenant/Fusion: base count of each prefab; Nest/Totem: objects; Marks: players per cast
         public int ExtraFrom;           // Lieutenant: one more from this many players (0 = never)
         public int Level = 1;           // creature level, 1 = no stars
         public float HpMul = 1f;        // effective HP multiplier (damage divisor on the owner)
-        public int Role;                // RoleHealer: heals the boss while alive
+        public int Role;                // RoleHealer, RoleFuse
         public float Lifetime;          // creatures: removed after this many seconds (0 = stay)
+        public bool InWater;            // Wave: only at spots under water (leeches); none found = none spawned
         public string Prop;             // Totem: the destructible prop; Marks: the telegraph effect
-        public float Interval = 12f;    // Totem: seconds between spawns
+        public float Interval = 12f;    // Totem, Fusion: seconds between spawns
         public int MaxAlive = 3;        // Totem: adds alive per totem
         public float Damage;            // Marks: damage of the strike
         public HitData.DamageType DamageType = HitData.DamageType.Lightning;
-        public string MarkKey;          // Marks: text key announced per mark ({0} boss, {1} player)
+        public string MarkKey;          // Marks: text key announced per mark ({0} boss, {1} player); Fusion: per wave
         public string Creature;         // Marks: creature summoned around the mark instead of an AoE (roots)
         public int CreatureCount = 4;   // Marks: how many, in a ring
         public float RingRadius = 3f;   // Marks: ring radius around the marked player
-        public float Duration;          // Resist: seconds (0 = while the shield holds); Bark: seconds it lasts
-        public Dictionary<HitData.DamageType, float> Mods; // Resist, Bark (Sap): damage multipliers by type; missing types use Other
-        public float Other = 1f;        // Bark (Sap): multiplier of every type not in Mods; Bark (Back): multiplier from the front
-        public float CooldownMin;       // Bark: seconds between barks, random in [min, max]
+        public float Duration;          // Resist: seconds (0 = while the shield holds); Cycle: seconds each lasts
+        public Dictionary<HitData.DamageType, float> Mods; // Resist: damage multipliers by type
+        public float CooldownMin;       // Cycle: seconds between, random in [min, max]
         public float CooldownMax;
-        public float Delay;             // Bark: first bark this long after the phase if no burn window came first
+        public float Delay;             // Cycle: first one this long after the phase if no burn window came first
+        public List<CycleVariant> Variants; // Cycle
+        public string EndKey;           // Cycle: announced when one ends
+        public float Heal;              // Fusion: % of boss max HP healed per creature that reaches it
     }
 
     internal class PhaseDef
@@ -83,21 +96,22 @@ namespace ExtendedBosses
         public ConfigEntry<float> CfgChargeInterval;
         public ConfigEntry<float> CfgChargeSpeed;
         public ConfigEntry<float> CfgChargeDuration;
-        public ConfigEntry<string> CfgBarkVariant;
-        public ConfigEntry<float> CfgBarkDuration;
-        public ConfigEntry<float> CfgBarkCdMin;
-        public ConfigEntry<float> CfgBarkCdMax;
-        public ConfigEntry<float> CfgBarkDelay;
+        public ConfigEntry<string> CfgCycleVariant;
+        public ConfigEntry<float> CfgCycleDuration;
+        public ConfigEntry<float> CfgCycleCdMin;
+        public ConfigEntry<float> CfgCycleCdMax;
+        public ConfigEntry<float> CfgCycleDelay;
         public ConfigEntry<float> CfgBackArc;
+        public ConfigEntry<float> CfgFusionInterval;
+        public ConfigEntry<float> CfgFusionHeal;
     }
 
     public partial class ExtendedBossesPlugin
     {
         internal const int RoleHealer = 1;
-        internal const string BarkSap = "Sap";
-        internal const string BarkBack = "Back";
-        internal const string BarkAuto = "Auto";
-        internal const string BarkRandom = "Random";
+        internal const int RoleFuse = 2;
+        internal const string CycleRandom = "Random";
+        internal const string CycleAuto = "Auto";
 
         private readonly List<BossDef> _bosses = new List<BossDef>();
         private readonly Dictionary<int, BossDef> _bossByHash = new Dictionary<int, BossDef>();
@@ -119,6 +133,7 @@ namespace ExtendedBosses
         {
             AddBoss(Eikthyr());
             AddBoss(Elder());
+            AddBoss(Bonemass());
         }
 
         private static PhaseDef Phase(BossDef b, float pct, string say)
@@ -126,6 +141,29 @@ namespace ExtendedBosses
             PhaseDef p = new PhaseDef { Pct = pct, Say = say };
             b.Phases.Add(p);
             return p;
+        }
+
+        private static Dictionary<HitData.DamageType, float> Mods(params object[] pairs)
+        {
+            Dictionary<HitData.DamageType, float> d = new Dictionary<HitData.DamageType, float>();
+            for (int i = 0; i + 1 < pairs.Length; i += 2) d[(HitData.DamageType)pairs[i]] = (float)pairs[i + 1];
+            return d;
+        }
+
+        // Binds the usual knobs of a resistance cycle under the given key prefix ("Bark", "Harden").
+        private void BindCycle(BossDef d, string prefix, string whatEn, string whatRu, bool variants)
+        {
+            if (variants)
+                d.CfgCycleVariant = S(d.Section, prefix + "Variant", CycleRandom,
+                    "Which " + whatEn + " comes: Random (chosen anew each time), a variant name to pin it, or Auto (positional variant for a group of 3+). A single player always gets the non-positional variant.",
+                    "Какой вариант (" + whatRu + "): Random — заново каждый раз, имя варианта — всегда он, Auto — позиционный для группы от 3 игроков. Один игрок всегда получает непозиционный вариант.",
+                    CycleRandom, "Sap", "Back", CycleAuto);
+            d.CfgCycleDuration = F(d.Section, prefix + "Duration", 30f, 5f, 120f, "Seconds each " + whatEn + " lasts.", "Длительность (" + whatRu + "), секунд.");
+            d.CfgCycleCdMin = F(d.Section, prefix + "CooldownMin", 50f, 5f, 300f, "Cooldown between: from...", "Перерыв между: от…");
+            d.CfgCycleCdMax = F(d.Section, prefix + "CooldownMax", 70f, 5f, 300f, "...to (random each time).", "…до (случайно каждый раз).");
+            d.CfgCycleDelay = F(d.Section, prefix + "StartDelay", 60f, 0f, 300f,
+                "The first one comes when the stagger after the fallen shield ends; if the shield still stands this long after 55%, it starts anyway.",
+                "Первый раз — когда кончается оглушение после падения щита; если щит стоит дольше этого после 55 %, начинается всё равно.");
         }
 
         // ------------------------------------------------------------------
@@ -199,13 +237,18 @@ namespace ExtendedBosses
             p.Acts.Add(new Act { Kind = ActKind.Nest, Prefabs = new[] { nest }, Count = 3f });
             p.Acts.Add(new Act { Kind = ActKind.Shield });
             // Living bark: after the burn window ends (or 60 s after this phase if the window never
-            // came), 30 s of bark, then 50-70 s cooldown, repeat. Sap: fire x0.25 (its usual
-            // weakness is gone), slash x1.25 (chop the tree), everything else x0.25. Back: from
-            // the front x0.25, from behind full damage.
+            // came), 30 s of bark, then 50-70 s cooldown, repeat; the variant is random each time.
             p.Acts.Add(new Act
             {
-                Kind = ActKind.Bark, Duration = 30f, CooldownMin = 50f, CooldownMax = 70f, Delay = 60f, Other = 0.25f,
-                Mods = new Dictionary<HitData.DamageType, float> { { HitData.DamageType.Slash, 1.25f }, { HitData.DamageType.Fire, 0.25f } }
+                Kind = ActKind.Cycle, Duration = 30f, CooldownMin = 50f, CooldownMax = 70f, Delay = 60f, EndKey = "elder.bark.end",
+                Variants = new List<CycleVariant>
+                {
+                    // sap: its usual fire weakness is gone, chop the tree with axes
+                    new CycleVariant { Id = "Sap", Say = "elder.bark.sap", Other = 0.25f,
+                                       Mods = Mods(HitData.DamageType.Slash, 1.25f, HitData.DamageType.Fire, 0.25f) },
+                    // back: x0.25 from the front, full damage from behind - the tank holds it
+                    new CycleVariant { Id = "Back", Say = "elder.bark.back", Other = 0.25f, Back = true },
+                }
             });
 
             Phase(b, 45f, "elder.45").Acts.Add(new Act { Kind = ActKind.Lieutenant, Prefabs = new[] { "Troll" }, ExtraFrom = 3 });
@@ -237,18 +280,84 @@ namespace ExtendedBosses
                     "Creature summoned in a ring around the marked player from 70%.", "Существо, которое появляется кольцом вокруг отмеченного игрока с 70 %.");
                 d.CfgMarkEffect = pl.S(d.Section, "MarkEffect", "vfx_prespawn",
                     "Vanilla effect on the marked player before the roots (players with the mod).", "Ванильный эффект на отмеченном игроке до корней (у игроков с модом).");
-                d.CfgBarkVariant = pl.S(d.Section, "BarkVariant", BarkRandom,
-                    "Living bark from 55%. Random: Sap or Back, chosen anew for every bark. Sap: fire x0.25, slash x1.25, the rest x0.25 - chop with axes. Back: from the front x0.25, full damage only from behind - the tank holds the Elder facing them. Auto: Back for a group of 3+, Sap otherwise.",
-                    "Живая кора с 55 %. Random — Sap или Back, заново для каждой коры. Sap — огонь ×0.25, рубящий ×1.25, остальное ×0.25: рубите топорами. Back — спереди ×0.25, полный урон только в спину: танк держит Древнего лицом к себе. Auto — Back для группы от 3 игроков, иначе Sap.",
-                    BarkRandom, BarkSap, BarkBack, BarkAuto);
-                d.CfgBarkDuration = pl.F(d.Section, "BarkDuration", 30f, 5f, 120f, "Seconds the bark lasts.", "Длительность коры, секунд.");
-                d.CfgBarkCdMin = pl.F(d.Section, "BarkCooldownMin", 50f, 5f, 300f, "Cooldown between barks: from...", "КД между корами: от…");
-                d.CfgBarkCdMax = pl.F(d.Section, "BarkCooldownMax", 70f, 5f, 300f, "...to (random each time).", "…до (случайно каждый раз).");
-                d.CfgBarkDelay = pl.F(d.Section, "BarkStartDelay", 60f, 0f, 300f,
-                    "The first bark comes when the stagger after the fallen shield ends; if the nests still stand this long after 55%, it starts anyway.",
-                    "Первая кора — когда кончается оглушение после падения щита; если гнёзда стоят дольше этого после 55 %, кора начинается всё равно.");
+                pl.BindCycle(d, "Bark", "living bark (Sap: fire x0.25, slash x1.25, the rest x0.25; Back: x0.25 from the front, full from behind)",
+                    "живая кора: Sap — огонь ×0.25, рубящий ×1.25, остальное ×0.25; Back — спереди ×0.25, в спину полный", true);
                 d.CfgBackArc = pl.F(d.Section, "BackArc", 120f, 30f, 270f,
                     "Back variant: width of the arc behind the Elder that counts as 'the back', degrees.", "Вариант Back: ширина дуги позади Древнего, которая считается спиной, градусов.");
+            };
+            return b;
+        }
+
+        // ------------------------------------------------------------------
+        // 3. Bonemass - Swamp: bone piles, then the big things of the swamp; hardening, poison
+        //    puddles, slime that heals it if it gets through
+        // ------------------------------------------------------------------
+        private static BossDef Bonemass()
+        {
+            BossDef b = new BossDef { Prefab = "Bonemass", Section = "12 Bonemass" };
+            const string pile = "Spawner_DraugrPile";
+
+            Phase(b, 85f, "bonemass.85").Acts.Add(new Act { Kind = ActKind.Nest, Prefabs = new[] { pile }, Count = 1f });
+
+            PhaseDef p = Phase(b, 70f, "bonemass.70");
+            p.Acts.Add(new Act { Kind = ActKind.Nest, Prefabs = new[] { pile }, Count = 2f });
+            p.Acts.Add(new Act { Kind = ActKind.Wave, Prefabs = new[] { "Leech" }, Count = 2f, InWater = true });
+            p.Acts.Add(new Act
+            {
+                Kind = ActKind.Marks, Prefabs = new[] { "bonemass_aoe" }, Prop = "vfx_prespawn", MarkKey = "bonemass.mark",
+                Count = 1f, Damage = 25f, DamageType = HitData.DamageType.Poison
+            });
+
+            p = Phase(b, 55f, "bonemass.55");
+            p.Acts.Add(new Act { Kind = ActKind.Nest, Prefabs = new[] { pile }, Count = 3f });
+            p.Acts.Add(new Act { Kind = ActKind.Shield });
+            // hardening: its blunt weakness turns into resistance, fire burns the bones
+            p.Acts.Add(new Act
+            {
+                Kind = ActKind.Cycle, Duration = 30f, CooldownMin = 50f, CooldownMax = 70f, Delay = 60f, EndKey = "bonemass.harden.end",
+                Variants = new List<CycleVariant>
+                {
+                    new CycleVariant { Id = "Harden", Say = "bonemass.harden", Other = 1f,
+                                       Mods = Mods(HitData.DamageType.Blunt, 0.25f, HitData.DamageType.Fire, 2f) },
+                }
+            });
+
+            p = Phase(b, 45f, "bonemass.45");
+            p.Acts.Add(new Act { Kind = ActKind.Lieutenant, Prefabs = new[] { "Abomination" } });
+            p.Acts.Add(new Act { Kind = ActKind.Fusion, Prefabs = new[] { "Blob", "Blob", "BlobElite" }, Count = 2f, Interval = 25f, Heal = 3f, MarkKey = "bonemass.fusion" });
+
+            Phase(b, 40f, "bonemass.40").Acts.Add(new Act { Kind = ActKind.Wave, Prefabs = new[] { "Writhan" }, Count = 1f });
+            Phase(b, 35f, "bonemass.35").Acts.Add(new Act { Kind = ActKind.Wave, Prefabs = new[] { "Surtling" }, Count = 2f });
+            Phase(b, 25f, "bonemass.25").Acts.Add(new Act { Kind = ActKind.Wave, Prefabs = new[] { "Draugr_Elite" }, Count = 1f });
+            Phase(b, 15f, "bonemass.15").Acts.Add(new Act { Kind = ActKind.Wave, Prefabs = new[] { "Wraith", "Bat_Swamp", "Bat_Swamp" }, Count = 1f });
+
+            b.Reward.Valuables.Add(new Loot("Coins", 60, 90, true));
+            b.Reward.Valuables.Add(new Loot("Ruby", 1, 2, false));
+            b.Reward.Valuables.Add(new Loot("AmberPearl", 1, 1, true));
+            b.Reward.Valuables.Add(new Loot("IronScrap", 6, 10, false));
+            b.Reward.NextBiome.Add(new Loot("SilverOre", 2, 4, false));
+            b.Reward.Gear = new[] { "SwordIron", "MaceIron", "AxeIron", "AtgeirIron", "SpearElderbark", "BowHuntsman",
+                                    "ArmorIronChest", "ArmorIronLegs", "HelmetIron", "ShieldBanded", "ShieldIronTower",
+                                    "ArmorRootChest", "ArmorRootLegs", "HelmetRoot" };
+            b.Reward.NextGear = new[] { "SwordSilver", "MaceSilver", "SpearWolfFang", "KnifeSilver", "BowDraugrFang",
+                                        "ArmorWolfChest", "ArmorWolfLegs", "HelmetDrake", "CapeWolf", "ShieldSilver" };
+
+            b.BindExtra = delegate(ExtendedBossesPlugin pl, BossDef d)
+            {
+                d.CfgNestPrefab = pl.S(d.Section, "NestPrefab", pile,
+                    "Vanilla destructible spawner placed at 85/70/55% (bone pile). Alternative: BonePileSpawner_swamp.",
+                    "Ванильный разрушаемый спавнер на 85/70/55 % (куча костей). Альтернатива — BonePileSpawner_swamp.");
+                d.CfgMarkPrefab = pl.S(d.Section, "MarkPrefab", "bonemass_aoe",
+                    "Vanilla AoE prefab of the poison puddle under a marked player from 70%.", "Ванильный AoE-префаб ядовитой лужи под отмеченным игроком с 70 %.");
+                d.CfgMarkEffect = pl.S(d.Section, "MarkEffect", "vfx_prespawn",
+                    "Vanilla effect on the marked player before the puddle (players with the mod).", "Ванильный эффект на отмеченном игроке до лужи (у игроков с модом).");
+                d.CfgMarkDamage = pl.F(d.Section, "MarkDamage", 25f, 0f, 500f,
+                    "Poison damage of the puddle (before 04 Marks DamageMultiplier).", "Урон ядом лужи (до множителя из 04 Marks).");
+                pl.BindCycle(d, "Harden", "hardening (blunt x0.25, fire x2)", "затвердевание: дробящий ×0.25, огонь ×2", false);
+                d.CfgFusionInterval = pl.F(d.Section, "SlimeInterval", 25f, 5f, 180f,
+                    "From 45%: seconds between slime waves crawling to Bonemass.", "С 45 %: секунд между волнами слизи, ползущей к Массивному.");
+                d.CfgFusionHeal = pl.F(d.Section, "SlimeHealPercent", 3f, 0f, 25f,
+                    "% of max HP Bonemass heals for every slime that reaches it.", "Сколько % макс. HP Массивный лечит за каждую дошедшую до него слизь.");
             };
             return b;
         }

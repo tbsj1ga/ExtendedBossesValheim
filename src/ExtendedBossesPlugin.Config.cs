@@ -159,8 +159,8 @@ namespace ExtendedBosses
             _cfgMarks = B(M, "Marks", true, "Marks on players followed by an AoE or roots (spread out). Off in Light.", "Метки на игроках, затем удар или корни (разбегитесь). Выкл в Light.");
             _cfgSpecials = B(M, "Specials", true, "Boss-specific abilities (Eikthyr's charge). Off in Light.", "Особые способности босса (рывок Эйктюра). Выкл в Light.");
             _cfgShield = B(M, "Shield", true, "The boss takes little damage while its nests stand; destroying them opens a burn window. Off in Light.", "Босс почти не получает урона, пока стоят его гнёзда; их разрушение открывает окно уязвимости. Выкл в Light.");
-            _cfgHealers = B(M, "Healers", true, "Healer adds (shamans) heal the boss while alive and near. Off in Light.", "Адды-лекари (шаманы) лечат босса, пока живы и рядом. Выкл в Light.");
-            _cfgResist = B(M, "Resistances", true, "Phases that change what hurts the boss (Elder's living bark). Off in Light.", "Фазы смены сопротивлений (живая кора Древнего). Выкл в Light.");
+            _cfgHealers = B(M, "Healers", true, "Healer adds (shamans) heal the boss while alive and near; slime that reaches Bonemass heals it. Off in Light.", "Адды-лекари (шаманы) лечат босса, пока живы и рядом; дошедшая до Массивного слизь лечит его. Выкл в Light.");
+            _cfgResist = B(M, "Resistances", true, "Phases that change what hurts the boss (Elder's living bark, Bonemass's hardening). Off in Light.", "Фазы смены сопротивлений (живая кора Древнего, затвердевание Массивного). Выкл в Light.");
             _cfgThreat = B(M, "Threat", true, "Threat table: the boss attacks whoever angered it most within the leash radius. Off in Light.", "Таблица угрозы: босс бьёт того, кто разозлил его больше всех в радиусе привязи. Выкл в Light.");
             _cfgCleanupOnDeath = B(M, "CleanupOnDeath", true, "Remove the boss's adds and nests when it dies.", "Убирать аддов и гнёзда босса после его смерти.");
             _cfgCleanupOnDisable = B(M, "CleanupOnDisable", true, "Remove the adds and nests of a fight when its boss is switched to Vanilla.", "Убирать аддов и гнёзда боя, когда босс переключён в Vanilla.");
@@ -256,7 +256,8 @@ namespace ExtendedBosses
                 case ActKind.Charge: return Sb(_cfgSpecials) && full;
                 case ActKind.Shield: return Sb(_cfgShield) && Sb(_cfgNests) && full;
                 case ActKind.Resist:
-                case ActKind.Bark: return Sb(_cfgResist) && full;
+                case ActKind.Cycle: return Sb(_cfgResist) && full;
+                case ActKind.Fusion: return Sb(_cfgHealers) && full;
             }
             return false;
         }

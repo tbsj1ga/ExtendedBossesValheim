@@ -38,6 +38,7 @@ namespace ExtendedBosses
                         {
                             case ActKind.Wave:
                             case ActKind.Lieutenant:
+                            case ActKind.Fusion:
                                 for (int k = 0; k < act.Prefabs.Length; k++) Check(tag, act.Prefabs[k], Need.Creature, seen, details);
                                 break;
                             case ActKind.Nest:

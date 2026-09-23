@@ -37,7 +37,7 @@ namespace ExtendedBosses
                         {
                             mul *= p.BossDamageFactor(__instance, d);
                             p.ApplyResist(__instance, hit);
-                            p.ApplyBark(__instance, hit);
+                            p.ApplyCycle(__instance, hit);
                             __state = __instance.GetHealth();
                         }
                     }

@@ -40,6 +40,20 @@ namespace ExtendedBosses
             { "elder.10", new[] { "{0}: Dead of the barrows, rise!", "{0}: Мёртвые курганов, встаньте!" } },
             { "elder.mark", new[] { "Roots stir under {1} - get out!", "Корни шевелятся под игроком {1} — выбирайтесь!" } },
 
+            // ---- Bonemass
+            { "bonemass.85", new[] { "{0}: The swamp remembers its dead! (destroy the bone pile)", "{0}: Болото помнит своих мертвецов! (разрушьте кучу костей)" } },
+            { "bonemass.70", new[] { "{0}: More bones! (piles - poison underfoot - leeches in the water)", "{0}: Больше костей! (кучи — яд под ногами — пиявки в воде)" } },
+            { "bonemass.55", new[] { "{0}: The bones shield me! (destroy all the piles)", "{0}: Кости укроют меня! (разрушьте все кучи)" } },
+            { "bonemass.harden", new[] { "{0}: the bones harden - blunt is useless, burn it!", "{0}: кости затвердели — дробящее бесполезно, жгите!" } },
+            { "bonemass.harden.end", new[] { "{0}: the bones soften again", "{0}: кости снова размякли" } },
+            { "bonemass.45", new[] { "{0} raises an abomination! Slime will crawl to the boss - kill it before it merges!", "{0} поднимает мерзость! К боссу поползёт слизь — убейте её, пока не слилась!" } },
+            { "bonemass.fusion", new[] { "{0} calls the slime - intercept it!", "{0} зовёт слизь — перехватите её!" } },
+            { "bonemass.40", new[] { "{0}: Writhans, to me!", "{0}: Скручни, ко мне!" } },
+            { "bonemass.35", new[] { "{0}: Fire of the swamp, come! (surtlings)", "{0}: Огонь болот, ко мне! (суртлинги)" } },
+            { "bonemass.25", new[] { "{0} raises the elite dead!", "{0} поднимает элитных драугров!" } },
+            { "bonemass.15", new[] { "{0}: Spirits of the swamp, feast!", "{0}: Духи болота, пируйте!" } },
+            { "bonemass.mark", new[] { "{0} spits poison under {1} - spread out!", "{0} плюёт ядом под игрока {1} — разойдитесь!" } },
+
             // ---- common
             { "window", new[] { "{0}: the shield has fallen - strike now!", "{0}: защита пала — бейте!" } },
             { "reset", new[] { "{0} regains strength...", "{0} восстанавливает силы…" } },
@@ -63,8 +77,9 @@ namespace ExtendedBosses
             { "cmd.shield", new[] { ", SHIELD", ", ЩИТ" } },
             { "cmd.window", new[] { ", WINDOW", ", ОКНО" } },
             { "cmd.resist", new[] { ", RESIST", ", СОПРОТИВЛЕНИЕ" } },
-            { "cmd.barksap", new[] { ", BARK (sap)", ", КОРА (сок)" } },
-            { "cmd.barkback", new[] { ", BARK (back)", ", КОРА (спина)" } },
+            { "cmd.cycle.sap", new[] { ", BARK (sap)", ", КОРА (сок)" } },
+            { "cmd.cycle.back", new[] { ", BARK (back)", ", КОРА (спина)" } },
+            { "cmd.cycle.harden", new[] { ", HARDENED", ", ЗАТВЕРДЕЛ" } },
             { "cmd.checkdone", new[] { "Self-check: {0} prefab(s) OK, {1} problem(s) - details in the log.", "Самопроверка: {0} префаб(ов) в порядке, проблем: {1} — подробности в логе." } },
         };
 

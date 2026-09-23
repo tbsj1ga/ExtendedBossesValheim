@@ -113,7 +113,7 @@ namespace ExtendedBosses
                 if (rt != null && rt.ShieldActive) flags += L("cmd.shield");
                 if (rt != null && rt.WindowActive) flags += L("cmd.window");
                 if (rt != null && rt.ResistAct != null) flags += L("cmd.resist");
-                if (rt != null && rt.BarkAct != null) flags += L(rt.BarkBack ? "cmd.barkback" : "cmd.barksap");
+                if (rt != null && rt.CycleAct != null && rt.CycleVar != null) flags += L("cmd.cycle." + rt.CycleVar.Id.ToLowerInvariant());
                 sb.Append(L("cmd.status",
                     def.Prefab, Ss(def.CfgMode), ProfileOf(def),
                     F1(c.GetHealthPercentage() * 100f), fired.ToString(), def.Phases.Count.ToString(),
