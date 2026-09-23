@@ -33,6 +33,7 @@ namespace ExtendedBosses
         private static string TotemKey(int i) { return "j1ga.extendedbosses.totem" + i; }
         private static int TotemActKey(int i) { return ("j1ga.extendedbosses.totemact" + i).GetStableHashCode(); }
         private const int NestCode = -1;       // totem slot holding a vanilla nest (spawns on its own)
+        private const int SeedCode = -2;       // totem slot holding a nest grown from a seed (spawns, never holds the shield)
 
         private class Strike
         {
@@ -75,6 +76,7 @@ namespace ExtendedBosses
             public float NextFix, FixUntil; // Fixate (local time)
             public ZDOID FixTarget = ZDOID.None;
             public float NextHazard;        // Hazard (local time)
+            public float NextSeed;          // Seeds: no new seed nest before this (local time)
             public float CocoonUntil, CocoonReady; // Cocoon (local time)
             public bool CocoonActive;
             public Vector3 LastPos;         // teleport detection
@@ -258,6 +260,7 @@ namespace ExtendedBosses
                     for (int p = 0; p < prefabs.Length; p++)
                         for (int k = 0; k < count; k++)
                         {
+                            if (AtCap(boss)) break;               // crowd cap: the rest of the wave does not come
                             Character c;
                             if (act.InWater)
                             {
@@ -481,6 +484,7 @@ namespace ExtendedBosses
             int spawned = 0;
             for (int k = 0; k < count; k++)
             {
+                if (AtCap(boss)) break;
                 string prefab = act.Prefabs[UnityEngine.Random.Range(0, act.Prefabs.Length)];
                 Character c = SpawnCreature(rt.BossId, prefab, level, 1f, boss.transform.position, 0, 20f, 26f, RoleFuse, 0f);
                 if (c == null) continue;
@@ -843,11 +847,16 @@ namespace ExtendedBosses
             return angle >= 180f - arc * 0.5f;
         }
 
-        private int TotemsAlive(ZDO bz)
+        // Nests and totems that hold the shield: the ones placed at the HP thresholds; seed nests do not.
+        private int TotemsAlive(ZDO bz) { return CountSlots(bz, false); }
+        private int SeedsAlive(ZDO bz) { return CountSlots(bz, true); }
+
+        private int CountSlots(ZDO bz, bool seeds)
         {
             int slots = bz.GetInt(KTotems), n = 0;
             for (int i = 0; i < slots; i++)
             {
+                if ((bz.GetInt(TotemActKey(i)) == SeedCode) != seeds) continue;
                 ZDOID id = bz.GetZDOID(TotemKey(i));
                 if (id != ZDOID.None && ZDOMan.instance.GetZDO(id) != null) n++;
             }
@@ -883,7 +892,7 @@ namespace ExtendedBosses
             ZDO bz = Zdo(boss);
             int slot = bz.GetInt(KTotems);
             bz.Set(TotemKey(slot), tz.m_uid);
-            bz.Set(TotemActKey(slot), vanillaNest ? NestCode : phase * 8 + index);
+            bz.Set(TotemActKey(slot), act.Kind == ActKind.Seeds ? SeedCode : vanillaNest ? NestCode : phase * 8 + index);
             bz.Set(KTotems, slot + 1);
             Debug(rt.Def.Prefab + ": placed " + prefab + " in slot " + slot + (vanillaNest ? " (vanilla nest)" : ""));
             return true;
@@ -918,6 +927,7 @@ namespace ExtendedBosses
 
                 int maxAlive = act.MaxAlive + (players >= 4 ? 1 : 0);
                 if (CountAdds(rt.BossId, i + 1) >= maxAlive) continue;
+                if (AtCap(boss)) continue;
                 string prefab = act.Prefabs[UnityEngine.Random.Range(0, act.Prefabs.Length)];
                 SpawnCreature(rt.BossId, prefab, AddLevel(rt.Def, act.Level, players), act.HpMul, totem.transform.position, i + 1, 1.5f, 4f, act.Role, act.Lifetime);
             }

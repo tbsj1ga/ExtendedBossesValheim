@@ -71,6 +71,7 @@ namespace ExtendedBosses
 
         // 07 Client (never synced: how this client draws things)
         private ConfigEntry<bool> _cfgShowCircles;
+        private ConfigEntry<float> _cfgMessageDuration;
 
         // 09 Raid
         private ConfigEntry<float> _cfgShieldFactor;
@@ -192,6 +193,9 @@ namespace ExtendedBosses
             _cfgResetRadius = F(Rs, "Radius", 50f, 10f, 200f, "Players within this distance keep the fight going.", "Игроки ближе этого расстояния удерживают бой.");
             _cfgResetSeconds = F(Rs, "Seconds", 60f, 10f, 600f, "Seconds without players before the reset.", "Секунд без игроков до сброса.");
 
+            _cfgMessageDuration = F("07 Client", "MessageDurationMultiplier", 1.5f, 0.5f, 4f,
+                "How long the mod's centre messages stay on screen, x vanilla (4 s). Only on this client; players without the mod see the vanilla length.",
+                "Сколько сообщения мода держатся в центре экрана, × от ванильных 4 с. Только на этом клиенте; у игроков без мода — ванильная длительность.");
             _cfgShowCircles = B("07 Client", "ShowMarkCircles", true,
                 "Draw the exact AoE radius of a mark on the ground (only players with the mod see it; not synced).",
                 "Рисовать на земле точный радиус удара метки (видят только игроки с модом; не синкается).");

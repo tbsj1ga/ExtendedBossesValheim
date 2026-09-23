@@ -311,10 +311,28 @@ namespace ExtendedBosses
             catch (Exception e) { Fail("message", e); }
         }
 
-        private static void ShowLocal(string key, string[] args)
+        private void ShowLocal(string key, string[] args)
         {
             MessageHud hud = MessageHud.instance;
-            if (hud != null) hud.ShowMessage(MessageHud.MessageType.Center, L(key, args));
+            if (hud == null) return;
+            string text = L(key, args);
+            hud.ShowMessage(MessageHud.MessageType.Center, text);
+            float mul = _cfgMessageDuration.Value;
+            if (mul > 1.01f || mul < 0.99f) StartCoroutine(StretchCenterMessage(hud, hud.m_messageCenterText.text, mul));
+        }
+
+        // Vanilla fades a centre message out over 4 s (a constant in MessageHud.ShowMessage),
+        // applied in its next update. One frame later the fade is restarted with our length -
+        // only for our message, only on clients with the mod.
+        private const float VanillaCenterFade = 4f;
+
+        private System.Collections.IEnumerator StretchCenterMessage(MessageHud hud, string text, float mul)
+        {
+            yield return null;
+            yield return null;
+            if (hud == null || hud.m_messageCenterText == null || hud.m_messageCenterText.text != text) yield break;
+            hud.m_messageCenterText.CrossFadeAlpha(1f, 0f, true);
+            hud.m_messageCenterText.CrossFadeAlpha(0f, VanillaCenterFade * mul, true);
         }
 
         // Boss name as a vanilla token, e.g. "$enemy_gdking" (resolved by each receiver).

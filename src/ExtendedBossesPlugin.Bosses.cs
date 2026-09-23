@@ -232,8 +232,8 @@ namespace ExtendedBosses
             });
             Phase(b, 15f, "eikthyr.15").Acts.Add(new Act { Kind = ActKind.Lieutenant, Prefabs = new[] { "Boar" }, Level = 3, HpMul = 3f });
 
-            b.Reward.Valuables.Add(new Loot("Coins", 20, 30, true));
-            b.Reward.Valuables.Add(new Loot("Amber", 1, 1, true));
+            b.Reward.Valuables.Add(new Loot("Coins", 60, 90, true));
+            b.Reward.Valuables.Add(new Loot("Amber", 3, 3, true));
             b.Reward.NextBiome.Add(new Loot("CopperOre", 2, 4, false));
             b.Reward.NextBiome.Add(new Loot("TinOre", 2, 4, false));
             b.Reward.Gear = new[] { "AxeFlint", "SpearFlint", "KnifeFlint", "Club", "Bow", "ShieldWood",
@@ -276,8 +276,9 @@ namespace ExtendedBosses
                 Kind = ActKind.Marks, Creature = "TentaRoot", CreatureCount = 4, RingRadius = 3f, Lifetime = 15f,
                 Prop = "vfx_prespawn", MarkKey = "elder.mark", Count = 1f
             });
-            // seeds: where his projectile lands, a nest may grow (at most 4 nests standing)
-            p.Acts.Add(new Act { Kind = ActKind.Seeds, Prefabs = new[] { nest }, Chance = 0.3f, MaxAlive = 4, MarkKey = "elder.seed" });
+            // seeds: where his projectile lands, a nest may grow - rarely (5 %, at most once in 20 s, at
+            // most 2 seed nests standing); seed nests spawn but never hold the shield
+            p.Acts.Add(new Act { Kind = ActKind.Seeds, Prefabs = new[] { nest }, Chance = 0.05f, Interval = 20f, MaxAlive = 2, MarkKey = "elder.seed" });
 
             p = Phase(b, 55f, "elder.55");
             p.Acts.Add(new Act { Kind = ActKind.Nest, Prefabs = new[] { nest }, Count = 3f });
@@ -306,8 +307,8 @@ namespace ExtendedBosses
 
             Phase(b, 10f, "elder.10").Acts.Add(new Act { Kind = ActKind.Wave, Prefabs = new[] { "Skeleton", "Ghost" }, Count = 1f });
 
-            b.Reward.Valuables.Add(new Loot("Coins", 40, 60, true));
-            b.Reward.Valuables.Add(new Loot("Amber", 1, 2, true));
+            b.Reward.Valuables.Add(new Loot("Coins", 120, 180, true));
+            b.Reward.Valuables.Add(new Loot("Amber", 3, 6, true));
             b.Reward.Valuables.Add(new Loot("Ruby", 1, 1, false));
             b.Reward.Valuables.Add(new Loot("CopperOre", 4, 8, false));
             b.Reward.Valuables.Add(new Loot("TinOre", 4, 8, false));
@@ -384,7 +385,7 @@ namespace ExtendedBosses
             Phase(b, 25f, "bonemass.25").Acts.Add(new Act { Kind = ActKind.Wave, Prefabs = new[] { "Draugr_Elite" }, Count = 1f });
             Phase(b, 15f, "bonemass.15").Acts.Add(new Act { Kind = ActKind.Wave, Prefabs = new[] { "Wraith", "Bat_Swamp", "Bat_Swamp" }, Count = 1f });
 
-            b.Reward.Valuables.Add(new Loot("Coins", 60, 90, true));
+            b.Reward.Valuables.Add(new Loot("Coins", 180, 270, true));
             b.Reward.Valuables.Add(new Loot("Ruby", 1, 2, false));
             b.Reward.Valuables.Add(new Loot("AmberPearl", 1, 1, true));
             b.Reward.Valuables.Add(new Loot("IronScrap", 6, 10, false));
@@ -470,7 +471,7 @@ namespace ExtendedBosses
             p.Acts.Add(new Act { Kind = ActKind.Wave, Prefabs = new[] { "Fenring" }, Count = 1f });
             p.Acts.Add(new Act { Kind = ActKind.Wave, Prefabs = drakes, Count = 2f });
 
-            b.Reward.Valuables.Add(new Loot("Coins", 80, 120, true));
+            b.Reward.Valuables.Add(new Loot("Coins", 240, 360, true));
             b.Reward.Valuables.Add(new Loot("Ruby", 1, 2, false));
             b.Reward.Valuables.Add(new Loot("SilverNecklace", 1, 1, true));
             b.Reward.Valuables.Add(new Loot("SilverOre", 6, 10, false));
@@ -552,7 +553,7 @@ namespace ExtendedBosses
             // experiment, off by default: the echo of the previous boss, half its HP
             Phase(b, 10f, "yagluth.10").Acts.Add(new Act { Kind = ActKind.Lieutenant, Prefabs = new[] { "Aspect_Moder" }, HpMul = 0.5f, Gate = "EchoOfModer" });
 
-            b.Reward.Valuables.Add(new Loot("Coins", 100, 150, true));
+            b.Reward.Valuables.Add(new Loot("Coins", 300, 450, true));
             b.Reward.Valuables.Add(new Loot("SilverNecklace", 1, 2, true));
             b.Reward.Valuables.Add(new Loot("Ruby", 2, 3, false));
             b.Reward.Valuables.Add(new Loot("BlackMetalScrap", 8, 14, false));
@@ -634,7 +635,7 @@ namespace ExtendedBosses
             Phase(b, 30f, "queen.30").Acts.Add(new Act { Kind = ActKind.Lieutenant, Prefabs = new[] { "Gjall" } });
             Phase(b, 20f, "queen.20").Acts.Add(new Act { Kind = ActKind.Wave, Prefabs = new[] { "Tick", "SeekerBrood" }, Count = 2f });
 
-            b.Reward.Valuables.Add(new Loot("Coins", 120, 180, true));
+            b.Reward.Valuables.Add(new Loot("Coins", 360, 540, true));
             b.Reward.Valuables.Add(new Loot("Ruby", 2, 3, false));
             b.Reward.Valuables.Add(new Loot("Softtissue", 4, 8, false));
             b.Reward.Valuables.Add(new Loot("BlackCore", 1, 2, false));
@@ -715,7 +716,7 @@ namespace ExtendedBosses
             Phase(b, 20f, "fader.20").Acts.Add(new Act { Kind = ActKind.Lieutenant, Prefabs = new[] { "Charred_Melee_Dyrnwyn" } });
             Phase(b, 10f, "fader.10").Acts.Add(new Act { Kind = ActKind.Wave, Prefabs = new[] { "Asksvin", "BlobLava" }, Count = 1f });
 
-            b.Reward.Valuables.Add(new Loot("Coins", 150, 250, true));
+            b.Reward.Valuables.Add(new Loot("Coins", 450, 750, true));
             b.Reward.Valuables.Add(new Loot("GemstoneRed", 1, 2, false));
             b.Reward.Valuables.Add(new Loot("GemstoneGreen", 1, 2, false));
             b.Reward.Valuables.Add(new Loot("GemstoneBlue", 1, 2, false));

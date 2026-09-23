@@ -154,7 +154,9 @@ namespace ExtendedBosses
                 {
                     Act act = acts[a];
                     if (act.Kind != ActKind.Seeds || !MechanicOn(rt.Def, ActKind.Seeds)) continue;
-                    if (UnityEngine.Random.value >= act.Chance || TotemsAlive(bz) >= act.MaxAlive) return;
+                    if (Time.time < rt.NextSeed || SeedsAlive(bz) >= act.MaxAlive) return;
+                    if (UnityEngine.Random.value >= act.Chance) return;
+                    rt.NextSeed = Time.time + act.Interval;
                     Vector3 at = point;
                     ZoneSystem zs = ZoneSystem.instance;
                     if (zs != null) at.y = zs.GetSolidHeight(at);
