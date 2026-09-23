@@ -35,6 +35,8 @@ namespace ExtendedBosses
         private ConfigEntry<float> _cfgHardAdds;
         private ConfigEntry<int> _cfgLieutenantStarPlayers;
         private ConfigEntry<int> _cfgAddStarPlayers;
+        private ConfigEntry<float> _cfgSoloHealth;
+        private ConfigEntry<float> _cfgSoloLieutenant;
 
         // 03 Mechanics
         private ConfigEntry<bool> _cfgWaves;
@@ -85,6 +87,9 @@ namespace ExtendedBosses
         private ConfigEntry<float> _cfgHoldSeconds;
         private ConfigEntry<float> _cfgThreatDecay;
         private ConfigEntry<float> _cfgOutOfLeashHalfLife;
+        private ConfigEntry<float> _cfgShieldMax;
+        private ConfigEntry<float> _cfgMinDamage;
+        private ConfigEntry<int> _cfgConfigVersion;
 
         private static readonly string[] Profiles = { ProfileLight, ProfileRaid, ProfileHard };
         private static readonly string[] BossProfiles = { ProfileDefault, ProfileLight, ProfileRaid, ProfileHard };
@@ -127,6 +132,9 @@ namespace ExtendedBosses
                 "Where phase messages go. Center: middle of the screen for every player, each in their language (players without the mod: see GuestLanguage). Chat: a chat line from the boss owner. Off: nothing.",
                 "Куда писать сообщения фаз. Center — в центр экрана всем, каждому на его языке (игрокам без мода — см. GuestLanguage). Chat — строкой в чат от владельца босса. Off — никуда.",
                 "Center", "Chat", "Off");
+            _cfgConfigVersion = I(G, "ConfigVersion", 0, 0, 1000,
+                "Internal: lets a new version of the mod update defaults that changed. Do not edit.",
+                "Служебное: позволяет новой версии мода обновить изменившиеся значения по умолчанию. Не менять.");
             _cfgGuestLanguage = S(G, "GuestLanguage", "Russian",
                 "Language of messages for players WITHOUT the mod (their game language is unknown to the server). Boss and creature names are still shown in their own language.",
                 "Язык сообщений для игроков БЕЗ мода (сервер не знает язык их игры). Имена боссов и мобов у них всё равно на их языке.",
@@ -152,6 +160,12 @@ namespace ExtendedBosses
                 "From this many players lieutenants get +1 star.", "С этого числа игроков лейтенанты получают +1 звезду.");
             _cfgAddStarPlayers = I(Sc, "AddStarPlayers", 7, 1, 20,
                 "From this many players ordinary adds get +1 star.", "С этого числа игроков обычные адды получают +1 звезду.");
+            _cfgSoloHealth = F(Sc, "SoloHealthMultiplier", 0.8f, 0.25f, 2f,
+                "Effective boss HP for a single player (x): all the mechanics fall on one person.",
+                "Эффективное HP босса для одного игрока (×): все механики ложатся на одного человека.");
+            _cfgSoloLieutenant = F(Sc, "SoloLieutenantHealth", 0.6f, 0.1f, 2f,
+                "Effective HP of lieutenants (troll, bear, golem, Morgen...) for a single player (x).",
+                "Эффективное HP лейтенантов (тролль, медведь, голем, морген…) для одного игрока (×).");
 
             const string M = "03 Mechanics";
             _cfgWaves = B(M, "Waves", true, "Waves of adds at HP thresholds.", "Волны аддов на порогах HP.");
@@ -205,7 +219,7 @@ namespace ExtendedBosses
             _cfgHardShieldFactor = F(Rd, "HardShieldDamageFactor", 0.1f, 0f, 1f, "Same in the Hard profile.", "То же в профиле Hard.");
             _cfgWindowSeconds = F(Rd, "WindowSeconds", 10f, 0f, 60f, "Burn window after the shield falls, seconds (the boss is staggered).", "Окно уязвимости после падения щита, секунд (босс оглушён).");
             _cfgWindowMultiplier = F(Rd, "WindowDamageMultiplier", 1.5f, 1f, 5f, "Damage the boss takes during the window (x).", "Урон по боссу в окне уязвимости (×).");
-            _cfgHealPercent = F(Rd, "HealPercentPerSecond", 0.5f, 0f, 10f, "Boss max HP healed per second by each living healer (%, at most 2 healers count).", "Сколько % макс. HP босса в секунду лечит каждый живой лекарь (учитываются не больше 2).");
+            _cfgHealPercent = F(Rd, "HealPercentPerSecond", 0.3f, 0f, 10f, "Boss max HP healed per second by each living healer (%, at most 2 healers count).", "Сколько % макс. HP босса в секунду лечит каждый живой лекарь (учитываются не больше 2).");
             _cfgHealRange = F(Rd, "HealRange", 40f, 5f, 150f, "Healers farther than this from the boss do not heal it.", "Лекари дальше этого от босса его не лечат.");
             _cfgLeash = F(Rd, "ThreatLeash", 25f, 5f, 100f,
                 "Threat: only players within this distance of the boss can hold it; one who runs out loses the boss to the nearest.",
@@ -214,6 +228,12 @@ namespace ExtendedBosses
             _cfgHoldSeconds = F(Rd, "ThreatHoldSeconds", 3.5f, 0f, 15f, "Minimum seconds on a new target.", "Минимум секунд на новой цели.");
             _cfgThreatDecay = F(Rd, "ThreatDecayPerSecond", 0.05f, 0f, 1f, "Share of threat forgotten per second.", "Доля угрозы, которая забывается за секунду.");
             _cfgOutOfLeashHalfLife = F(Rd, "ThreatOutOfLeashHalfLife", 3f, 0.5f, 30f, "Outside the leash threat halves every this many seconds.", "Вне радиуса привязи угроза вдвое падает за столько секунд.");
+            _cfgShieldMax = F(Rd, "ShieldMaxSeconds", 90f, 0f, 600f,
+                "A shield falls by itself after this many seconds even if nests still stand (no burn window then). 0 = never.",
+                "Щит спадает сам через столько секунд, даже если гнёзда стоят (окна уязвимости тогда нет). 0 — никогда.");
+            _cfgMinDamage = F(Rd, "MinDamageFactor", 0.1f, 0f, 1f,
+                "All the mechanics together (shield, cocoon, resist and cycle phases) never cut damage to the boss below this (x). Cycle phases also never start under a shield or cocoon.",
+                "Все механики вместе (щит, кокон, сопротивления и фазы-циклы) никогда не режут урон по боссу ниже этого (×). Фазы-циклы к тому же не начинаются под щитом или коконом.");
         }
 
         // ------------------------------------------------------------------
@@ -232,6 +252,42 @@ namespace ExtendedBosses
                     "Default: the global profile from 01 General.", "Default — общий профиль из 01 General.", BossProfiles);
                 if (b.BindExtra != null) b.BindExtra(this, b);
             }
+        }
+
+        // ------------------------------------------------------------------
+        // migration: defaults that changed are reset once in an existing file (other values kept)
+        // ------------------------------------------------------------------
+        private const int CurrentConfigVersion = 2;
+
+        private void MigrateConfig()
+        {
+            int v = _cfgConfigVersion.Value;
+            if (v >= CurrentConfigVersion) return;
+            List<string> reset = new List<string>();
+            if (v < 2)
+            {
+                // 0.8.3: after the first test - softer heals, a weaker Eikthyr lightning
+                ResetToDefault(_cfgHealPercent, reset);
+                BossDef eik = BossByPrefab("Eikthyr");
+                if (eik != null) ResetToDefault(eik.CfgMarkDamage, reset);
+                BossDef yag = BossByPrefab("GoblinKing");
+                if (yag != null) ResetToDefault(yag.CfgRegen, reset);
+            }
+            _cfgConfigVersion.Value = CurrentConfigVersion;
+            if (reset.Count > 0) Logger.LogInfo("Config updated to version " + CurrentConfigVersion + ", new defaults: " + string.Join(", ", reset.ToArray()));
+        }
+
+        private static void ResetToDefault(ConfigEntryBase e, List<string> log)
+        {
+            if (e == null || Equals(e.BoxedValue, e.DefaultValue)) return;
+            e.BoxedValue = e.DefaultValue;
+            log.Add(e.Definition.Section + "/" + e.Definition.Key);
+        }
+
+        private BossDef BossByPrefab(string prefab)
+        {
+            for (int i = 0; i < _bosses.Count; i++) if (_bosses[i].Prefab == prefab) return _bosses[i];
+            return null;
         }
 
         internal bool IsModMode(BossDef b)

@@ -36,9 +36,16 @@ namespace ExtendedBosses
                         if (d != null && p.IsModMode(d))
                         {
                             p.RecordHit(__instance, hit);
-                            mul *= p.BossDamageFactor(__instance, d);
+                            // mechanics (shield, window, resist, cycle phases) - floored together
+                            float before = hit.GetTotalDamage();
                             p.ApplyResist(__instance, hit);
                             p.ApplyCycle(__instance, hit);
+                            hit.ApplyModifier(p.MechFactor(__instance, d));
+                            float after = hit.GetTotalDamage();
+                            float floor = p.Sv(p._cfgMinDamage);
+                            if (before > 0.01f && after > 0.0001f && after < before * floor) hit.ApplyModifier(before * floor / after);
+                            // then the group scaling
+                            mul *= p.ScaleFactor(__instance, d);
                             __state = __instance.GetHealth();
                         }
                     }

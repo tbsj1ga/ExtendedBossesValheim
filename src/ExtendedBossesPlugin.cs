@@ -20,7 +20,7 @@ namespace ExtendedBosses
     {
         public const string Guid = "j1ga.extendedbosses";
         public const string Name = "Extended Bosses";
-        public const string Version = "0.8.2";
+        public const string Version = "0.8.3";
 
         public static ExtendedBossesPlugin Instance;
 
@@ -51,6 +51,7 @@ namespace ExtendedBosses
                 BindWatchConfig();
                 BuildBosses();
                 BindBossConfig();
+                MigrateConfig();
                 RegisterCommands();
                 _harmony = new Harmony(Guid);
                 _harmony.PatchAll(typeof(ExtendedBossesPlugin).Assembly);

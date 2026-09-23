@@ -17,6 +17,7 @@ namespace ExtendedBosses
         internal static readonly int KResistAct = "j1ga.extendedbosses.resist".GetStableHashCode();   // boss: act code + 1 of the resist phase
         internal static readonly int KResistUntil = "j1ga.extendedbosses.resistuntil".GetStableHashCode(); // boss: net ticks, 0 = while shielded
         internal static readonly int KWindowUntil = "j1ga.extendedbosses.window".GetStableHashCode(); // boss: net ticks the burn window ends
+        internal static readonly int KShieldSince = "j1ga.extendedbosses.shieldsince".GetStableHashCode(); // boss: net ticks the shield was raised
         internal static readonly int KCycleAct = "j1ga.extendedbosses.cycle".GetStableHashCode();       // boss: act code + 1 of the bark cycle
         internal static readonly int KCycleStartAt = "j1ga.extendedbosses.cyclestart".GetStableHashCode(); // boss: net ticks of the first bark (until it starts)
         internal static readonly int KCycleStarted = "j1ga.extendedbosses.cycleon".GetStableHashCode(); // boss: 1 once the cycle runs
@@ -29,6 +30,7 @@ namespace ExtendedBosses
         internal static readonly int KSrc = "j1ga.extendedbosses.src".GetStableHashCode();            // add: totem slot + 1 (0 = none)
         internal static readonly int KRole = "j1ga.extendedbosses.role".GetStableHashCode();          // add: RoleHealer, ...
         internal static readonly int KExpire = "j1ga.extendedbosses.expire".GetStableHashCode();      // add: net ticks to remove it at
+        internal static readonly int KFuseHeal = "j1ga.extendedbosses.fuseheal".GetStableHashCode();  // fusing add: % of boss max HP it heals on arrival
 
         private static string TotemKey(int i) { return "j1ga.extendedbosses.totem" + i; }
         private static int TotemActKey(int i) { return ("j1ga.extendedbosses.totemact" + i).GetStableHashCode(); }
@@ -277,11 +279,12 @@ namespace ExtendedBosses
                 case ActKind.Lieutenant:
                 {
                     int count = Mathf.Max(1, Mathf.RoundToInt(act.Count)) + (act.ExtraFrom > 0 && players >= act.ExtraFrom ? 1 : 0);
+                    float ltHp = act.HpMul * (players <= 1 ? Sv(_cfgSoloLieutenant) : 1f);   // a single player faces a weaker lieutenant
                     int level = LieutenantLevel(act.Level, players);
                     int spawned = 0;
                     for (int p = 0; p < act.Prefabs.Length; p++)
                         for (int k = 0; k < count; k++)
-                            if (SpawnCreature(rt.BossId, act.Prefabs[p], level, act.HpMul, center, 0, Sv(_cfgSpawnRadiusMin), Sv(_cfgSpawnRadiusMax), act.Role, act.Lifetime) != null) spawned++;
+                            if (SpawnCreature(rt.BossId, act.Prefabs[p], level, ltHp, center, 0, Sv(_cfgSpawnRadiusMin), Sv(_cfgSpawnRadiusMax), act.Role, act.Lifetime) != null) spawned++;
                     return spawned > 0;
                 }
                 case ActKind.Nest:
@@ -314,6 +317,7 @@ namespace ExtendedBosses
                     return true;
                 case ActKind.Shield:
                     z.Set(KShieldAct, code + 1);
+                    z.Set(KShieldSince, NetTicks());
                     return true;
                 case ActKind.Resist:
                     z.Set(KResistAct, code + 1);
@@ -348,7 +352,15 @@ namespace ExtendedBosses
         // Multiplier of damage taken by a boss: our group scaling instead of vanilla's (which
         // ApplyDamage still divides by afterwards), shield, burn window. Resistances are per type
         // and applied separately (ApplyResist).
+        // Both parts together (for 'eb status').
         internal float BossDamageFactor(Character boss, BossDef def)
+        {
+            return ScaleFactor(boss, def) * MechFactor(boss, def);
+        }
+
+        // Group scaling: our effective HP instead of vanilla's (which ApplyDamage still divides by
+        // afterwards). A single player gets SoloHealthMultiplier.
+        internal float ScaleFactor(Character boss, BossDef def)
         {
             int n = GroupSize(boss);
             float vanillaHp = 1f;
@@ -358,19 +370,22 @@ namespace ExtendedBosses
                 float s = g.GetDifficultyDamageScaleEnemy(boss.transform.position);
                 if (s > 0.0001f) vanillaHp = 1f / s;
             }
-            bool hard = ProfileOf(def) == ProfileHard;
             float ours = Sv(_cfgBaseHealth) * (1f + Sv(_cfgHealthPerPlayer) * (n - 1));
-            if (hard) ours *= Sv(_cfgHardHealth);
+            if (n <= 1) ours *= Sv(_cfgSoloHealth);
+            if (ProfileOf(def) == ProfileHard) ours *= Sv(_cfgHardHealth);
             if (ours < 0.01f) ours = 0.01f;
-            float f = vanillaHp / ours;
+            return vanillaHp / ours;
+        }
 
+        // Mechanics: shield / cocoon, burn window. Resist and cycle phases are per type (applied
+        // separately); the damage prefix floors all mechanics together at MinDamageFactor.
+        internal float MechFactor(Character boss, BossDef def)
+        {
             FightRt rt = RtIfRunning(boss);
-            if (rt != null)
-            {
-                if (rt.ShieldActive || rt.CocoonActive) f *= Sv(hard ? _cfgHardShieldFactor : _cfgShieldFactor);
-                else if (rt.WindowActive) f *= Sv(_cfgWindowMultiplier);
-            }
-            return f;
+            if (rt == null) return 1f;
+            if (rt.ShieldActive || rt.CocoonActive) return Sv(ProfileOf(def) == ProfileHard ? _cfgHardShieldFactor : _cfgShieldFactor);
+            if (rt.WindowActive) return Sv(_cfgWindowMultiplier);
+            return 1f;
         }
 
         internal void ApplyResist(Character boss, HitData hit)
@@ -481,7 +496,7 @@ namespace ExtendedBosses
 
             int count = ScaledCount(rt.Def, act.Count, players);
             int level = AddLevel(rt.Def, act.Level, players);
-            int spawned = 0;
+            List<Character> wave = new List<Character>();
             for (int k = 0; k < count; k++)
             {
                 if (AtCap(boss)) break;
@@ -489,7 +504,15 @@ namespace ExtendedBosses
                 Character c = SpawnCreature(rt.BossId, prefab, level, 1f, boss.transform.position, 0, 20f, 26f, RoleFuse, 0f);
                 if (c == null) continue;
                 FollowBoss(c, boss);
-                spawned++;
+                wave.Add(c);
+            }
+            int spawned = wave.Count;
+            // the heal is per WAVE: shared among its slimes, so a bigger wave does not heal more
+            float waveHeal = rt.Def.CfgFusionHeal != null ? Sv(rt.Def.CfgFusionHeal) : act.Heal;
+            for (int i = 0; i < wave.Count; i++)
+            {
+                ZDO wz = Zdo(wave[i]);
+                if (wz != null) wz.Set(KFuseHeal, waveHeal / wave.Count);
             }
             if (spawned > 0 && !string.IsNullOrEmpty(act.MarkKey)) Announce(act.MarkKey, NameToken(boss));
         }
@@ -514,8 +537,8 @@ namespace ExtendedBosses
             }
             if (MechanicOn(rt.Def, ActKind.Fusion))
             {
-                Act act = ActiveAct(rt.Def, Zdo(boss).GetInt(KPhase), ActKind.Fusion);
-                float pct = rt.Def.CfgFusionHeal != null ? Sv(rt.Def.CfgFusionHeal) : (act != null ? act.Heal : 0f);
+                ZDO cz = Zdo(c);
+                float pct = cz != null ? cz.GetFloat(KFuseHeal, 0f) : 0f;      // its share of the wave's heal
                 float amount = boss.GetMaxHealth() * pct / 100f;
                 if (amount > 0f) boss.Heal(amount, true);
                 Debug(rt.Def.Prefab + ": " + c.m_name + " fused, healed " + F1(amount));
@@ -530,6 +553,16 @@ namespace ExtendedBosses
         {
             rt.TotemsAlive = TotemsAlive(z);
             bool armed = z.GetInt(KShieldAct) > 0;
+            // a shield never holds forever (a nest that only a pickaxe breaks, one out of reach):
+            // after ShieldMaxSeconds it falls by itself - without the burn window
+            float maxShield = Sv(_cfgShieldMax);
+            if (armed && maxShield > 0f && net - z.GetLong(KShieldSince, net) > Seconds(maxShield))
+            {
+                z.Set(KShieldAct, 0);
+                armed = false;
+                Announce("shield.fade", NameToken(boss));
+                Debug(rt.Def.Prefab + ": shield timed out after " + F1(maxShield) + " s");
+            }
             if (armed && rt.TotemsAlive == 0)
             {
                 z.Set(KShieldAct, 0);
@@ -585,7 +618,7 @@ namespace ExtendedBosses
             if (z.GetInt(KCycleStarted) == 0)
             {
                 // first bark: after the burn window, or after the delay if no window came
-                if (rt.WindowActive || net < z.GetLong(KCycleStartAt, 0L)) return;
+                if (rt.WindowActive || rt.ShieldActive || rt.CocoonActive || net < z.GetLong(KCycleStartAt, 0L)) return;   // never under the shield or cocoon
                 z.Set(KCycleStarted, 1);
                 StartCycle(boss, rt, z, act, net, players, on);
             }
@@ -603,7 +636,7 @@ namespace ExtendedBosses
                     if (on && !string.IsNullOrEmpty(endKey)) Announce(endKey, NameToken(boss));
                     Debug(rt.Def.Prefab + ": cycle ended");
                 }
-                else if (next > 0L && net >= next && !rt.WindowActive) StartCycle(boss, rt, z, act, net, players, on);
+                else if (next > 0L && net >= next && !rt.WindowActive && !rt.ShieldActive && !rt.CocoonActive) StartCycle(boss, rt, z, act, net, players, on);
             }
 
             if (on && net < z.GetLong(KCycleUntil, 0L) && act.Variants != null)

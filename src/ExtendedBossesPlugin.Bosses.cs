@@ -228,7 +228,7 @@ namespace ExtendedBosses
             Phase(b, 30f, "eikthyr.30").Acts.Add(new Act
             {
                 Kind = ActKind.Marks, Prefabs = new[] { "lightningAOE" }, Prop = "vfx_prespawn", MarkKey = "eikthyr.mark",
-                Count = 1f, Damage = 30f, DamageType = HitData.DamageType.Lightning
+                Count = 1f, Damage = 15f, DamageType = HitData.DamageType.Lightning
             });
             Phase(b, 15f, "eikthyr.15").Acts.Add(new Act { Kind = ActKind.Lieutenant, Prefabs = new[] { "Boar" }, Level = 3, HpMul = 3f });
 
@@ -250,7 +250,7 @@ namespace ExtendedBosses
                     "Vanilla AoE prefab of the lightning strike at 30%.", "Ванильный AoE-префаб удара молнии на 30 %.");
                 d.CfgMarkEffect = pl.S(d.Section, "MarkEffect", "vfx_prespawn",
                     "Vanilla effect on the marked player before the strike (players with the mod).", "Ванильный эффект на отмеченном игроке до удара (у игроков с модом).");
-                d.CfgMarkDamage = pl.F(d.Section, "MarkDamage", 30f, 0f, 500f,
+                d.CfgMarkDamage = pl.F(d.Section, "MarkDamage", 15f, 0f, 500f,
                     "Lightning damage of the strike (before 04 Marks DamageMultiplier).", "Урон молнией (до множителя из 04 Marks).");
                 d.CfgChargeInterval = pl.F(d.Section, "ChargeInterval", 20f, 5f, 120f, "Seconds between charges from 60%.", "Секунд между рывками с 60 %.");
                 d.CfgChargeSpeed = pl.F(d.Section, "ChargeSpeed", 2f, 1f, 4f, "Speed multiplier during a charge.", "Множитель скорости во время рывка.");
@@ -376,7 +376,7 @@ namespace ExtendedBosses
 
             p = Phase(b, 45f, "bonemass.45");
             p.Acts.Add(new Act { Kind = ActKind.Lieutenant, Prefabs = new[] { "Abomination" } });
-            p.Acts.Add(new Act { Kind = ActKind.Fusion, Prefabs = new[] { "Blob", "Blob", "BlobElite" }, Count = 2f, Interval = 25f, Heal = 3f, MarkKey = "bonemass.fusion" });
+            p.Acts.Add(new Act { Kind = ActKind.Fusion, Prefabs = new[] { "Blob", "Blob", "BlobElite" }, Count = 2f, Interval = 25f, Heal = 6f, MarkKey = "bonemass.fusion" });
 
             Phase(b, 40f, "bonemass.40").Acts.Add(new Act { Kind = ActKind.Wave, Prefabs = new[] { "Writhan" }, Count = 1f });
             p = Phase(b, 35f, "bonemass.35");
@@ -416,8 +416,9 @@ namespace ExtendedBosses
                     "Гнилостный пар: яд, который получает атакующий вблизи за удар (не чаще раза в секунду на игрока).");
                 d.CfgFusionInterval = pl.F(d.Section, "SlimeInterval", 25f, 5f, 180f,
                     "From 45%: seconds between slime waves crawling to Bonemass.", "С 45 %: секунд между волнами слизи, ползущей к Массивному.");
-                d.CfgFusionHeal = pl.F(d.Section, "SlimeHealPercent", 3f, 0f, 25f,
-                    "% of max HP Bonemass heals for every slime that reaches it.", "Сколько % макс. HP Массивный лечит за каждую дошедшую до него слизь.");
+                d.CfgFusionHeal = pl.F(d.Section, "SlimeWaveHealPercent", 6f, 0f, 50f,
+                    "% of max HP one slime wave can heal Bonemass in total, shared among its slimes (a bigger wave does not heal more).",
+                    "Сколько % макс. HP может вылечить Массивному одна волна слизи в сумме, поровну на её капли (большая волна не лечит больше).");
             };
             return b;
         }
@@ -535,7 +536,7 @@ namespace ExtendedBosses
                 {
                     // the fire of the fulings feeds him; frost puts it out for a while
                     new CycleVariant { Id = "Regen", Say = "yagluth.regen", EndKey = "yagluth.regen.end",
-                                       RegenPercent = 0.6f, RegenStopType = HitData.DamageType.Frost, RegenStopSeconds = 3f },
+                                       RegenPercent = 0.3f, RegenStopType = HitData.DamageType.Frost, RegenStopSeconds = 3f },
                     // mild: the most used damage type of the last seconds x0.6, the rest x1.1
                     new CycleVariant { Id = "Adapt", Say = "yagluth.adapt", EndKey = "yagluth.adapt.end",
                                        Adapt = true, AdaptFactor = 0.6f, AdaptOthers = 1.1f },
@@ -579,7 +580,7 @@ namespace ExtendedBosses
                     "Vanilla effect on the marked player before the meteors (players with the mod).", "Ванильный эффект на отмеченном игроке до метеоров (у игроков с модом).");
                 pl.BindCycle(d, "Cycle", "Regen: heals unless hit by frost within 3 s; Adapt: the most used damage type x0.6, the rest x1.1",
                     "Regen — регенерация: лечится, если 3 с не получал мороза; Adapt — адаптация: самый частый тип урона ×0.6, остальные ×1.1", "Regen", "Adapt");
-                d.CfgRegen = pl.F(d.Section, "RegenPercentPerSecond", 0.6f, 0f, 5f,
+                d.CfgRegen = pl.F(d.Section, "RegenPercentPerSecond", 0.3f, 0f, 5f,
                     "Regeneration: % of max HP healed per second while no frost hit him for 3 s.", "Регенерация: % макс. HP в секунду, пока его 3 с не били морозом.");
                 d.CfgAdaptFactor = pl.F(d.Section, "AdaptFactor", 0.6f, 0.1f, 1f,
                     "Adaptation: damage of the type he adapted to (x).", "Адаптация: урон того типа, к которому он приспособился (×).");
@@ -602,10 +603,10 @@ namespace ExtendedBosses
             BossDef b = new BossDef { Prefab = "SeekerQueen", Section = "15 Queen" };
             const string egg = "SeekerEgg_alwayshatch";
 
-            Phase(b, 85f, "queen.85").Acts.Add(new Act { Kind = ActKind.Nest, Prefabs = new[] { egg }, Count = 2f, AnyProp = true, ScaleAsAdds = true });
+            Phase(b, 85f, "queen.85").Acts.Add(new Act { Kind = ActKind.Nest, Prefabs = new[] { egg }, Count = 2f, AnyProp = true });
 
             PhaseDef p = Phase(b, 70f, "queen.70");
-            p.Acts.Add(new Act { Kind = ActKind.Nest, Prefabs = new[] { egg }, Count = 2f, AnyProp = true, ScaleAsAdds = true });
+            p.Acts.Add(new Act { Kind = ActKind.Nest, Prefabs = new[] { egg }, Count = 2f, AnyProp = true });
             p.Acts.Add(new Act
             {
                 Kind = ActKind.Marks, Prefabs = new[] { "SeekerQueen_spithit" }, Prop = "vfx_prespawn", MarkKey = "queen.mark",
@@ -613,7 +614,7 @@ namespace ExtendedBosses
             });
 
             p = Phase(b, 55f, "queen.55");
-            p.Acts.Add(new Act { Kind = ActKind.Nest, Prefabs = new[] { egg }, Count = 3f, AnyProp = true, ScaleAsAdds = true });
+            p.Acts.Add(new Act { Kind = ActKind.Nest, Prefabs = new[] { egg }, Count = 3f, AnyProp = true });
             p.Acts.Add(new Act { Kind = ActKind.Shield });
             p.Acts.Add(new Act
             {

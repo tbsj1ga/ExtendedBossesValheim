@@ -118,6 +118,7 @@ namespace ExtendedBosses
 
             // ---- common
             { "window", new[] { "{0}: the shield has fallen - strike now!", "{0}: защита пала — бейте!" } },
+            { "shield.fade", new[] { "{0}: the shield crumbles by itself", "{0}: щит рассыпается сам" } },
             { "reset", new[] { "{0} regains strength...", "{0} восстанавливает силы…" } },
 
             // ---- console
