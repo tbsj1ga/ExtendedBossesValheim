@@ -46,6 +46,7 @@ namespace ExtendedBosses
                                 break;
                             case ActKind.Totem:
                                 Check(tag, def.CfgTotemPrefab != null ? Ss(def.CfgTotemPrefab) : act.Prop, Need.Totem, seen, details);
+                                if (!string.IsNullOrEmpty(act.Fallback)) Check(tag, act.Fallback, Need.Nest, seen, details);
                                 for (int k = 0; k < act.Prefabs.Length; k++) Check(tag, act.Prefabs[k], Need.Creature, seen, details);
                                 break;
                             case ActKind.Marks:
@@ -55,6 +56,10 @@ namespace ExtendedBosses
                         }
                     }
                 }
+                for (int i = 0; i < def.Phases.Count; i++)
+                    for (int a = 0; a < def.Phases[i].Acts.Count; a++)
+                        if (def.Phases[i].Acts[a].NightPrefabs != null)
+                            for (int k = 0; k < def.Phases[i].Acts[a].NightPrefabs.Length; k++) Check(tag, def.Phases[i].Acts[a].NightPrefabs[k], Need.Creature, seen, details);
                 for (int i = 0; i < def.Reward.Valuables.Count; i++) Check(tag, def.Reward.Valuables[i].Prefab, Need.Item, seen, details);
                 for (int i = 0; i < def.Reward.NextBiome.Count; i++) Check(tag, def.Reward.NextBiome[i].Prefab, Need.Item, seen, details);
                 for (int i = 0; i < def.Reward.Gear.Length; i++) Check(tag, def.Reward.Gear[i], Need.Item, seen, details);
@@ -88,7 +93,7 @@ namespace ExtendedBosses
                         else if (pf.GetComponentInChildren<SpawnArea>(true) == null) problem = "no SpawnArea - it will not spawn anything";
                         break;
                     case Need.Totem:
-                        if (!IsDestructibleProp(pf)) problem = "not a destructible network object - BonePileSpawner will be used";
+                        if (!IsDestructibleProp(pf)) problem = "not a destructible network object - the fallback nest (if any) will be used";
                         break;
                     case Need.Aoe:
                     {

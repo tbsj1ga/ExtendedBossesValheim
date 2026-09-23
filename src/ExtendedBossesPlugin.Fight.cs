@@ -233,7 +233,8 @@ namespace ExtendedBosses
                     int count = ScaledCount(rt.Def, act.Count, players);
                     int level = AddLevel(rt.Def, act.Level, players);
                     int spawned = 0;
-                    for (int p = 0; p < act.Prefabs.Length; p++)
+                    string[] prefabs = act.NightPrefabs != null && EnvMan.IsNight() ? act.NightPrefabs : act.Prefabs;
+                    for (int p = 0; p < prefabs.Length; p++)
                         for (int k = 0; k < count; k++)
                         {
                             Character c;
@@ -241,9 +242,9 @@ namespace ExtendedBosses
                             {
                                 Vector3 wp;
                                 if (!WaterPoint(center, Sv(_cfgSpawnRadiusMin), Sv(_cfgSpawnRadiusMax), out wp)) continue;
-                                c = SpawnCreatureAt(rt.BossId, act.Prefabs[p], level, act.HpMul, wp, 0, act.Role, act.Lifetime);
+                                c = SpawnCreatureAt(rt.BossId, prefabs[p], level, act.HpMul, wp, 0, act.Role, act.Lifetime);
                             }
-                            else c = SpawnCreature(rt.BossId, act.Prefabs[p], level, act.HpMul, center, 0, Sv(_cfgSpawnRadiusMin), Sv(_cfgSpawnRadiusMax), act.Role, act.Lifetime);
+                            else c = SpawnCreature(rt.BossId, prefabs[p], level, act.HpMul, center, 0, Sv(_cfgSpawnRadiusMin), Sv(_cfgSpawnRadiusMax), act.Role, act.Lifetime);
                             if (c != null) spawned++;
                         }
                     if (act.InWater && spawned == 0) Debug(rt.Def.Prefab + ": no water around for " + act.Prefabs[0]);
@@ -631,15 +632,27 @@ namespace ExtendedBosses
                 hit.ApplyModifier(v.Other);
                 return;
             }
-            if (v.MeleeFactor < 1f || v.Retaliate > 0f)
+            if (v.GroundedOnly && boss.IsFlying()) return;       // e.g. Moder's ice armor: only on the ground
+            if (v.MeleeFactor < 1f || v.Retaliate > 0f || v.RangedFactor < 1f || v.ThornsPercent > 0f)
             {
                 Character a = hit.GetAttacker();
-                if (a != null && a.IsPlayer() && Flat(a.transform.position - boss.transform.position) <= v.MeleeRange + boss.GetRadius())
+                if (a != null && a.IsPlayer())
                 {
-                    float mf = rt.Def.CfgCycleMelee != null && v.MeleeFactor < 1f ? Sv(rt.Def.CfgCycleMelee) : v.MeleeFactor;
-                    if (mf < 1f) hit.ApplyModifier(mf);
-                    float back = rt.Def.CfgCycleRetaliate != null && v.Retaliate > 0f ? Sv(rt.Def.CfgCycleRetaliate) : v.Retaliate;
-                    if (back > 0f) Retaliate(boss, rt, a, back, v.RetaliateType);
+                    bool close = Flat(a.transform.position - boss.transform.position) <= v.MeleeRange + boss.GetRadius();
+                    if (close)
+                    {
+                        float mf = rt.Def.CfgCycleMelee != null && v.MeleeFactor < 1f ? Sv(rt.Def.CfgCycleMelee) : v.MeleeFactor;
+                        if (mf < 1f) hit.ApplyModifier(mf);
+                        float back = rt.Def.CfgCycleRetaliate != null && v.Retaliate > 0f ? Sv(rt.Def.CfgCycleRetaliate) : v.Retaliate;
+                        if (back > 0f) Retaliate(boss, rt, a, back, v.RetaliateType);
+                    }
+                    else
+                    {
+                        float rf = rt.Def.CfgCycleRanged != null && v.RangedFactor < 1f ? Sv(rt.Def.CfgCycleRanged) : v.RangedFactor;
+                        if (rf < 1f) hit.ApplyModifier(rf);
+                    }
+                    float thorns = rt.Def.CfgCycleThorns != null && v.ThornsPercent > 0f ? Sv(rt.Def.CfgCycleThorns) : v.ThornsPercent;
+                    if (thorns > 0f) Retaliate(boss, rt, a, Mathf.Max(v.ThornsMin, hit.GetTotalDamage() * thorns / 100f), v.RetaliateType);
                 }
             }
             float o = v.Other;
@@ -725,8 +738,9 @@ namespace ExtendedBosses
             GameObject pf = ZNetScene.instance.GetPrefab(prefab);
             if (!vanillaNest && !IsDestructibleProp(pf))
             {
-                Warn(rt.Def.Prefab + ": totem prefab '" + prefab + "' is missing or not a destructible network object; using BonePileSpawner (vanilla bone pile) instead.");
-                prefab = "BonePileSpawner";
+                if (string.IsNullOrEmpty(act.Fallback)) { Warn(rt.Def.Prefab + ": totem prefab '" + prefab + "' is missing or not a destructible network object; no fallback, skipped."); return false; }
+                Warn(rt.Def.Prefab + ": totem prefab '" + prefab + "' is missing or not a destructible network object; using " + act.Fallback + " (vanilla nest) instead.");
+                prefab = act.Fallback;
                 pf = ZNetScene.instance.GetPrefab(prefab);
                 vanillaNest = true;
             }

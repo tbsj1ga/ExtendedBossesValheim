@@ -56,6 +56,19 @@ namespace ExtendedBosses
             { "bonemass.15", new[] { "{0}: Spirits of the swamp, feast!", "{0}: Духи болота, пируйте!" } },
             { "bonemass.mark", new[] { "{0} spits poison under {1} - spread out!", "{0} плюёт ядом под игрока {1} — разойдитесь!" } },
 
+            // ---- Moder
+            { "moder.85", new[] { "{0}: The ice will bear my brood! (break the ice spike) - the pack is coming!", "{0}: Лёд выносит моё потомство! (разбейте ледяной сталагмит) — идёт стая!" } },
+            { "moder.70", new[] { "{0}: More ice, more young! (spikes - frost flashes under your feet)", "{0}: Больше льда — больше детёнышей! (сталагмиты — ледяные вспышки под ногами)" } },
+            { "moder.55", new[] { "{0}: The ice shields me! (break every spike)", "{0}: Лёд укроет меня! (разбейте все сталагмиты)" } },
+            { "moder.ice", new[] { "{0}: ice armor - arrows bounce off while she is on the ground, fight up close!", "{0}: ледяная броня — пока она на земле, стрелы отскакивают, бейте вблизи!" } },
+            { "moder.ice.end", new[] { "{0}: the ice armor melts", "{0}: ледяная броня тает" } },
+            { "moder.thorns", new[] { "{0}: ice thorns - every blow is paid back with frost, hit with care!", "{0}: ледяные шипы — каждый удар возвращается морозом, бейте с умом!" } },
+            { "moder.thorns.end", new[] { "{0}: the thorns break off", "{0}: шипы обламываются" } },
+            { "moder.45", new[] { "{0} calls the cultists - their fire burns her ice too!", "{0} зовёт культистов — их огонь жжёт и её лёд!" } },
+            { "moder.35", new[] { "{0} wakes the stone golem!", "{0} будит каменного голема!" } },
+            { "moder.20", new[] { "{0}: All my brood, to me!", "{0}: Всё моё потомство — ко мне!" } },
+            { "moder.mark", new[] { "{0} breathes frost under {1} - spread out!", "{0} дышит морозом под игрока {1} — разойдитесь!" } },
+
             // ---- common
             { "window", new[] { "{0}: the shield has fallen - strike now!", "{0}: защита пала — бейте!" } },
             { "reset", new[] { "{0} regains strength...", "{0} восстанавливает силы…" } },
@@ -83,6 +96,8 @@ namespace ExtendedBosses
             { "cmd.cycle.back", new[] { ", BARK (back)", ", КОРА (спина)" } },
             { "cmd.cycle.harden", new[] { ", HARDENED", ", ЗАТВЕРДЕЛ" } },
             { "cmd.cycle.rot", new[] { ", ROTTEN STEAM", ", ГНИЛОСТНЫЙ ПАР" } },
+            { "cmd.cycle.icearmor", new[] { ", ICE ARMOR", ", ЛЕДЯНАЯ БРОНЯ" } },
+            { "cmd.cycle.thorns", new[] { ", ICE THORNS", ", ЛЕДЯНЫЕ ШИПЫ" } },
             { "cmd.checkdone", new[] { "Self-check: {0} prefab(s) OK, {1} problem(s) - details in the log.", "Самопроверка: {0} префаб(ов) в порядке, проблем: {1} — подробности в логе." } },
         };
 

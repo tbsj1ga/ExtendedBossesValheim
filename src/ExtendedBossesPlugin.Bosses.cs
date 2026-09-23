@@ -22,6 +22,10 @@ namespace ExtendedBosses
         public float MeleeRange = 5f;
         public float Retaliate;         // damage dealt back to a close attacker per hit (at most once a second)
         public HitData.DamageType RetaliateType = HitData.DamageType.Poison;
+        public float RangedFactor = 1f; // multiplier of hits from attackers beyond MeleeRange (+ boss radius)
+        public bool GroundedOnly;       // no effect while the boss flies (Moder)
+        public float ThornsPercent;     // % of every hit's damage dealt back to the attacker (RetaliateType), at most once a second
+        public float ThornsMin;         // at least this much when thorns trigger
         public string EndKey;           // announced when it ends (falls back to the act's EndKey)
     }
 
@@ -29,6 +33,8 @@ namespace ExtendedBosses
     {
         public ActKind Kind;
         public string[] Prefabs;        // creatures (Wave, Lieutenant, Totem, Fusion), the nest (Nest), the AoE (Marks)
+        public string[] NightPrefabs;   // Wave: used instead of Prefabs at night (wolves -> Ulvs)
+        public string Fallback = "BonePileSpawner"; // Totem: vanilla nest used if the prop is not destructible (null = skip)
         public float Count = 1f;        // Wave/Lieutenant/Fusion: base count of each prefab; Nest/Totem: objects; Marks: players per cast
         public int ExtraFrom;           // Lieutenant: one more from this many players (0 = never)
         public int Level = 1;           // creature level, 1 = no stars
@@ -109,6 +115,8 @@ namespace ExtendedBosses
         public ConfigEntry<float> CfgBackArc;
         public ConfigEntry<float> CfgCycleMelee;       // MeleeFactor of the variant that has one
         public ConfigEntry<float> CfgCycleRetaliate;   // Retaliate of the variant that has one
+        public ConfigEntry<float> CfgCycleRanged;      // RangedFactor of the variant that has one
+        public ConfigEntry<float> CfgCycleThorns;      // ThornsPercent of the variant that has one
         public ConfigEntry<float> CfgFusionInterval;
         public ConfigEntry<float> CfgFusionHeal;
     }
@@ -141,6 +149,7 @@ namespace ExtendedBosses
             AddBoss(Eikthyr());
             AddBoss(Elder());
             AddBoss(Bonemass());
+            AddBoss(Moder());
         }
 
         private static PhaseDef Phase(BossDef b, float pct, string say)
@@ -381,6 +390,87 @@ namespace ExtendedBosses
                     "From 45%: seconds between slime waves crawling to Bonemass.", "С 45 %: секунд между волнами слизи, ползущей к Массивному.");
                 d.CfgFusionHeal = pl.F(d.Section, "SlimeHealPercent", 3f, 0f, 25f,
                     "% of max HP Bonemass heals for every slime that reaches it.", "Сколько % макс. HP Массивный лечит за каждую дошедшую до него слизь.");
+            };
+            return b;
+        }
+
+        // ------------------------------------------------------------------
+        // 4. Moder - Mountains: ice stalagmites hatch drakes and hold her shield; wolves, cultists,
+        //    a golem; ice flashes under marked players; ice armor (arrows bounce while she is on
+        //    the ground) alternating with ice thorns (every hit is paid back with frost)
+        // ------------------------------------------------------------------
+        private static BossDef Moder()
+        {
+            BossDef b = new BossDef { Prefab = "Dragon", Section = "13 Moder" };
+            const string spike = "caverock_ice_stalagmite";
+            string[] drakes = { "Hatchling" };
+
+            PhaseDef p = Phase(b, 85f, "moder.85");
+            p.Acts.Add(new Act { Kind = ActKind.Totem, Prop = spike, Count = 1f, Prefabs = drakes, Interval = 15f, MaxAlive = 2, Fallback = null });
+            p.Acts.Add(new Act { Kind = ActKind.Wave, Prefabs = new[] { "Wolf" }, NightPrefabs = new[] { "Ulv" }, Count = 2f });
+
+            p = Phase(b, 70f, "moder.70");
+            p.Acts.Add(new Act { Kind = ActKind.Totem, Prop = spike, Count = 2f, Prefabs = drakes, Interval = 15f, MaxAlive = 2, Fallback = null });
+            p.Acts.Add(new Act
+            {
+                Kind = ActKind.Marks, Prefabs = new[] { "FenringIceNova_aoe" }, Prop = "vfx_prespawn", MarkKey = "moder.mark",
+                Count = 1f, Damage = 25f, DamageType = HitData.DamageType.Frost
+            });
+
+            p = Phase(b, 55f, "moder.55");
+            p.Acts.Add(new Act { Kind = ActKind.Totem, Prop = spike, Count = 3f, Prefabs = drakes, Interval = 15f, MaxAlive = 2, Fallback = null });
+            p.Acts.Add(new Act { Kind = ActKind.Shield });
+            p.Acts.Add(new Act
+            {
+                Kind = ActKind.Cycle, Duration = 30f, CooldownMin = 50f, CooldownMax = 70f, Delay = 60f,
+                Variants = new List<CycleVariant>
+                {
+                    // ice armor: arrows bounce off while she is on the ground - melee window
+                    new CycleVariant { Id = "IceArmor", Say = "moder.ice", EndKey = "moder.ice.end", Other = 1f,
+                                       MeleeRange = 6f, RangedFactor = 0.25f, GroundedOnly = true },
+                    // ice thorns: every hit is paid back with frost (and the frost slows)
+                    new CycleVariant { Id = "Thorns", Say = "moder.thorns", EndKey = "moder.thorns.end", Other = 1f,
+                                       ThornsPercent = 12f, ThornsMin = 5f, RetaliateType = HitData.DamageType.Frost },
+                }
+            });
+
+            Phase(b, 45f, "moder.45").Acts.Add(new Act { Kind = ActKind.Wave, Prefabs = new[] { "Fenring_Cultist" }, Count = 1f });
+            Phase(b, 35f, "moder.35").Acts.Add(new Act { Kind = ActKind.Lieutenant, Prefabs = new[] { "StoneGolem" } });
+            p = Phase(b, 20f, "moder.20");
+            p.Acts.Add(new Act { Kind = ActKind.Wave, Prefabs = new[] { "Fenring" }, Count = 1f });
+            p.Acts.Add(new Act { Kind = ActKind.Wave, Prefabs = drakes, Count = 2f });
+
+            b.Reward.Valuables.Add(new Loot("Coins", 80, 120, true));
+            b.Reward.Valuables.Add(new Loot("Ruby", 1, 2, false));
+            b.Reward.Valuables.Add(new Loot("SilverNecklace", 1, 1, true));
+            b.Reward.Valuables.Add(new Loot("SilverOre", 6, 10, false));
+            b.Reward.Valuables.Add(new Loot("Obsidian", 4, 8, false));
+            b.Reward.Valuables.Add(new Loot("Crystal", 2, 4, false));
+            b.Reward.NextBiome.Add(new Loot("BlackMetalScrap", 2, 4, false));
+            b.Reward.Gear = new[] { "SwordSilver", "MaceSilver", "SpearWolfFang", "KnifeSilver", "BowDraugrFang", "ShieldSilver",
+                                    "ArmorWolfChest", "ArmorWolfLegs", "HelmetDrake", "CapeWolf",
+                                    "ArmorFenringChest", "ArmorFenringLegs", "HelmetFenring" };
+            b.Reward.NextGear = new[] { "SwordBlackmetal", "AxeBlackMetal", "AtgeirBlackmetal", "KnifeBlackMetal", "MaceNeedle", "ShieldBlackmetal",
+                                        "ArmorPaddedCuirass", "ArmorPaddedGreaves", "HelmetPadded", "CapeLinen" };
+
+            b.BindExtra = delegate(ExtendedBossesPlugin pl, BossDef d)
+            {
+                d.CfgTotemPrefab = pl.S(d.Section, "TotemPrefab", spike,
+                    "Destructible vanilla object that hatches drakes at 85/70/55% and holds the shield. Must be networked and destructible (see the self-check).",
+                    "Разрушаемый ванильный объект, из которого вылупляются дрейки на 85/70/55 % и который держит щит. Должен быть сетевым и разрушаемым (см. самопроверку).");
+                d.CfgMarkPrefab = pl.S(d.Section, "MarkPrefab", "FenringIceNova_aoe",
+                    "Vanilla AoE prefab of the ice flash under a marked player from 70%.", "Ванильный AoE-префаб ледяной вспышки под отмеченным игроком с 70 %.");
+                d.CfgMarkEffect = pl.S(d.Section, "MarkEffect", "vfx_prespawn",
+                    "Vanilla effect on the marked player before the flash (players with the mod).", "Ванильный эффект на отмеченном игроке до вспышки (у игроков с модом).");
+                d.CfgMarkDamage = pl.F(d.Section, "MarkDamage", 25f, 0f, 500f,
+                    "Frost damage of the flash (before 04 Marks DamageMultiplier); frost also slows.", "Урон морозом вспышки (до множителя из 04 Marks); мороз ещё и замедляет.");
+                pl.BindCycle(d, "Cycle", "IceArmor: hits from afar x0.25 while she is on the ground; Thorns: every hit is paid back with frost",
+                    "IceArmor — ледяная броня: удары издалека ×0.25, пока она на земле; Thorns — ледяные шипы: каждый удар возвращается морозом", "IceArmor", "Thorns");
+                d.CfgCycleRanged = pl.F(d.Section, "IceArmorRangedFactor", 0.25f, 0f, 1f,
+                    "Ice armor: damage of hits from farther than 6 m (x), only while Moder is on the ground.", "Ледяная броня: урон ударов дальше 6 м (×), только пока Модер на земле.");
+                d.CfgCycleThorns = pl.F(d.Section, "ThornsPercent", 12f, 0f, 100f,
+                    "Ice thorns: % of each hit's damage dealt back as frost to the attacker (at least 5, at most once a second per player).",
+                    "Ледяные шипы: % урона удара, который возвращается атакующему морозом (не меньше 5, не чаще раза в секунду на игрока).");
             };
             return b;
         }
