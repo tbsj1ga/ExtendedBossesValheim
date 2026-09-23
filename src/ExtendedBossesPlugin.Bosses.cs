@@ -26,6 +26,12 @@ namespace ExtendedBosses
         public bool GroundedOnly;       // no effect while the boss flies (Moder)
         public float ThornsPercent;     // % of every hit's damage dealt back to the attacker (RetaliateType), at most once a second
         public float ThornsMin;         // at least this much when thorns trigger
+        public float RegenPercent;      // boss heals this % of max HP per second while it lasts...
+        public HitData.DamageType RegenStopType = HitData.DamageType.Frost; // ...unless hit by this type
+        public float RegenStopSeconds = 3f;                                   // ...within this many seconds
+        public bool Adapt;              // resists the damage type it took most lately (announced with {1} = type)
+        public float AdaptFactor = 0.6f;  // that type x
+        public float AdaptOthers = 1.1f;  // every other type x
         public string EndKey;           // announced when it ends (falls back to the act's EndKey)
     }
 
@@ -59,6 +65,7 @@ namespace ExtendedBosses
         public List<CycleVariant> Variants; // Cycle
         public string EndKey;           // Cycle: announced when one ends
         public float Heal;              // Fusion: % of boss max HP healed per creature that reaches it
+        public string Gate;             // runs only if the boss's bool setting with this key is on (experiments)
     }
 
     internal class PhaseDef
@@ -117,6 +124,10 @@ namespace ExtendedBosses
         public ConfigEntry<float> CfgCycleRetaliate;   // Retaliate of the variant that has one
         public ConfigEntry<float> CfgCycleRanged;      // RangedFactor of the variant that has one
         public ConfigEntry<float> CfgCycleThorns;      // ThornsPercent of the variant that has one
+        public ConfigEntry<float> CfgRegen;            // RegenPercent of the variant that has one
+        public ConfigEntry<float> CfgAdaptFactor;
+        public ConfigEntry<float> CfgAdaptOthers;
+        public readonly Dictionary<string, ConfigEntry<bool>> Gates = new Dictionary<string, ConfigEntry<bool>>();
         public ConfigEntry<float> CfgFusionInterval;
         public ConfigEntry<float> CfgFusionHeal;
     }
@@ -150,6 +161,7 @@ namespace ExtendedBosses
             AddBoss(Elder());
             AddBoss(Bonemass());
             AddBoss(Moder());
+            AddBoss(Yagluth());
         }
 
         private static PhaseDef Phase(BossDef b, float pct, string say)
@@ -471,6 +483,88 @@ namespace ExtendedBosses
                 d.CfgCycleThorns = pl.F(d.Section, "ThornsPercent", 12f, 0f, 100f,
                     "Ice thorns: % of each hit's damage dealt back as frost to the attacker (at least 5, at most once a second per player).",
                     "Ледяные шипы: % урона удара, который возвращается атакующему морозом (не меньше 5, не чаще раза в секунду на игрока).");
+            };
+            return b;
+        }
+
+        // ------------------------------------------------------------------
+        // 5. Yagluth - Plains: fuling totems with the shield, shamans heal him, meteors on marks,
+        //    brutes, Unbjorn, the three skeletons of HardBosses, deathsquitos; regeneration (stopped
+        //    by frost) alternating with a mild adaptation to the damage type used most
+        // ------------------------------------------------------------------
+        private static BossDef Yagluth()
+        {
+            BossDef b = new BossDef { Prefab = "GoblinKing", Section = "14 Yagluth" };
+            const string totem = "goblin_totempole";
+            string[] fulings = { "Goblin", "Goblin", "GoblinArcher" };
+
+            Phase(b, 85f, "yagluth.85").Acts.Add(new Act { Kind = ActKind.Totem, Prop = totem, Count = 1f, Prefabs = fulings, Interval = 12f, MaxAlive = 3, Fallback = null });
+
+            PhaseDef p = Phase(b, 70f, "yagluth.70");
+            p.Acts.Add(new Act { Kind = ActKind.Totem, Prop = totem, Count = 2f, Prefabs = fulings, Interval = 12f, MaxAlive = 3, Fallback = null });
+            // his own meteor shower, dropped around a marked player (its own vanilla damage)
+            p.Acts.Add(new Act { Kind = ActKind.Marks, Prefabs = new[] { "spawn_meteors" }, Prop = "vfx_prespawn", MarkKey = "yagluth.mark", Count = 1f });
+
+            p = Phase(b, 55f, "yagluth.55");
+            p.Acts.Add(new Act { Kind = ActKind.Totem, Prop = totem, Count = 3f, Prefabs = fulings, Interval = 12f, MaxAlive = 3, Fallback = null });
+            p.Acts.Add(new Act { Kind = ActKind.Shield });
+            p.Acts.Add(new Act { Kind = ActKind.Wave, Prefabs = new[] { "GoblinShaman" }, Count = 1f, Role = RoleHealer });
+            p.Acts.Add(new Act
+            {
+                Kind = ActKind.Cycle, Duration = 30f, CooldownMin = 50f, CooldownMax = 70f, Delay = 60f,
+                Variants = new List<CycleVariant>
+                {
+                    // the fire of the fulings feeds him; frost puts it out for a while
+                    new CycleVariant { Id = "Regen", Say = "yagluth.regen", EndKey = "yagluth.regen.end",
+                                       RegenPercent = 0.6f, RegenStopType = HitData.DamageType.Frost, RegenStopSeconds = 3f },
+                    // mild: the most used damage type of the last seconds x0.6, the rest x1.1
+                    new CycleVariant { Id = "Adapt", Say = "yagluth.adapt", EndKey = "yagluth.adapt.end",
+                                       Adapt = true, AdaptFactor = 0.6f, AdaptOthers = 1.1f },
+                }
+            });
+
+            Phase(b, 45f, "yagluth.45").Acts.Add(new Act { Kind = ActKind.Wave, Prefabs = new[] { "GoblinBrute" }, Count = 1f });
+            Phase(b, 30f, "yagluth.30").Acts.Add(new Act { Kind = ActKind.Lieutenant, Prefabs = new[] { "Unbjorn" } });
+            Phase(b, 20f, "yagluth.20").Acts.Add(new Act { Kind = ActKind.Wave, Prefabs = new[] { "Skeleton_NoArcher", "Skeleton", "Skeleton_Poison" }, Count = 1f });
+            Phase(b, 15f, "yagluth.15").Acts.Add(new Act { Kind = ActKind.Wave, Prefabs = new[] { "Deathsquito" }, Count = 1f });
+            // experiment, off by default: the echo of the previous boss, half its HP
+            Phase(b, 10f, "yagluth.10").Acts.Add(new Act { Kind = ActKind.Lieutenant, Prefabs = new[] { "Aspect_Moder" }, HpMul = 0.5f, Gate = "EchoOfModer" });
+
+            b.Reward.Valuables.Add(new Loot("Coins", 100, 150, true));
+            b.Reward.Valuables.Add(new Loot("SilverNecklace", 1, 2, true));
+            b.Reward.Valuables.Add(new Loot("Ruby", 2, 3, false));
+            b.Reward.Valuables.Add(new Loot("BlackMetalScrap", 8, 14, false));
+            b.Reward.NextBiome.Add(new Loot("Softtissue", 2, 4, false));
+            b.Reward.NextBiome.Add(new Loot("BlackCore", 1, 1, false));
+            b.Reward.Gear = new[] { "SwordBlackmetal", "AxeBlackMetal", "AtgeirBlackmetal", "KnifeBlackMetal", "MaceNeedle",
+                                    "ShieldBlackmetal", "ShieldBlackmetalTower",
+                                    "ArmorPaddedCuirass", "ArmorPaddedGreaves", "HelmetPadded", "CapeLinen", "CapeLox" };
+            b.Reward.NextGear = new[] { "SwordMistwalker", "AxeJotunBane", "THSwordKrom", "KnifeSkollAndHati", "SpearCarapace", "AtgeirHimminAfl",
+                                        "MaceEldner", "BowSpineSnap", "CrossbowArbalest", "ShieldCarapace",
+                                        "ArmorCarapaceChest", "ArmorCarapaceLegs", "HelmetCarapace",
+                                        "ArmorMageChest", "ArmorMageLegs", "HelmetMage", "StaffFireball", "StaffIceShards" };
+
+            b.BindExtra = delegate(ExtendedBossesPlugin pl, BossDef d)
+            {
+                d.CfgTotemPrefab = pl.S(d.Section, "TotemPrefab", totem,
+                    "Destructible vanilla object that spawns fulings at 85/70/55% and holds the shield. Must be networked and destructible (see the self-check).",
+                    "Разрушаемый ванильный объект, из которого идут фулинги на 85/70/55 % и который держит щит. Должен быть сетевым и разрушаемым (см. самопроверку).");
+                d.CfgMarkPrefab = pl.S(d.Section, "MarkPrefab", "spawn_meteors",
+                    "Vanilla prefab dropped at a marked player from 70%: spawn_meteors (his meteor shower, its own damage) or an AoE such as aoe_nova.",
+                    "Ванильный префаб под отмеченным игроком с 70 %: spawn_meteors (его метеоритный дождь, урон свой) или AoE, например aoe_nova.");
+                d.CfgMarkEffect = pl.S(d.Section, "MarkEffect", "vfx_prespawn",
+                    "Vanilla effect on the marked player before the meteors (players with the mod).", "Ванильный эффект на отмеченном игроке до метеоров (у игроков с модом).");
+                pl.BindCycle(d, "Cycle", "Regen: heals unless hit by frost within 3 s; Adapt: the most used damage type x0.6, the rest x1.1",
+                    "Regen — регенерация: лечится, если 3 с не получал мороза; Adapt — адаптация: самый частый тип урона ×0.6, остальные ×1.1", "Regen", "Adapt");
+                d.CfgRegen = pl.F(d.Section, "RegenPercentPerSecond", 0.6f, 0f, 5f,
+                    "Regeneration: % of max HP healed per second while no frost hit him for 3 s.", "Регенерация: % макс. HP в секунду, пока его 3 с не били морозом.");
+                d.CfgAdaptFactor = pl.F(d.Section, "AdaptFactor", 0.6f, 0.1f, 1f,
+                    "Adaptation: damage of the type he adapted to (x).", "Адаптация: урон того типа, к которому он приспособился (×).");
+                d.CfgAdaptOthers = pl.F(d.Section, "AdaptOthers", 1.1f, 1f, 2f,
+                    "Adaptation: damage of every other type (x).", "Адаптация: урон всех остальных типов (×).");
+                d.Gates["EchoOfModer"] = pl.B(d.Section, "EchoOfModer", false,
+                    "Experiment: at 10% Yagluth calls the echo of Moder (Aspect_Moder, half HP). Off by default.",
+                    "Эксперимент: на 10 % Яглут призывает эхо Модер (Aspect_Moder, половина HP). По умолчанию выкл.");
             };
             return b;
         }

@@ -70,7 +70,7 @@ namespace ExtendedBosses
             if (z != null)
             {
                 z.Set(KBoss, bossId);
-                if (hpMul > 1.001f) z.Set(KHpMul, hpMul);
+                if (Mathf.Abs(hpMul - 1f) > 0.001f) z.Set(KHpMul, hpMul);
                 if (src != 0) z.Set(KSrc, src);
                 if (role != 0) z.Set(KRole, role);
                 if (lifetime > 0f) z.Set(KExpire, NetTicks() + Seconds(lifetime));
@@ -79,7 +79,7 @@ namespace ExtendedBosses
             c.m_group = RaidGroup;
             BaseAI ai = go.GetComponent<BaseAI>();
             if (ai != null) ai.SetHuntPlayer(true);
-            Debug("spawned " + prefab + " lvl " + level + (hpMul > 1.001f ? " hp x" + F1(hpMul) : ""));
+            Debug("spawned " + prefab + " lvl " + level + (Mathf.Abs(hpMul - 1f) > 0.001f ? " hp x" + F1(hpMul) : ""));
             return c;
         }
 

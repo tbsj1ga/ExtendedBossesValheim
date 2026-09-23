@@ -22,7 +22,8 @@ namespace ExtendedBosses
         internal static readonly int KCycleStarted = "j1ga.extendedbosses.cycleon".GetStableHashCode(); // boss: 1 once the cycle runs
         internal static readonly int KCycleUntil = "j1ga.extendedbosses.cycleuntil".GetStableHashCode(); // boss: net ticks the current bark ends
         internal static readonly int KCycleNext = "j1ga.extendedbosses.cyclenext".GetStableHashCode();  // boss: net ticks the next bark starts
-        internal static readonly int KCycleKind = "j1ga.extendedbosses.cyclekind".GetStableHashCode();  // boss: 1 = Sap, 2 = Back (fixed per bark)
+        internal static readonly int KCycleAdapt = "j1ga.extendedbosses.cycleadapt".GetStableHashCode(); // boss: DamageType an Adapt variant resists
+        internal static readonly int KCycleKind ="j1ga.extendedbosses.cyclekind".GetStableHashCode();  // boss: 1 = Sap, 2 = Back (fixed per bark)
         internal const string KBoss = "j1ga.extendedbosses.boss";                                      // add/totem: ZDOID of its boss
         internal static readonly int KHpMul = "j1ga.extendedbosses.hpmul".GetStableHashCode();        // add: effective HP multiplier
         internal static readonly int KSrc = "j1ga.extendedbosses.src".GetStableHashCode();            // add: totem slot + 1 (0 = none)
@@ -65,6 +66,9 @@ namespace ExtendedBosses
             public CycleVariant CycleVar;   // and its variant
             public float NextFusion;        // Fusion: next slime wave (local time)
             public readonly Dictionary<ZDOID, float> RetaliateAt = new Dictionary<ZDOID, float>(); // per player, local time
+            public readonly Dictionary<HitData.DamageType, float> TypeDmg = new Dictionary<HitData.DamageType, float>();   // recent damage by type (decays)
+            public readonly Dictionary<HitData.DamageType, float> LastHitBy = new Dictionary<HitData.DamageType, float>();  // local time of the last hit with the type
+            public HitData.DamageType AdaptType;    // the type an active Adapt variant resists
             public int TotemsAlive;
             public int Healers;
 
@@ -192,6 +196,7 @@ namespace ExtendedBosses
             }
 
             TickAdds(boss, rt, net);
+            DecayTyped(rt);
             TickTotems(boss, rt, z, players, now);
             TickShield(boss, rt, z, net);
             TickCycle(boss, rt, z, net, players);
@@ -211,6 +216,11 @@ namespace ExtendedBosses
             {
                 Act act = ph.Acts[a];
                 if (!MechanicOn(def, act.Kind)) continue;
+                if (act.Gate != null)
+                {
+                    BepInEx.Configuration.ConfigEntry<bool> gate;
+                    if (!def.Gates.TryGetValue(act.Gate, out gate) || !Sb(gate)) continue;
+                }
                 try
                 {
                     if (RunAct(boss, rt, act, index, a, players, now)) ran++;
@@ -576,8 +586,72 @@ namespace ExtendedBosses
                 {
                     rt.CycleAct = act;
                     rt.CycleVar = act.Variants[vi];
+                    rt.AdaptType = (HitData.DamageType)z.GetInt(KCycleAdapt);
+                    TickRegen(boss, rt, rt.CycleVar);
                 }
             }
+        }
+
+        // Regeneration variant: heals every tick unless a hit of the stopping type came lately.
+        private void TickRegen(Character boss, FightRt rt, CycleVariant v)
+        {
+            if (v.RegenPercent <= 0f) return;
+            float last;
+            if (rt.LastHitBy.TryGetValue(v.RegenStopType, out last) && Time.time - last < v.RegenStopSeconds) return;
+            float max = boss.GetMaxHealth();
+            if (boss.GetHealth() >= max) return;
+            float pct = rt.Def.CfgRegen != null ? Sv(rt.Def.CfgRegen) : v.RegenPercent;
+            float amount = max * pct / 100f * TickInterval;
+            if (amount > 0f) boss.Heal(amount, false);
+        }
+
+        // Damage by type as it arrives (before any modifier), for adaptation and regen stops.
+        internal void RecordHit(Character boss, HitData hit)
+        {
+            FightRt rt = RtIfRunning(boss);
+            if (rt == null) return;
+            float now = Time.time;
+            AddTyped(rt, HitData.DamageType.Blunt, hit.m_damage.m_blunt, now);
+            AddTyped(rt, HitData.DamageType.Slash, hit.m_damage.m_slash, now);
+            AddTyped(rt, HitData.DamageType.Pierce, hit.m_damage.m_pierce, now);
+            AddTyped(rt, HitData.DamageType.Fire, hit.m_damage.m_fire, now);
+            AddTyped(rt, HitData.DamageType.Frost, hit.m_damage.m_frost, now);
+            AddTyped(rt, HitData.DamageType.Lightning, hit.m_damage.m_lightning, now);
+            AddTyped(rt, HitData.DamageType.Poison, hit.m_damage.m_poison, now);
+            AddTyped(rt, HitData.DamageType.Spirit, hit.m_damage.m_spirit, now);
+        }
+
+        private static void AddTyped(FightRt rt, HitData.DamageType t, float amount, float now)
+        {
+            if (amount <= 0f) return;
+            float v;
+            rt.TypeDmg.TryGetValue(t, out v);
+            rt.TypeDmg[t] = v + amount;
+            rt.LastHitBy[t] = now;
+        }
+
+        // recent damage by type fades with a 10 s half-life
+        private static void DecayTyped(FightRt rt)
+        {
+            if (rt.TypeDmg.Count == 0) return;
+            float k = Mathf.Pow(0.5f, TickInterval / 10f);
+            List<HitData.DamageType> keys = new List<HitData.DamageType>(rt.TypeDmg.Keys);
+            for (int i = 0; i < keys.Count; i++) rt.TypeDmg[keys[i]] *= k;
+        }
+
+        private static HitData.DamageType MostUsedType(FightRt rt)
+        {
+            HitData.DamageType best = HitData.DamageType.Slash;
+            float bestV = 0f;
+            foreach (KeyValuePair<HitData.DamageType, float> kv in rt.TypeDmg)
+                if (kv.Value > bestV) { bestV = kv.Value; best = kv.Key; }
+            return best;
+        }
+
+        // vanilla tooltip token of a damage type ($inventory_slash), localized by every client
+        private static string TypeToken(HitData.DamageType t)
+        {
+            return "$inventory_" + t.ToString().ToLowerInvariant();
         }
 
         private void StartCycle(Character boss, FightRt rt, ZDO z, Act act, long net, int players, bool on)
@@ -589,8 +663,15 @@ namespace ExtendedBosses
             z.Set(KCycleKind, vi + 1);
             z.Set(KCycleUntil, net + Seconds(dur));
             z.Set(KCycleNext, 0L);
-            if (on && !string.IsNullOrEmpty(v.Say)) Announce(v.Say, NameToken(boss));
-            Debug(rt.Def.Prefab + ": cycle " + v.Id + " for " + F1(dur) + " s");
+            string extra = "";
+            if (v.Adapt)
+            {
+                HitData.DamageType t = MostUsedType(rt);
+                z.Set(KCycleAdapt, (int)t);
+                extra = TypeToken(t);
+            }
+            if (on && !string.IsNullOrEmpty(v.Say)) Announce(v.Say, NameToken(boss), extra);
+            Debug(rt.Def.Prefab + ": cycle " + v.Id + (v.Adapt ? " (" + extra + ")" : "") + " for " + F1(dur) + " s");
         }
 
         private int PickVariant(BossDef def, Act act, int players)
@@ -670,6 +751,20 @@ namespace ExtendedBosses
                         case HitData.DamageType.Poison: poison = kv.Value; break;
                         case HitData.DamageType.Spirit: spirit = kv.Value; break;
                     }
+            if (v.Adapt)
+            {
+                float f = rt.Def.CfgAdaptFactor != null ? Sv(rt.Def.CfgAdaptFactor) : v.AdaptFactor;
+                float others = rt.Def.CfgAdaptOthers != null ? Sv(rt.Def.CfgAdaptOthers) : v.AdaptOthers;
+                HitData.DamageType t = rt.AdaptType;
+                blunt = t == HitData.DamageType.Blunt ? f : others;
+                slash = t == HitData.DamageType.Slash ? f : others;
+                pierce = t == HitData.DamageType.Pierce ? f : others;
+                fire = t == HitData.DamageType.Fire ? f : others;
+                frost = t == HitData.DamageType.Frost ? f : others;
+                lightning = t == HitData.DamageType.Lightning ? f : others;
+                poison = t == HitData.DamageType.Poison ? f : others;
+                spirit = t == HitData.DamageType.Spirit ? f : others;
+            }
             hit.m_damage.m_blunt *= blunt;
             hit.m_damage.m_slash *= slash;
             hit.m_damage.m_pierce *= pierce;
@@ -860,7 +955,10 @@ namespace ExtendedBosses
             if (act.Creature != null) return act.RingRadius + 1f;
             GameObject pf = ZNetScene.instance.GetPrefab(MarkPrefab(def, act));
             Aoe aoe = pf != null ? pf.GetComponentInChildren<Aoe>(true) : null;
-            return aoe != null && aoe.m_radius > 0.1f ? aoe.m_radius : 4f;
+            if (aoe != null && aoe.m_radius > 0.1f) return aoe.m_radius;
+            SpawnAbility sa = pf != null ? pf.GetComponentInChildren<SpawnAbility>(true) : null;
+            if (sa != null && sa.m_spawnRadius > 0.1f) return sa.m_spawnRadius + 2f;   // meteors: where they fall + splash
+            return 4f;
         }
 
         private void LandStrike(Character boss, FightRt rt, Strike s, int players)
@@ -885,11 +983,17 @@ namespace ExtendedBosses
             if (pf == null) { Warn(rt.Def.Prefab + ": mark prefab '" + prefab + "' not found."); return; }
             float dmg = (rt.Def.CfgMarkDamage != null ? Sv(rt.Def.CfgMarkDamage) : s.Act.Damage) * Sv(_cfgMarkDamage);
             GameObject go = UnityEngine.Object.Instantiate(pf, pos, Quaternion.identity);
-            Aoe[] aoes = go.GetComponentsInChildren<Aoe>(true);
-            for (int i = 0; i < aoes.Length; i++)
+            // a spawner of projectiles (Yagluth's meteors) drops them around itself - here, the
+            // marked player - not at whoever is closest to the boss
+            SpawnAbility[] sas = go.GetComponentsInChildren<SpawnAbility>(true);
+            for (int i = 0; i < sas.Length; i++) sas[i].m_spawnAtTarget = false;
+            // Aoe, SpawnAbility, Projectile: the boss as owner - its adds (same group) are friends
+            IProjectile[] ps = go.GetComponentsInChildren<IProjectile>(true);
+            for (int i = 0; i < ps.Length; i++) ps[i].Setup(boss, Vector3.zero, 0f, null, null, null);
+            if (dmg > 0f)
             {
-                aoes[i].Setup(boss, Vector3.zero, 0f, null, null, null);   // boss as owner: its adds (same group) are friends
-                aoes[i].m_damage = DamageOf(s.Act.DamageType, dmg);
+                Aoe[] aoes = go.GetComponentsInChildren<Aoe>(true);
+                for (int i = 0; i < aoes.Length; i++) aoes[i].m_damage = DamageOf(s.Act.DamageType, dmg);
             }
             // a local-only prefab: show players with the mod a harmless copy
             if (pf.GetComponent<ZNetView>() == null) SendFx(FxStrike, ZDOID.None, pos, 0f, 0f, prefab);

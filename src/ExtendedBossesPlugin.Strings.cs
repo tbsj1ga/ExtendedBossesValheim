@@ -69,6 +69,21 @@ namespace ExtendedBosses
             { "moder.20", new[] { "{0}: All my brood, to me!", "{0}: Всё моё потомство — ко мне!" } },
             { "moder.mark", new[] { "{0} breathes frost under {1} - spread out!", "{0} дышит морозом под игрока {1} — разойдитесь!" } },
 
+            // ---- Yagluth
+            { "yagluth.85", new[] { "{0}: My tribe, rise! (break the fuling totem)", "{0}: Моё племя, встань! (сломайте тотем фулингов)" } },
+            { "yagluth.70", new[] { "{0}: Burn! (more totems - meteors fall on the marked)", "{0}: Горите! (ещё тотемы — метеоры падают на отмеченных)" } },
+            { "yagluth.55", new[] { "{0}: The totems shield me, the shamans mend me! (break the totems, kill the shamans)", "{0}: Тотемы укроют, шаманы исцелят! (сломайте тотемы, убейте шаманов)" } },
+            { "yagluth.regen", new[] { "{0} feeds on fire - he heals unless chilled! Hit with frost!", "{0} питается огнём — он лечится, пока его не остудят! Бейте морозом!" } },
+            { "yagluth.regen.end", new[] { "{0}: the fire inside dims", "{0}: огонь внутри угасает" } },
+            { "yagluth.adapt", new[] { "{0} adapts: {1} hurts him less - switch weapons!", "{0} приспособился: урон «{1}» проходит слабее — смените оружие!" } },
+            { "yagluth.adapt.end", new[] { "{0} loses the adaptation", "{0}: приспособление прошло" } },
+            { "yagluth.45", new[] { "{0} calls the brutes!", "{0} зовёт брютов!" } },
+            { "yagluth.30", new[] { "{0} wakes the Unbjorn!", "{0} будит анбьёрна!" } },
+            { "yagluth.20", new[] { "{0}: Bones of my servants, rise!", "{0}: Кости моих слуг, встаньте!" } },
+            { "yagluth.15", new[] { "{0}: Swarm, drink their blood!", "{0}: Рой, пей их кровь!" } },
+            { "yagluth.10", new[] { "{0} calls an echo of the dragon queen!", "{0} призывает эхо королевы драконов!" } },
+            { "yagluth.mark", new[] { "{0} calls meteors on {1} - run!", "{0} зовёт метеоры на игрока {1} — бегите!" } },
+
             // ---- common
             { "window", new[] { "{0}: the shield has fallen - strike now!", "{0}: защита пала — бейте!" } },
             { "reset", new[] { "{0} regains strength...", "{0} восстанавливает силы…" } },
@@ -98,6 +113,8 @@ namespace ExtendedBosses
             { "cmd.cycle.rot", new[] { ", ROTTEN STEAM", ", ГНИЛОСТНЫЙ ПАР" } },
             { "cmd.cycle.icearmor", new[] { ", ICE ARMOR", ", ЛЕДЯНАЯ БРОНЯ" } },
             { "cmd.cycle.thorns", new[] { ", ICE THORNS", ", ЛЕДЯНЫЕ ШИПЫ" } },
+            { "cmd.cycle.regen", new[] { ", REGENERATION", ", РЕГЕНЕРАЦИЯ" } },
+            { "cmd.cycle.adapt", new[] { ", ADAPTED", ", АДАПТАЦИЯ" } },
             { "cmd.checkdone", new[] { "Self-check: {0} prefab(s) OK, {1} problem(s) - details in the log.", "Самопроверка: {0} префаб(ов) в порядке, проблем: {1} — подробности в логе." } },
         };
 

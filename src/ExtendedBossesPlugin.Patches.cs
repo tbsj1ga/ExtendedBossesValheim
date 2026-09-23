@@ -35,6 +35,7 @@ namespace ExtendedBosses
                         BossDef d = p.BossOf(z);
                         if (d != null && p.IsModMode(d))
                         {
+                            p.RecordHit(__instance, hit);
                             mul *= p.BossDamageFactor(__instance, d);
                             p.ApplyResist(__instance, hit);
                             p.ApplyCycle(__instance, hit);
@@ -42,7 +43,7 @@ namespace ExtendedBosses
                         }
                     }
                     float hp = z.GetFloat(KHpMul, 1f);
-                    if (hp > 1.001f) mul /= hp;
+                    if (hp > 0.01f && Mathf.Abs(hp - 1f) > 0.001f) mul /= hp;
                     if (Mathf.Abs(mul - 1f) > 0.001f) hit.ApplyModifier(mul);
                 }
                 catch (Exception e) { p.Fail("RPC_Damage", e); }

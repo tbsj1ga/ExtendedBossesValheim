@@ -98,7 +98,9 @@ namespace ExtendedBosses
                     case Need.Aoe:
                     {
                         Aoe aoe = pf.GetComponentInChildren<Aoe>(true);
-                        if (aoe == null) problem = "no Aoe component - it will deal no damage";
+                        SpawnAbility sa = pf.GetComponentInChildren<SpawnAbility>(true);
+                        if (aoe == null && sa != null) { info = "spawner, radius " + F1(sa.m_spawnRadius) + ", its projectiles deal the damage"; if (nv == null) problem = "local-only spawner: players WITHOUT the mod may not see it (" + info + ")"; }
+                        else if (aoe == null) problem = "no Aoe or SpawnAbility - it will deal no damage";
                         else
                         {
                             info = "radius " + F1(aoe.m_radius);
