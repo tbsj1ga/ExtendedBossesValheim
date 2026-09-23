@@ -53,7 +53,9 @@ namespace ExtendedBosses
         private void PickThreatTarget(MonsterAI ai, Character boss)
         {
             FightRt rt = RtIfRunning(boss);
-            if (rt == null || !ThreatOn(rt.Def) || !IsModMode(rt.Def) || rt.Threat.Count == 0) return;
+            if (rt == null || !IsModMode(rt.Def)) return;
+            if (HoldFixation(ai, rt)) return;                       // a fixation beats the threat table
+            if (!ThreatOn(rt.Def) || rt.Threat.Count == 0) return;
             float leash = Sv(_cfgLeash);
             Vector3 bp = boss.transform.position;
 

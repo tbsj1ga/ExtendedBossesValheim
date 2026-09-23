@@ -75,6 +75,7 @@ namespace ExtendedBosses
                     if (!__instance.IsPlayer()) return;
                     Character a = hit.GetAttacker();
                     if (a == null || !a.IsBoss() || !IsOwner(a)) return;
+                    p.ApplyHitEffect(a, hit);
                     p.Lifesteal(a, hit);
                 }
                 catch (Exception e) { p.Fail("Character.Damage", e); }

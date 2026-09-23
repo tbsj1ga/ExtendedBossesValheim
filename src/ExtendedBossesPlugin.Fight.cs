@@ -71,6 +71,14 @@ namespace ExtendedBosses
             public HitData.DamageType AdaptType;    // the type an active Adapt variant resists
             public int TotemsAlive;
             public int Healers;
+            public int Guards;              // Cocoon: living guards
+            public float NextFix, FixUntil; // Fixate (local time)
+            public ZDOID FixTarget = ZDOID.None;
+            public float NextHazard;        // Hazard (local time)
+            public float CocoonUntil, CocoonReady; // Cocoon (local time)
+            public bool CocoonActive;
+            public Vector3 LastPos;         // teleport detection
+            public bool HasLastPos;
 
             // threat
             public readonly Dictionary<ZDOID, float> Threat = new Dictionary<ZDOID, float>();
@@ -204,6 +212,9 @@ namespace ExtendedBosses
             TickFusion(boss, rt, mask, players, now);
             TickMarks(boss, rt, mask, players, now);
             TickCharge(boss, rt, mask, now);
+            TickFixate(boss, rt, mask, now);
+            TickHazard(boss, rt, mask, now);
+            TickCocoon(boss, rt, mask, players, now);
             TickThreat(boss, rt);
         }
 
@@ -276,7 +287,7 @@ namespace ExtendedBosses
                     int count = act.ScaleAsAdds ? ScaledCount(rt.Def, act.Count, players) : NestCount(act.Count, players);
                     int placed = 0;
                     for (int k = 0; k < count; k++)
-                        if (PlaceTotem(boss, rt, act, phase, index)) placed++;
+                        if (PlaceTotem(boss, rt, act, phase, index, RingPoint(boss.transform.position, Sv(_cfgSpawnRadiusMin), Sv(_cfgSpawnRadiusMax)))) placed++;
                     return placed > 0;
                 }
                 case ActKind.Marks:
@@ -284,6 +295,16 @@ namespace ExtendedBosses
                     return true;
                 case ActKind.Charge:
                     rt.NextCharge = now + 2f;
+                    return true;
+                case ActKind.Seeds:
+                case ActKind.HitEffect:
+                case ActKind.Cocoon:
+                    return true;        // passive: read while the fight runs
+                case ActKind.Fixate:
+                    rt.NextFix = now + 5f;
+                    return true;
+                case ActKind.Hazard:
+                    rt.NextHazard = now + 5f;
                     return true;
                 case ActKind.Fusion:
                     rt.NextFusion = now + 5f;
@@ -343,7 +364,7 @@ namespace ExtendedBosses
             FightRt rt = RtIfRunning(boss);
             if (rt != null)
             {
-                if (rt.ShieldActive) f *= Sv(hard ? _cfgHardShieldFactor : _cfgShieldFactor);
+                if (rt.ShieldActive || rt.CocoonActive) f *= Sv(hard ? _cfgHardShieldFactor : _cfgShieldFactor);
                 else if (rt.WindowActive) f *= Sv(_cfgWindowMultiplier);
             }
             return f;
@@ -411,7 +432,7 @@ namespace ExtendedBosses
         private void TickAdds(Character boss, FightRt rt, long net)
         {
             _tmpExpired.Clear();
-            int healers = 0;
+            int healers = 0, guards = 0;
             float healRange = Sv(_cfgHealRange);
             Vector3 bp = boss.transform.position;
             List<Character> all = Character.GetAllCharacters();
@@ -424,11 +445,13 @@ namespace ExtendedBosses
                 long exp = z.GetLong(KExpire, 0L);
                 if (exp > 0L && net >= exp) { _tmpExpired.Add(c.gameObject); continue; }
                 int role = z.GetInt(KRole);
+                if (role == RoleGuard) guards++;
                 if (role == RoleHealer && Vector3.Distance(c.transform.position, bp) <= healRange) healers++;
                 else if (role == RoleFuse && TryFuse(boss, rt, c)) _tmpExpired.Add(c.gameObject);
             }
             for (int i = 0; i < _tmpExpired.Count; i++) DestroyNetObject(_tmpExpired[i]);
             rt.Healers = healers;
+            rt.Guards = guards;
         }
 
         private void TickHeal(Character boss, FightRt rt)
@@ -834,9 +857,9 @@ namespace ExtendedBosses
         // ------------------------------------------------------------------
         // totems and nests
         // ------------------------------------------------------------------
-        private bool PlaceTotem(Character boss, FightRt rt, Act act, int phase, int index)
+        private bool PlaceTotem(Character boss, FightRt rt, Act act, int phase, int index, Vector3 at)
         {
-            bool vanillaNest = act.Kind == ActKind.Nest;
+            bool vanillaNest = act.Kind == ActKind.Nest || act.Kind == ActKind.Seeds;
             string prefab = vanillaNest ? act.Prefabs[0] : act.Prop;
             if (vanillaNest && rt.Def.CfgNestPrefab != null) prefab = Ss(rt.Def.CfgNestPrefab);
             if (!vanillaNest && rt.Def.CfgTotemPrefab != null) prefab = Ss(rt.Def.CfgTotemPrefab);
@@ -852,7 +875,7 @@ namespace ExtendedBosses
             }
             if (act.AnyProp ? (pf == null || pf.GetComponent<ZNetView>() == null) : !IsDestructibleProp(pf)) { Warn(rt.Def.Prefab + ": nest prefab '" + prefab + "' is missing or not " + (act.AnyProp ? "networked." : "destructible.")); return false; }
 
-            GameObject go = SpawnObject(pf, RingPoint(boss.transform.position, Sv(_cfgSpawnRadiusMin), Sv(_cfgSpawnRadiusMax)));
+            GameObject go = SpawnObject(pf, at);
             ZDO tz = Zdo(go.transform);
             if (tz == null) return false;
             tz.Set(KBoss, rt.BossId);

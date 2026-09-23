@@ -39,6 +39,7 @@ namespace ExtendedBosses
             { "elder.20", new[] { "{0} calls the elite - kill the shamans first, they heal the boss!", "{0} зовёт элиту — сначала убейте шаманов, они лечат босса!" } },
             { "elder.10", new[] { "{0}: Dead of the barrows, rise!", "{0}: Мёртвые курганов, встаньте!" } },
             { "elder.mark", new[] { "Roots stir under {1} - get out!", "Корни шевелятся под игроком {1} — выбирайтесь!" } },
+            { "elder.seed", new[] { "A seed of {0} takes root - a new nest!", "Семя ({0}) пустило корни — новое гнездо!" } },
 
             // ---- Bonemass
             { "bonemass.85", new[] { "{0}: The swamp remembers its dead! (destroy the bone pile)", "{0}: Болото помнит своих мертвецов! (разрушьте кучу костей)" } },
@@ -68,6 +69,7 @@ namespace ExtendedBosses
             { "moder.35", new[] { "{0} wakes the stone golem!", "{0} будит каменного голема!" } },
             { "moder.20", new[] { "{0}: All my brood, to me!", "{0}: Всё моё потомство — ко мне!" } },
             { "moder.mark", new[] { "{0} breathes frost under {1} - spread out!", "{0} дышит морозом под игрока {1} — разойдитесь!" } },
+            { "moder.breath", new[] { "{0} lands and fixes her eyes on {1} - the rest, stay out of her breath!", "{0} садится и смотрит на игрока {1} — остальные, не стойте под её дыханием!" } },
 
             // ---- Yagluth
             { "yagluth.85", new[] { "{0}: My tribe, rise! (break the fuling totem)", "{0}: Моё племя, встань! (сломайте тотем фулингов)" } },
@@ -83,6 +85,7 @@ namespace ExtendedBosses
             { "yagluth.15", new[] { "{0}: Swarm, drink their blood!", "{0}: Рой, пей их кровь!" } },
             { "yagluth.10", new[] { "{0} calls an echo of the dragon queen!", "{0} призывает эхо королевы драконов!" } },
             { "yagluth.mark", new[] { "{0} calls meteors on {1} - run!", "{0} зовёт метеоры на игрока {1} — бегите!" } },
+            { "yagluth.beam", new[] { "{0} locks his gaze on {1} - break line of sight!", "{0} не сводит глаз с игрока {1} — укройтесь от луча!" } },
 
             // ---- The Queen
             { "queen.85", new[] { "{0} lays a clutch! (smash the eggs before they hatch)", "{0} откладывает кладку! (разбейте яйца, пока не вылупились)" } },
@@ -96,6 +99,7 @@ namespace ExtendedBosses
             { "queen.30", new[] { "{0} calls a gjall from the mist!", "{0} призывает гьялля из тумана!" } },
             { "queen.20", new[] { "{0}: All my brood, devour them!", "{0}: Весь выводок — пожрите их!" } },
             { "queen.mark", new[] { "{0} spits acid at {1} - spread out!", "{0} плюёт кислотой в игрока {1} — разойдитесь!" } },
+            { "queen.cocoon", new[] { "{0} hides behind her guards - kill them to reach her!", "{0} укрылась за стражами — убейте их, чтобы добраться до неё!" } },
 
             // ---- Fader
             { "fader.85", new[] { "{0}: Rise, charred! (break the spawner stone)", "{0}: Встаньте, обугленные! (разбейте камень-спавнер)" } },
@@ -110,6 +114,7 @@ namespace ExtendedBosses
             { "fader.20", new[] { "{0} calls Lord Reto!", "{0} призывает лорда Рето!" } },
             { "fader.10", new[] { "{0}: Ashlands, devour them!", "{0}: Пепельные земли, пожрите их!" } },
             { "fader.mark", new[] { "{0} calls meteors on {1} - run!", "{0} зовёт метеоры на игрока {1} — бегите!" } },
+            { "fader.wall", new[] { "{0} raises a wall of fire - split up!", "{0} поднимает стену огня — разделитесь!" } },
 
             // ---- common
             { "window", new[] { "{0}: the shield has fallen - strike now!", "{0}: защита пала — бейте!" } },
@@ -133,6 +138,8 @@ namespace ExtendedBosses
             { "cmd.ownedother", new[] { "owned by another client", "владелец — другой клиент" } },
             { "cmd.shield", new[] { ", SHIELD", ", ЩИТ" } },
             { "cmd.window", new[] { ", WINDOW", ", ОКНО" } },
+            { "cmd.cocoon", new[] { ", COCOON", ", КОКОН" } },
+            { "cmd.fixate", new[] { ", FIXATED", ", ФИКСАЦИЯ" } },
             { "cmd.resist", new[] { ", RESIST", ", СОПРОТИВЛЕНИЕ" } },
             { "cmd.cycle.sap", new[] { ", BARK (sap)", ", КОРА (сок)" } },
             { "cmd.cycle.back", new[] { ", BARK (back)", ", КОРА (спина)" } },

@@ -258,6 +258,11 @@ namespace ExtendedBosses
                 case ActKind.Resist:
                 case ActKind.Cycle: return Sb(_cfgResist) && full;
                 case ActKind.Fusion: return Sb(_cfgHealers) && full;
+                case ActKind.Seeds: return Sb(_cfgNests);
+                case ActKind.HitEffect: return Sb(_cfgSpecials) && full;
+                case ActKind.Fixate:
+                case ActKind.Hazard: return Sb(_cfgMarks) && full;
+                case ActKind.Cocoon: return Sb(_cfgShield) && full;
             }
             return false;
         }

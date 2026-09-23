@@ -112,6 +112,8 @@ namespace ExtendedBosses
                 string flags = "";
                 if (rt != null && rt.ShieldActive) flags += L("cmd.shield");
                 if (rt != null && rt.WindowActive) flags += L("cmd.window");
+                if (rt != null && rt.CocoonActive) flags += L("cmd.cocoon");
+                if (rt != null && rt.FixTarget != ZDOID.None && Time.time < rt.FixUntil) flags += L("cmd.fixate");
                 if (rt != null && rt.ResistAct != null) flags += L("cmd.resist");
                 if (rt != null && rt.CycleAct != null && rt.CycleVar != null) flags += L("cmd.cycle." + rt.CycleVar.Id.ToLowerInvariant());
                 sb.Append(L("cmd.status",

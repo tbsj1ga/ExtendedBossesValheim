@@ -10,7 +10,7 @@ namespace ExtendedBosses
     // One report in the log instead of discovering problems phase by phase in a fight.
     public partial class ExtendedBossesPlugin
     {
-        private enum Need { Creature, Nest, Totem, Prop, Aoe, Effect, Item }
+        private enum Need { Creature, Nest, Totem, Prop, Aoe, Effect, Item, Status }
 
         private int _checkOk;
         private List<string> _checkProblems = new List<string>();
@@ -49,6 +49,18 @@ namespace ExtendedBosses
                                 if (!string.IsNullOrEmpty(act.Fallback)) Check(tag, act.Fallback, Need.Nest, seen, details);
                                 for (int k = 0; k < act.Prefabs.Length; k++) Check(tag, act.Prefabs[k], Need.Creature, seen, details);
                                 break;
+                            case ActKind.Seeds:
+                                Check(tag, def.CfgNestPrefab != null ? Ss(def.CfgNestPrefab) : act.Prefabs[0], Need.Nest, seen, details);
+                                break;
+                            case ActKind.Cocoon:
+                                for (int k = 0; k < act.Prefabs.Length; k++) Check(tag, act.Prefabs[k], Need.Creature, seen, details);
+                                break;
+                            case ActKind.Hazard:
+                                Check(tag, act.Prefabs[0], Need.Aoe, seen, details);
+                                break;
+                            case ActKind.HitEffect:
+                                Check(tag, act.Effect, Need.Status, seen, details);
+                                break;
                             case ActKind.Marks:
                                 Check(tag, MarkPrefab(def, act), act.Creature != null ? Need.Creature : Need.Aoe, seen, details);
                                 Check(tag, def.CfgMarkEffect != null ? Ss(def.CfgMarkEffect) : act.Prop, Need.Effect, seen, details);
@@ -76,8 +88,16 @@ namespace ExtendedBosses
         private void Check(string tag, string prefab, Need need, HashSet<string> seen, StringBuilder details)
         {
             if (string.IsNullOrEmpty(prefab) || !seen.Add(need + ":" + prefab)) return;
-            GameObject pf = ZNetScene.instance.GetPrefab(prefab);
             string problem = null, info = "";
+            if (need == Need.Status)
+            {
+                ObjectDB db = ObjectDB.instance;
+                if (db != null && db.GetStatusEffect(prefab.GetStableHashCode()) == null) problem = "no such status effect";
+                if (problem != null) _checkProblems.Add(tag + prefab + " (Status): " + problem); else _checkOk++;
+                details.Append("  ").Append(tag).Append(prefab).Append(" (Status): ").Append(problem ?? "OK").Append("\n");
+                return;
+            }
+            GameObject pf = ZNetScene.instance.GetPrefab(prefab);
             if (pf == null) problem = "not found";
             else
             {

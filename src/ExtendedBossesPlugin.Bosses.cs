@@ -8,7 +8,7 @@ namespace ExtendedBosses
     // A fight is data: phases at HP thresholds, each a list of actions (the "bricks" of
     // ROADMAP.md, section A). The fight controller knows how to run each kind of action; a boss
     // is only a table here.
-    internal enum ActKind { Wave, Lieutenant, Nest, Totem, Marks, Charge, Shield, Resist, Cycle, Fusion }
+    internal enum ActKind { Wave, Lieutenant, Nest, Totem, Marks, Charge, Shield, Resist, Cycle, Fusion, Seeds, HitEffect, Fixate, Cocoon, Hazard }
 
     // One variant of a resistance cycle (Elder's sap/back bark, Bonemass's hardening).
     internal class CycleVariant
@@ -69,6 +69,9 @@ namespace ExtendedBosses
         public string Gate;             // runs only if the boss's bool setting with this key is on (experiments)
         public bool AnyProp;            // Nest: any networked object, need not be destructible (eggs that hatch on their own)
         public bool ScaleAsAdds;        // Nest/Totem: count scales like adds instead of the nest rule
+        public float Chance;            // Seeds: chance per landed projectile
+        public string Effect;           // HitEffect: vanilla status effect put on the boss's hits (Wet, Tared)
+        public bool Land;               // Fixate: a flying boss lands first (Moder's breath)
     }
 
     internal class PhaseDef
@@ -140,6 +143,7 @@ namespace ExtendedBosses
     {
         internal const int RoleHealer = 1;
         internal const int RoleFuse = 2;
+        internal const int RoleGuard = 3;
         internal const string CycleRandom = "Random";
         internal const string CycleAuto = "Auto";
 
@@ -272,6 +276,8 @@ namespace ExtendedBosses
                 Kind = ActKind.Marks, Creature = "TentaRoot", CreatureCount = 4, RingRadius = 3f, Lifetime = 15f,
                 Prop = "vfx_prespawn", MarkKey = "elder.mark", Count = 1f
             });
+            // seeds: where his projectile lands, a nest may grow (at most 4 nests standing)
+            p.Acts.Add(new Act { Kind = ActKind.Seeds, Prefabs = new[] { nest }, Chance = 0.3f, MaxAlive = 4, MarkKey = "elder.seed" });
 
             p = Phase(b, 55f, "elder.55");
             p.Acts.Add(new Act { Kind = ActKind.Nest, Prefabs = new[] { nest }, Count = 3f });
@@ -347,6 +353,7 @@ namespace ExtendedBosses
                 Kind = ActKind.Marks, Prefabs = new[] { "bonemass_aoe" }, Prop = "vfx_prespawn", MarkKey = "bonemass.mark",
                 Count = 1f, Damage = 25f, DamageType = HitData.DamageType.Poison
             });
+            p.Acts.Add(new Act { Kind = ActKind.HitEffect, Effect = "Wet" });      // swamp water: his hits leave you wet
 
             p = Phase(b, 55f, "bonemass.55");
             p.Acts.Add(new Act { Kind = ActKind.Nest, Prefabs = new[] { pile }, Count = 3f });
@@ -371,7 +378,9 @@ namespace ExtendedBosses
             p.Acts.Add(new Act { Kind = ActKind.Fusion, Prefabs = new[] { "Blob", "Blob", "BlobElite" }, Count = 2f, Interval = 25f, Heal = 3f, MarkKey = "bonemass.fusion" });
 
             Phase(b, 40f, "bonemass.40").Acts.Add(new Act { Kind = ActKind.Wave, Prefabs = new[] { "Writhan" }, Count = 1f });
-            Phase(b, 35f, "bonemass.35").Acts.Add(new Act { Kind = ActKind.Wave, Prefabs = new[] { "Surtling" }, Count = 2f });
+            p = Phase(b, 35f, "bonemass.35");
+            p.Acts.Add(new Act { Kind = ActKind.Wave, Prefabs = new[] { "Surtling" }, Count = 2f });
+            p.Acts.Add(new Act { Kind = ActKind.HitEffect, Effect = "Tared" });   // later: tar - slow and flammable (surtlings!)
             Phase(b, 25f, "bonemass.25").Acts.Add(new Act { Kind = ActKind.Wave, Prefabs = new[] { "Draugr_Elite" }, Count = 1f });
             Phase(b, 15f, "bonemass.15").Acts.Add(new Act { Kind = ActKind.Wave, Prefabs = new[] { "Wraith", "Bat_Swamp", "Bat_Swamp" }, Count = 1f });
 
@@ -452,7 +461,10 @@ namespace ExtendedBosses
                 }
             });
 
-            Phase(b, 45f, "moder.45").Acts.Add(new Act { Kind = ActKind.Wave, Prefabs = new[] { "Fenring_Cultist" }, Count = 1f });
+            p = Phase(b, 45f, "moder.45");
+            p.Acts.Add(new Act { Kind = ActKind.Wave, Prefabs = new[] { "Fenring_Cultist" }, Count = 1f });
+            // breath mark: she lands and takes the marked player as her target for a while
+            p.Acts.Add(new Act { Kind = ActKind.Fixate, Land = true, Interval = 35f, Duration = 8f, MarkKey = "moder.breath" });
             Phase(b, 35f, "moder.35").Acts.Add(new Act { Kind = ActKind.Lieutenant, Prefabs = new[] { "StoneGolem" } });
             p = Phase(b, 20f, "moder.20");
             p.Acts.Add(new Act { Kind = ActKind.Wave, Prefabs = new[] { "Fenring" }, Count = 1f });
@@ -529,7 +541,11 @@ namespace ExtendedBosses
                 }
             });
 
-            Phase(b, 45f, "yagluth.45").Acts.Add(new Act { Kind = ActKind.Wave, Prefabs = new[] { "GoblinBrute" }, Count = 1f });
+            p = Phase(b, 45f, "yagluth.45");
+            p.Acts.Add(new Act { Kind = ActKind.Wave, Prefabs = new[] { "GoblinBrute" }, Count = 1f });
+            // beam on a mark: he locks on a player (his beam follows his target) - break line of sight
+            p.Acts.Add(new Act { Kind = ActKind.Fixate, Interval = 30f, Duration = 8f, MarkKey = "yagluth.beam" });
+            p.Acts.Add(new Act { Kind = ActKind.HitEffect, Effect = "Tared" });   // tar on his hits - and he is fire
             Phase(b, 30f, "yagluth.30").Acts.Add(new Act { Kind = ActKind.Lieutenant, Prefabs = new[] { "Unbjorn" } });
             Phase(b, 20f, "yagluth.20").Acts.Add(new Act { Kind = ActKind.Wave, Prefabs = new[] { "Skeleton_NoArcher", "Skeleton", "Skeleton_Poison" }, Count = 1f });
             Phase(b, 15f, "yagluth.15").Acts.Add(new Act { Kind = ActKind.Wave, Prefabs = new[] { "Deathsquito" }, Count = 1f });
@@ -611,7 +627,10 @@ namespace ExtendedBosses
                 }
             });
 
-            Phase(b, 45f, "queen.45").Acts.Add(new Act { Kind = ActKind.Wave, Prefabs = new[] { "SeekerBrute" }, Count = 1f });
+            p = Phase(b, 45f, "queen.45");
+            p.Acts.Add(new Act { Kind = ActKind.Wave, Prefabs = new[] { "SeekerBrute" }, Count = 1f });
+            // cocoon: after each of her teleports guards appear; while they live she takes x0.1
+            p.Acts.Add(new Act { Kind = ActKind.Cocoon, Prefabs = new[] { "Seeker", "SeekerBrood" }, Count = 1f, Duration = 20f, Interval = 30f, MarkKey = "queen.cocoon" });
             Phase(b, 30f, "queen.30").Acts.Add(new Act { Kind = ActKind.Lieutenant, Prefabs = new[] { "Gjall" } });
             Phase(b, 20f, "queen.20").Acts.Add(new Act { Kind = ActKind.Wave, Prefabs = new[] { "Tick", "SeekerBrood" }, Count = 2f });
 
@@ -688,7 +707,10 @@ namespace ExtendedBosses
                 }
             });
 
-            Phase(b, 45f, "fader.45").Acts.Add(new Act { Kind = ActKind.Lieutenant, Prefabs = new[] { "Morgen" } });
+            p = Phase(b, 45f, "fader.45");
+            p.Acts.Add(new Act { Kind = ActKind.Lieutenant, Prefabs = new[] { "Morgen" } });
+            // his own wall of fire, raised from where he stands every 45 s - the raid must split
+            p.Acts.Add(new Act { Kind = ActKind.Hazard, Prefabs = new[] { "Fader_WallOfFire_Spawn" }, Interval = 45f, MarkKey = "fader.wall" });
             Phase(b, 30f, "fader.30").Acts.Add(new Act { Kind = ActKind.Lieutenant, Prefabs = new[] { "FallenValkyrie" } });
             Phase(b, 20f, "fader.20").Acts.Add(new Act { Kind = ActKind.Lieutenant, Prefabs = new[] { "Charred_Melee_Dyrnwyn" } });
             Phase(b, 10f, "fader.10").Acts.Add(new Act { Kind = ActKind.Wave, Prefabs = new[] { "Asksvin", "BlobLava" }, Count = 1f });
