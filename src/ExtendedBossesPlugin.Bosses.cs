@@ -18,6 +18,11 @@ namespace ExtendedBosses
         public Dictionary<HitData.DamageType, float> Mods;  // multipliers by type
         public float Other = 1f;        // multiplier of every type not in Mods (Back: from the front)
         public bool Back;               // positional: full damage only from behind; never picked solo
+        public float MeleeFactor = 1f;  // multiplier of hits from attackers within MeleeRange (+ boss radius)
+        public float MeleeRange = 5f;
+        public float Retaliate;         // damage dealt back to a close attacker per hit (at most once a second)
+        public HitData.DamageType RetaliateType = HitData.DamageType.Poison;
+        public string EndKey;           // announced when it ends (falls back to the act's EndKey)
     }
 
     internal class Act
@@ -102,6 +107,8 @@ namespace ExtendedBosses
         public ConfigEntry<float> CfgCycleCdMax;
         public ConfigEntry<float> CfgCycleDelay;
         public ConfigEntry<float> CfgBackArc;
+        public ConfigEntry<float> CfgCycleMelee;       // MeleeFactor of the variant that has one
+        public ConfigEntry<float> CfgCycleRetaliate;   // Retaliate of the variant that has one
         public ConfigEntry<float> CfgFusionInterval;
         public ConfigEntry<float> CfgFusionHeal;
     }
@@ -151,13 +158,19 @@ namespace ExtendedBosses
         }
 
         // Binds the usual knobs of a resistance cycle under the given key prefix ("Bark", "Harden").
-        private void BindCycle(BossDef d, string prefix, string whatEn, string whatRu, bool variants)
+        private void BindCycle(BossDef d, string prefix, string whatEn, string whatRu, params string[] variantIds)
         {
-            if (variants)
+            if (variantIds != null && variantIds.Length > 1)
+            {
+                List<string> allowed = new List<string>();
+                allowed.Add(CycleRandom);
+                allowed.AddRange(variantIds);
+                allowed.Add(CycleAuto);
                 d.CfgCycleVariant = S(d.Section, prefix + "Variant", CycleRandom,
-                    "Which " + whatEn + " comes: Random (chosen anew each time), a variant name to pin it, or Auto (positional variant for a group of 3+). A single player always gets the non-positional variant.",
-                    "Какой вариант (" + whatRu + "): Random — заново каждый раз, имя варианта — всегда он, Auto — позиционный для группы от 3 игроков. Один игрок всегда получает непозиционный вариант.",
-                    CycleRandom, "Sap", "Back", CycleAuto);
+                    "Which variant (" + whatEn + ") comes: Random (chosen anew each time), a variant name to pin it, or Auto (positional variant for a group of 3+). A single player never gets a positional variant.",
+                    "Какой вариант (" + whatRu + "): Random — заново каждый раз, имя варианта — всегда он, Auto — позиционный для группы от 3 игроков. Одному игроку позиционный вариант не выпадает никогда.",
+                    allowed.ToArray());
+            }
             d.CfgCycleDuration = F(d.Section, prefix + "Duration", 30f, 5f, 120f, "Seconds each " + whatEn + " lasts.", "Длительность (" + whatRu + "), секунд.");
             d.CfgCycleCdMin = F(d.Section, prefix + "CooldownMin", 50f, 5f, 300f, "Cooldown between: from...", "Перерыв между: от…");
             d.CfgCycleCdMax = F(d.Section, prefix + "CooldownMax", 70f, 5f, 300f, "...to (random each time).", "…до (случайно каждый раз).");
@@ -280,8 +293,8 @@ namespace ExtendedBosses
                     "Creature summoned in a ring around the marked player from 70%.", "Существо, которое появляется кольцом вокруг отмеченного игрока с 70 %.");
                 d.CfgMarkEffect = pl.S(d.Section, "MarkEffect", "vfx_prespawn",
                     "Vanilla effect on the marked player before the roots (players with the mod).", "Ванильный эффект на отмеченном игроке до корней (у игроков с модом).");
-                pl.BindCycle(d, "Bark", "living bark (Sap: fire x0.25, slash x1.25, the rest x0.25; Back: x0.25 from the front, full from behind)",
-                    "живая кора: Sap — огонь ×0.25, рубящий ×1.25, остальное ×0.25; Back — спереди ×0.25, в спину полный", true);
+                pl.BindCycle(d, "Bark", "living bark - Sap: fire x0.25, slash x1.25, the rest x0.25; Back: x0.25 from the front, full from behind",
+                    "живая кора: Sap — огонь ×0.25, рубящий ×1.25, остальное ×0.25; Back — спереди ×0.25, в спину полный", "Sap", "Back");
                 d.CfgBackArc = pl.F(d.Section, "BackArc", 120f, 30f, 270f,
                     "Back variant: width of the arc behind the Elder that counts as 'the back', degrees.", "Вариант Back: ширина дуги позади Древнего, которая считается спиной, градусов.");
             };
@@ -311,14 +324,18 @@ namespace ExtendedBosses
             p = Phase(b, 55f, "bonemass.55");
             p.Acts.Add(new Act { Kind = ActKind.Nest, Prefabs = new[] { pile }, Count = 3f });
             p.Acts.Add(new Act { Kind = ActKind.Shield });
-            // hardening: its blunt weakness turns into resistance, fire burns the bones
+            // alternating, like the Elder's bark:
+            //   hardening - its blunt weakness turns into resistance, fire burns the bones;
+            //   rotten steam - close hits sink in (x0.5) and poison the attacker, ranged is full
             p.Acts.Add(new Act
             {
-                Kind = ActKind.Cycle, Duration = 30f, CooldownMin = 50f, CooldownMax = 70f, Delay = 60f, EndKey = "bonemass.harden.end",
+                Kind = ActKind.Cycle, Duration = 30f, CooldownMin = 50f, CooldownMax = 70f, Delay = 60f,
                 Variants = new List<CycleVariant>
                 {
-                    new CycleVariant { Id = "Harden", Say = "bonemass.harden", Other = 1f,
+                    new CycleVariant { Id = "Harden", Say = "bonemass.harden", EndKey = "bonemass.harden.end", Other = 1f,
                                        Mods = Mods(HitData.DamageType.Blunt, 0.25f, HitData.DamageType.Fire, 2f) },
+                    new CycleVariant { Id = "Rot", Say = "bonemass.rot", EndKey = "bonemass.rot.end", Other = 1f,
+                                       MeleeFactor = 0.5f, MeleeRange = 5f, Retaliate = 12f, RetaliateType = HitData.DamageType.Poison },
                 }
             });
 
@@ -353,7 +370,13 @@ namespace ExtendedBosses
                     "Vanilla effect on the marked player before the puddle (players with the mod).", "Ванильный эффект на отмеченном игроке до лужи (у игроков с модом).");
                 d.CfgMarkDamage = pl.F(d.Section, "MarkDamage", 25f, 0f, 500f,
                     "Poison damage of the puddle (before 04 Marks DamageMultiplier).", "Урон ядом лужи (до множителя из 04 Marks).");
-                pl.BindCycle(d, "Harden", "hardening (blunt x0.25, fire x2)", "затвердевание: дробящий ×0.25, огонь ×2", false);
+                pl.BindCycle(d, "Cycle", "Harden: blunt x0.25, fire x2; Rot: close hits x0.5 and poison the attacker, ranged full",
+                    "Harden — затвердевание: дробящий ×0.25, огонь ×2; Rot — гнилостный пар: удары вблизи ×0.5 и травят атакующего, издалека полный", "Harden", "Rot");
+                d.CfgCycleMelee = pl.F(d.Section, "RotMeleeFactor", 0.5f, 0f, 1f,
+                    "Rotten steam: damage of hits from within 5 m (x).", "Гнилостный пар: урон ударов ближе 5 м (×).");
+                d.CfgCycleRetaliate = pl.F(d.Section, "RotPoisonDamage", 12f, 0f, 200f,
+                    "Rotten steam: poison dealt back to a close attacker per hit (at most once a second per player).",
+                    "Гнилостный пар: яд, который получает атакующий вблизи за удар (не чаще раза в секунду на игрока).");
                 d.CfgFusionInterval = pl.F(d.Section, "SlimeInterval", 25f, 5f, 180f,
                     "From 45%: seconds between slime waves crawling to Bonemass.", "С 45 %: секунд между волнами слизи, ползущей к Массивному.");
                 d.CfgFusionHeal = pl.F(d.Section, "SlimeHealPercent", 3f, 0f, 25f,

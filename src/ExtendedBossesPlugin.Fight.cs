@@ -64,6 +64,7 @@ namespace ExtendedBosses
             public Act CycleAct;            // non-null while a resistance cycle is up
             public CycleVariant CycleVar;   // and its variant
             public float NextFusion;        // Fusion: next slime wave (local time)
+            public readonly Dictionary<ZDOID, float> RetaliateAt = new Dictionary<ZDOID, float>(); // per player, local time
             public int TotemsAlive;
             public int Healers;
 
@@ -558,7 +559,10 @@ namespace ExtendedBosses
                 {
                     // just ended: announce and roll the cooldown
                     z.Set(KCycleNext, until + Seconds(CycleCooldown(rt.Def, act)));
-                    if (on && !string.IsNullOrEmpty(act.EndKey)) Announce(act.EndKey, NameToken(boss));
+                    int ended = z.GetInt(KCycleKind) - 1;
+                    string endKey = act.Variants != null && ended >= 0 && ended < act.Variants.Count && !string.IsNullOrEmpty(act.Variants[ended].EndKey)
+                        ? act.Variants[ended].EndKey : act.EndKey;
+                    if (on && !string.IsNullOrEmpty(endKey)) Announce(endKey, NameToken(boss));
                     Debug(rt.Def.Prefab + ": cycle ended");
                 }
                 else if (next > 0L && net >= next && !rt.WindowActive) StartCycle(boss, rt, z, act, net, players, on);
@@ -627,6 +631,17 @@ namespace ExtendedBosses
                 hit.ApplyModifier(v.Other);
                 return;
             }
+            if (v.MeleeFactor < 1f || v.Retaliate > 0f)
+            {
+                Character a = hit.GetAttacker();
+                if (a != null && a.IsPlayer() && Flat(a.transform.position - boss.transform.position) <= v.MeleeRange + boss.GetRadius())
+                {
+                    float mf = rt.Def.CfgCycleMelee != null && v.MeleeFactor < 1f ? Sv(rt.Def.CfgCycleMelee) : v.MeleeFactor;
+                    if (mf < 1f) hit.ApplyModifier(mf);
+                    float back = rt.Def.CfgCycleRetaliate != null && v.Retaliate > 0f ? Sv(rt.Def.CfgCycleRetaliate) : v.Retaliate;
+                    if (back > 0f) Retaliate(boss, rt, a, back, v.RetaliateType);
+                }
+            }
             float o = v.Other;
             float blunt = o, slash = o, pierce = o, fire = o, frost = o, lightning = o, poison = o, spirit = o;
             if (v.Mods != null)
@@ -651,6 +666,24 @@ namespace ExtendedBosses
             hit.m_damage.m_poison *= poison;
             hit.m_damage.m_spirit *= spirit;
             hit.m_damage.m_chop *= slash;       // axes chop the tree too
+        }
+
+        // A vanilla hit on the attacking player from the boss (poison etc.): routed to the
+        // player's own client like any monster hit, so players without the mod feel it too.
+        private void Retaliate(Character boss, FightRt rt, Character attacker, float amount, HitData.DamageType type)
+        {
+            float now = Time.time, last;
+            ZDOID id = attacker.GetZDOID();
+            if (rt.RetaliateAt.TryGetValue(id, out last) && now - last < 1f) return;
+            rt.RetaliateAt[id] = now;
+            HitData h = new HitData();
+            h.m_damage = DamageOf(type, amount);
+            h.m_point = attacker.GetCenterPoint();
+            Vector3 dir = attacker.transform.position - boss.transform.position;
+            dir.y = 0f;
+            h.m_dir = dir.sqrMagnitude > 0.01f ? dir.normalized : Vector3.forward;
+            h.SetAttacker(boss);
+            attacker.Damage(h);
         }
 
         // Is the attacker within the arc behind the boss? No attacker (DoT, environment): front.

@@ -46,6 +46,8 @@ namespace ExtendedBosses
             { "bonemass.55", new[] { "{0}: The bones shield me! (destroy all the piles)", "{0}: Кости укроют меня! (разрушьте все кучи)" } },
             { "bonemass.harden", new[] { "{0}: the bones harden - blunt is useless, burn it!", "{0}: кости затвердели — дробящее бесполезно, жгите!" } },
             { "bonemass.harden.end", new[] { "{0}: the bones soften again", "{0}: кости снова размякли" } },
+            { "bonemass.rot", new[] { "{0}: rotten steam - close blows sink in and poison you, strike from afar!", "{0}: гнилостный пар — удары вблизи вязнут и травят, бейте издалека!" } },
+            { "bonemass.rot.end", new[] { "{0}: the steam clears", "{0}: пар рассеялся" } },
             { "bonemass.45", new[] { "{0} raises an abomination! Slime will crawl to the boss - kill it before it merges!", "{0} поднимает мерзость! К боссу поползёт слизь — убейте её, пока не слилась!" } },
             { "bonemass.fusion", new[] { "{0} calls the slime - intercept it!", "{0} зовёт слизь — перехватите её!" } },
             { "bonemass.40", new[] { "{0}: Writhans, to me!", "{0}: Скручни, ко мне!" } },
@@ -80,6 +82,7 @@ namespace ExtendedBosses
             { "cmd.cycle.sap", new[] { ", BARK (sap)", ", КОРА (сок)" } },
             { "cmd.cycle.back", new[] { ", BARK (back)", ", КОРА (спина)" } },
             { "cmd.cycle.harden", new[] { ", HARDENED", ", ЗАТВЕРДЕЛ" } },
+            { "cmd.cycle.rot", new[] { ", ROTTEN STEAM", ", ГНИЛОСТНЫЙ ПАР" } },
             { "cmd.checkdone", new[] { "Self-check: {0} prefab(s) OK, {1} problem(s) - details in the log.", "Самопроверка: {0} префаб(ов) в порядке, проблем: {1} — подробности в логе." } },
         };
 
