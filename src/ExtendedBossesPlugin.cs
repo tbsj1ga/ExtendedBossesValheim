@@ -20,7 +20,7 @@ namespace ExtendedBosses
     {
         public const string Guid = "j1ga.extendedbosses";
         public const string Name = "Extended Bosses";
-        public const string Version = "0.8.0";
+        public const string Version = "0.8.1";
 
         public static ExtendedBossesPlugin Instance;
 
@@ -47,11 +47,13 @@ namespace ExtendedBosses
                 Instance = this;
                 BindConfig();
                 BindSyncConfig();
+                BindWatchConfig();
                 BuildBosses();
                 BindBossConfig();
                 RegisterCommands();
                 _harmony = new Harmony(Guid);
                 _harmony.PatchAll(typeof(ExtendedBossesPlugin).Assembly);
+                StartWatcher();
                 Logger.LogInfo(Name + " " + Version + " loaded, " + _bosses.Count + " boss definition(s).");
             }
             catch (Exception e)
@@ -63,7 +65,7 @@ namespace ExtendedBosses
 
         private void OnDestroy()
         {
-            try { RestoreAllCharges(); ClearCircles(); if (_harmony != null) _harmony.UnpatchSelf(); }
+            try { StopWatcher(); RestoreAllCharges(); ClearCircles(); if (_harmony != null) _harmony.UnpatchSelf(); }
             catch (Exception e) { Logger.LogWarning("OnDestroy: " + e.Message); }
             if (Instance == this) Instance = null;
         }
@@ -73,6 +75,7 @@ namespace ExtendedBosses
             if (_disabledByErrors) return;
             try
             {
+                TickConfigWatch(Time.time);
                 if (_syncDirty) FlushSync();
                 UpdateCircles(Time.time);
                 TickHello();

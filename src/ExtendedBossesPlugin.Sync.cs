@@ -28,7 +28,7 @@ namespace ExtendedBosses
             _cfgSync = B("08 Sync", "SyncConfig", true,
                 "The server sends its settings to every client with the mod on connect and on change; the client uses them while connected. Off on the server: everyone uses their own file. No effect on a client. Section 07 Client is never synced.",
                 "Сервер раздаёт свои настройки всем клиентам с модом при входе и при изменении; клиент использует их, пока подключён. Выкл на сервере — каждый со своим файлом. На клиенте не влияет. Секция 07 Client не синкается никогда.");
-            Config.SettingChanged += delegate { _syncDirty = true; };
+            Config.SettingChanged += delegate { _syncDirty = true; if (!_reloading) _lastSettingChange = Time.realtimeSinceStartup; };
         }
 
         private static string CompKey(ConfigDefinition d) { return d.Section + "\u0001" + d.Key; }
