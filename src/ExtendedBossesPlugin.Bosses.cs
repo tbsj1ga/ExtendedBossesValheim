@@ -32,6 +32,7 @@ namespace ExtendedBosses
         public bool Adapt;              // resists the damage type it took most lately (announced with {1} = type)
         public float AdaptFactor = 0.6f;  // that type x
         public float AdaptOthers = 1.1f;  // every other type x
+        public float Lifesteal;         // boss heals this % of the raw damage of its hits on players
         public string EndKey;           // announced when it ends (falls back to the act's EndKey)
     }
 
@@ -66,6 +67,8 @@ namespace ExtendedBosses
         public string EndKey;           // Cycle: announced when one ends
         public float Heal;              // Fusion: % of boss max HP healed per creature that reaches it
         public string Gate;             // runs only if the boss's bool setting with this key is on (experiments)
+        public bool AnyProp;            // Nest: any networked object, need not be destructible (eggs that hatch on their own)
+        public bool ScaleAsAdds;        // Nest/Totem: count scales like adds instead of the nest rule
     }
 
     internal class PhaseDef
@@ -127,6 +130,7 @@ namespace ExtendedBosses
         public ConfigEntry<float> CfgRegen;            // RegenPercent of the variant that has one
         public ConfigEntry<float> CfgAdaptFactor;
         public ConfigEntry<float> CfgAdaptOthers;
+        public ConfigEntry<float> CfgLifesteal;
         public readonly Dictionary<string, ConfigEntry<bool>> Gates = new Dictionary<string, ConfigEntry<bool>>();
         public ConfigEntry<float> CfgFusionInterval;
         public ConfigEntry<float> CfgFusionHeal;
@@ -162,6 +166,7 @@ namespace ExtendedBosses
             AddBoss(Bonemass());
             AddBoss(Moder());
             AddBoss(Yagluth());
+            AddBoss(Queen());
         }
 
         private static PhaseDef Phase(BossDef b, float pct, string say)
@@ -565,6 +570,86 @@ namespace ExtendedBosses
                 d.Gates["EchoOfModer"] = pl.B(d.Section, "EchoOfModer", false,
                     "Experiment: at 10% Yagluth calls the echo of Moder (Aspect_Moder, half HP). Off by default.",
                     "Эксперимент: на 10 % Яглут призывает эхо Модер (Aspect_Moder, половина HP). По умолчанию выкл.");
+            };
+            return b;
+        }
+
+        // ------------------------------------------------------------------
+        // 6. The Queen - Mistlands: clutches of eggs (smash them before they hatch - they hold
+        //    her shield), acid on marks, brutes, a gjall, ticks and brood; bloodthirst (heals from
+        //    her hits) alternating with acid thorns (every hit is paid back with poison)
+        // ------------------------------------------------------------------
+        private static BossDef Queen()
+        {
+            BossDef b = new BossDef { Prefab = "SeekerQueen", Section = "15 Queen" };
+            const string egg = "SeekerEgg_alwayshatch";
+
+            Phase(b, 85f, "queen.85").Acts.Add(new Act { Kind = ActKind.Nest, Prefabs = new[] { egg }, Count = 2f, AnyProp = true, ScaleAsAdds = true });
+
+            PhaseDef p = Phase(b, 70f, "queen.70");
+            p.Acts.Add(new Act { Kind = ActKind.Nest, Prefabs = new[] { egg }, Count = 2f, AnyProp = true, ScaleAsAdds = true });
+            p.Acts.Add(new Act
+            {
+                Kind = ActKind.Marks, Prefabs = new[] { "SeekerQueen_spithit" }, Prop = "vfx_prespawn", MarkKey = "queen.mark",
+                Count = 1f, Damage = 30f, DamageType = HitData.DamageType.Poison
+            });
+
+            p = Phase(b, 55f, "queen.55");
+            p.Acts.Add(new Act { Kind = ActKind.Nest, Prefabs = new[] { egg }, Count = 3f, AnyProp = true, ScaleAsAdds = true });
+            p.Acts.Add(new Act { Kind = ActKind.Shield });
+            p.Acts.Add(new Act
+            {
+                Kind = ActKind.Cycle, Duration = 30f, CooldownMin = 50f, CooldownMax = 70f, Delay = 60f,
+                Variants = new List<CycleVariant>
+                {
+                    // bloodthirst: her hits on players heal her - dodge, block, keep the tank up
+                    new CycleVariant { Id = "Bloodthirst", Say = "queen.blood", EndKey = "queen.blood.end", Lifesteal = 40f },
+                    // acid thorns: every hit on her is paid back with poison
+                    new CycleVariant { Id = "AcidThorns", Say = "queen.acid", EndKey = "queen.acid.end",
+                                       ThornsPercent = 10f, ThornsMin = 5f, RetaliateType = HitData.DamageType.Poison },
+                }
+            });
+
+            Phase(b, 45f, "queen.45").Acts.Add(new Act { Kind = ActKind.Wave, Prefabs = new[] { "SeekerBrute" }, Count = 1f });
+            Phase(b, 30f, "queen.30").Acts.Add(new Act { Kind = ActKind.Lieutenant, Prefabs = new[] { "Gjall" } });
+            Phase(b, 20f, "queen.20").Acts.Add(new Act { Kind = ActKind.Wave, Prefabs = new[] { "Tick", "SeekerBrood" }, Count = 2f });
+
+            b.Reward.Valuables.Add(new Loot("Coins", 120, 180, true));
+            b.Reward.Valuables.Add(new Loot("Ruby", 2, 3, false));
+            b.Reward.Valuables.Add(new Loot("Softtissue", 4, 8, false));
+            b.Reward.Valuables.Add(new Loot("BlackCore", 1, 2, false));
+            b.Reward.Valuables.Add(new Loot("Eitr", 2, 4, true));
+            b.Reward.NextBiome.Add(new Loot("FlametalOreNew", 2, 4, false));
+            b.Reward.NextBiome.Add(new Loot("GemstoneRed", 1, 1, false));
+            b.Reward.NextBiome.Add(new Loot("GemstoneGreen", 1, 1, false));
+            b.Reward.NextBiome.Add(new Loot("GemstoneBlue", 1, 1, false));
+            b.Reward.Gear = new[] { "SwordMistwalker", "AxeJotunBane", "THSwordKrom", "KnifeSkollAndHati", "SpearCarapace", "AtgeirHimminAfl",
+                                    "MaceEldner", "BowSpineSnap", "CrossbowArbalest", "ShieldCarapace",
+                                    "ArmorCarapaceChest", "ArmorCarapaceLegs", "HelmetCarapace",
+                                    "ArmorMageChest", "ArmorMageLegs", "HelmetMage", "StaffFireball", "StaffIceShards" };
+            b.Reward.NextGear = new[] { "SwordNiedhogg", "AxeBerzerkr", "THSwordSlayer", "SpearSplitner", "SledgeDemolisher",
+                                        "BowAshlands", "CrossbowRipper", "ShieldFlametal",
+                                        "ArmorFlametalChest", "ArmorFlametalLegs", "HelmetFlametal" };
+
+            b.BindExtra = delegate(ExtendedBossesPlugin pl, BossDef d)
+            {
+                d.CfgNestPrefab = pl.S(d.Section, "EggPrefab", egg,
+                    "Vanilla egg laid in clutches at 85/70/55%: they hatch seekers on their own and hold her shield until smashed or hatched.",
+                    "Ванильное яйцо, кладки на 85/70/55 %: сами вылупляются ищущими и держат её щит, пока не разбиты или не вылупились.");
+                d.CfgMarkPrefab = pl.S(d.Section, "MarkPrefab", "SeekerQueen_spithit",
+                    "Vanilla AoE prefab of the acid splash under a marked player from 70%.", "Ванильный AoE-префаб кислотного всплеска под отмеченным игроком с 70 %.");
+                d.CfgMarkEffect = pl.S(d.Section, "MarkEffect", "vfx_prespawn",
+                    "Vanilla effect on the marked player before the acid (players with the mod).", "Ванильный эффект на отмеченном игроке до кислоты (у игроков с модом).");
+                d.CfgMarkDamage = pl.F(d.Section, "MarkDamage", 30f, 0f, 500f,
+                    "Poison damage of the acid splash (before 04 Marks DamageMultiplier).", "Урон ядом кислотного всплеска (до множителя из 04 Marks).");
+                pl.BindCycle(d, "Cycle", "Bloodthirst: her hits on players heal her; AcidThorns: every hit on her is paid back with poison",
+                    "Bloodthirst — кровожадность: её удары по игрокам лечат её; AcidThorns — кислотные шипы: каждый удар по ней возвращается ядом", "Bloodthirst", "AcidThorns");
+                d.CfgLifesteal = pl.F(d.Section, "BloodthirstPercent", 40f, 0f, 200f,
+                    "Bloodthirst: % of the raw damage of her hits on players she heals (before armor and block).",
+                    "Кровожадность: сколько % сырого урона её ударов по игрокам она лечит (до брони и блока).");
+                d.CfgCycleThorns = pl.F(d.Section, "AcidThornsPercent", 10f, 0f, 100f,
+                    "Acid thorns: % of each hit's damage dealt back as poison to the attacker (at least 5, at most once a second per player).",
+                    "Кислотные шипы: % урона удара, который возвращается атакующему ядом (не меньше 5, не чаще раза в секунду на игрока).");
             };
             return b;
         }

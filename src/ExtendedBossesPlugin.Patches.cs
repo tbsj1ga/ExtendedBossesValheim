@@ -60,6 +60,28 @@ namespace ExtendedBosses
         }
 
         // ------------------------------------------------------------------
+        // the boss hits a player: Character.Damage runs on the attacker's side (the boss owner)
+        // before the hit is sent to the player - bloodthirst reads the raw damage here
+        // ------------------------------------------------------------------
+        [HarmonyPatch(typeof(Character), "Damage")]
+        private static class Character_Damage_Patch
+        {
+            private static void Prefix(Character __instance, HitData hit)
+            {
+                ExtendedBossesPlugin p = Instance;
+                if (p == null || !p.Active || __instance == null || hit == null || p._fights.Count == 0) return;
+                try
+                {
+                    if (!__instance.IsPlayer()) return;
+                    Character a = hit.GetAttacker();
+                    if (a == null || !a.IsBoss() || !IsOwner(a)) return;
+                    p.Lifesteal(a, hit);
+                }
+                catch (Exception e) { p.Fail("Character.Damage", e); }
+            }
+        }
+
+        // ------------------------------------------------------------------
         // the raid group on every client, for adds loaded from the world
         // ------------------------------------------------------------------
         [HarmonyPatch(typeof(Character), "Awake")]

@@ -273,7 +273,7 @@ namespace ExtendedBosses
                 case ActKind.Nest:
                 case ActKind.Totem:
                 {
-                    int count = NestCount(act.Count, players);
+                    int count = act.ScaleAsAdds ? ScaledCount(rt.Def, act.Count, players) : NestCount(act.Count, players);
                     int placed = 0;
                     for (int k = 0; k < count; k++)
                         if (PlaceTotem(boss, rt, act, phase, index)) placed++;
@@ -605,6 +605,17 @@ namespace ExtendedBosses
             if (amount > 0f) boss.Heal(amount, false);
         }
 
+        // Bloodthirst: the boss's hit on a player is built on the boss owner (Character.Damage
+        // runs there before the RPC to the player), so the raw damage is known here.
+        internal void Lifesteal(Character boss, HitData hit)
+        {
+            FightRt rt = RtIfRunning(boss);
+            if (rt == null || rt.CycleAct == null || rt.CycleVar == null || rt.CycleVar.Lifesteal <= 0f) return;
+            float pct = rt.Def.CfgLifesteal != null ? Sv(rt.Def.CfgLifesteal) : rt.CycleVar.Lifesteal;
+            float amount = hit.GetTotalDamage() * pct / 100f;
+            if (amount > 0f && boss.GetHealth() < boss.GetMaxHealth()) boss.Heal(amount, true);
+        }
+
         // Damage by type as it arrives (before any modifier), for adaptation and regen stops.
         internal void RecordHit(Character boss, HitData hit)
         {
@@ -839,7 +850,7 @@ namespace ExtendedBosses
                 pf = ZNetScene.instance.GetPrefab(prefab);
                 vanillaNest = true;
             }
-            if (!IsDestructibleProp(pf)) { Warn(rt.Def.Prefab + ": nest prefab '" + prefab + "' is missing or not destructible."); return false; }
+            if (act.AnyProp ? (pf == null || pf.GetComponent<ZNetView>() == null) : !IsDestructibleProp(pf)) { Warn(rt.Def.Prefab + ": nest prefab '" + prefab + "' is missing or not " + (act.AnyProp ? "networked." : "destructible.")); return false; }
 
             GameObject go = SpawnObject(pf, RingPoint(boss.transform.position, Sv(_cfgSpawnRadiusMin), Sv(_cfgSpawnRadiusMax)));
             ZDO tz = Zdo(go.transform);

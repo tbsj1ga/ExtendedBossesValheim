@@ -10,7 +10,7 @@ namespace ExtendedBosses
     // One report in the log instead of discovering problems phase by phase in a fight.
     public partial class ExtendedBossesPlugin
     {
-        private enum Need { Creature, Nest, Totem, Aoe, Effect, Item }
+        private enum Need { Creature, Nest, Totem, Prop, Aoe, Effect, Item }
 
         private int _checkOk;
         private List<string> _checkProblems = new List<string>();
@@ -42,7 +42,7 @@ namespace ExtendedBosses
                                 for (int k = 0; k < act.Prefabs.Length; k++) Check(tag, act.Prefabs[k], Need.Creature, seen, details);
                                 break;
                             case ActKind.Nest:
-                                Check(tag, def.CfgNestPrefab != null ? Ss(def.CfgNestPrefab) : act.Prefabs[0], Need.Nest, seen, details);
+                                Check(tag, def.CfgNestPrefab != null ? Ss(def.CfgNestPrefab) : act.Prefabs[0], act.AnyProp ? Need.Prop : Need.Nest, seen, details);
                                 break;
                             case ActKind.Totem:
                                 Check(tag, def.CfgTotemPrefab != null ? Ss(def.CfgTotemPrefab) : act.Prop, Need.Totem, seen, details);
@@ -91,6 +91,9 @@ namespace ExtendedBosses
                     case Need.Nest:
                         if (!IsDestructibleProp(pf)) problem = "not a destructible network object";
                         else if (pf.GetComponentInChildren<SpawnArea>(true) == null) problem = "no SpawnArea - it will not spawn anything";
+                        break;
+                    case Need.Prop:
+                        if (nv == null) problem = "not a network object";
                         break;
                     case Need.Totem:
                         if (!IsDestructibleProp(pf)) problem = "not a destructible network object - the fallback nest (if any) will be used";

@@ -84,6 +84,19 @@ namespace ExtendedBosses
             { "yagluth.10", new[] { "{0} calls an echo of the dragon queen!", "{0} призывает эхо королевы драконов!" } },
             { "yagluth.mark", new[] { "{0} calls meteors on {1} - run!", "{0} зовёт метеоры на игрока {1} — бегите!" } },
 
+            // ---- The Queen
+            { "queen.85", new[] { "{0} lays a clutch! (smash the eggs before they hatch)", "{0} откладывает кладку! (разбейте яйца, пока не вылупились)" } },
+            { "queen.70", new[] { "{0}: More children! (eggs - acid falls on the marked)", "{0}: Больше детей! (яйца — кислота на отмеченных)" } },
+            { "queen.55", new[] { "{0}: My brood shields me! (smash every egg)", "{0}: Выводок укроет меня! (разбейте все яйца)" } },
+            { "queen.blood", new[] { "{0} thirsts - her blows heal her! Dodge, block, keep away!", "{0} жаждет крови — её удары лечат её! Уклоняйтесь, блокируйте, не подставляйтесь!" } },
+            { "queen.blood.end", new[] { "{0}: the thirst fades", "{0}: жажда утихает" } },
+            { "queen.acid", new[] { "{0}: acid thorns - every blow is paid back with poison, hit with care!", "{0}: кислотные шипы — каждый удар возвращается ядом, бейте с умом!" } },
+            { "queen.acid.end", new[] { "{0}: the acid dries up", "{0}: кислота высыхает" } },
+            { "queen.45", new[] { "{0} calls her guards!", "{0} зовёт стражей!" } },
+            { "queen.30", new[] { "{0} calls a gjall from the mist!", "{0} призывает гьялля из тумана!" } },
+            { "queen.20", new[] { "{0}: All my brood, devour them!", "{0}: Весь выводок — пожрите их!" } },
+            { "queen.mark", new[] { "{0} spits acid at {1} - spread out!", "{0} плюёт кислотой в игрока {1} — разойдитесь!" } },
+
             // ---- common
             { "window", new[] { "{0}: the shield has fallen - strike now!", "{0}: защита пала — бейте!" } },
             { "reset", new[] { "{0} regains strength...", "{0} восстанавливает силы…" } },
@@ -115,6 +128,8 @@ namespace ExtendedBosses
             { "cmd.cycle.thorns", new[] { ", ICE THORNS", ", ЛЕДЯНЫЕ ШИПЫ" } },
             { "cmd.cycle.regen", new[] { ", REGENERATION", ", РЕГЕНЕРАЦИЯ" } },
             { "cmd.cycle.adapt", new[] { ", ADAPTED", ", АДАПТАЦИЯ" } },
+            { "cmd.cycle.bloodthirst", new[] { ", BLOODTHIRST", ", КРОВОЖАДНОСТЬ" } },
+            { "cmd.cycle.acidthorns", new[] { ", ACID THORNS", ", КИСЛОТНЫЕ ШИПЫ" } },
             { "cmd.checkdone", new[] { "Self-check: {0} prefab(s) OK, {1} problem(s) - details in the log.", "Самопроверка: {0} префаб(ов) в порядке, проблем: {1} — подробности в логе." } },
         };
 
