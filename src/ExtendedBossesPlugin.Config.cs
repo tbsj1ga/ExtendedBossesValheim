@@ -7,7 +7,7 @@ using UnityEngine;
 namespace ExtendedBosses
 {
     // Every value is read at the moment it is used (through Sv/Sb/Ss/Si, which also honour the
-    // server's copy), nothing is cached, so a change in the file or in ConfigurationManager (F11)
+    // server's copy), nothing is cached, so a change in the file or in ConfigurationManager (F1)
     // takes effect on the next tick - no relog. Descriptions are in English and Russian.
     public partial class ExtendedBossesPlugin
     {

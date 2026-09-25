@@ -5,7 +5,7 @@ using UnityEngine;
 
 namespace ExtendedBosses
 {
-    // Threat table (ROADMAP A10), on the boss owner. Damage to the boss adds threat to the
+    // Threat table, on the boss owner. Damage to the boss adds threat to the
     // attacking player; threat fades over time and fast outside the leash radius. The boss
     // targets the highest threat among players inside the leash, switches only past a margin and
     // holds a new target for a while - no ping-pong, and "hit, run away, come back first" does

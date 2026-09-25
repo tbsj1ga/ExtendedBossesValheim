@@ -1,250 +1,244 @@
-# История изменений
+# Changelog
 
-Версия задаётся в одном месте — `ExtendedBossesPlugin.Version` в
+**English** · [Русский](CHANGELOG-RU.md)
+
+The version is set in one place — `ExtendedBossesPlugin.Version` in
 `src/ExtendedBossesPlugin.cs`.
 
-## 0.8.3 — баланс после разбора всех боссов (не проверено в игре)
+## 0.8.4 — Publishing prep
 
-- Фазы-циклы **не начинаются под щитом и коконом**; все механики вместе не
-  режут урон по боссу ниже ×0.1 (`09 Raid / MinDamageFactor`).
-- Щит **спадает сам через 90 с** (`ShieldMaxSeconds`), без окна уязвимости —
-  на случай гнезда, которое не ломается оружием.
-- Лечение мягче: шаманы 0.3 %/с (было 0.5), регенерация Яглута 0.3 %/с (было
-  0.6); слизь Массивного — **не больше 6 % на всю волну** поровну на капли
-  (было 3 % за каждую; `SlimeWaveHealPercent` вместо `SlimeHealPercent`).
-- Молния Эйктюра — 15 (было 30).
-- Яйца Королевы — по правилу гнёзд: 2 / 2 / 3, соло 1, с 6 игроков +1 (было
-  «как адды», до 28 яиц на 8 игроков).
-- Соло: HP босса ×0.8 (`02 Scaling / SoloHealthMultiplier`), лейтенантов ×0.6
+- Documentation in English (README, CHANGELOG, FIGHTS, ROADMAP) with Russian copies
+  (-RU.md); a real Thunderstore README; code and build-script comments in English.
+- No gameplay changes.
+
+## 0.8.3 — Balance after reviewing every boss (not tested in game)
+
+- Phase cycles **do not start under the shield or the cocoon**; all mechanics together
+  never cut damage to the boss below ×0.1 (`09 Raid / MinDamageFactor`).
+- The shield **drops by itself after 90 s** (`ShieldMaxSeconds`), with no burn window —
+  in case a nest cannot be broken with weapons.
+- Softer healing: shamans 0.3%/s (was 0.5), Yagluth's regeneration 0.3%/s (was 0.6);
+  Bonemass's slime — **at most 6% for the whole wave**, split evenly between the blobs
+  (was 3% for each; `SlimeWaveHealPercent` instead of `SlimeHealPercent`).
+- Eikthyr's lightning — 15 (was 30).
+- The Queen's eggs follow the nest rule: 2 / 2 / 3, solo 1, +1 from 6 players (was "like
+  adds", up to 28 eggs for 8 players).
+- Solo: boss HP ×0.8 (`02 Scaling / SoloHealthMultiplier`), lieutenants ×0.6
   (`SoloLieutenantHealth`).
-- Миграция конфига (`01 General / ConfigVersion`): в уже созданном файле
-  изменившиеся умолчания (лечение шаманов, молния Эйктюра, регенерация
-  Яглута) обновляются один раз, остальные значения сохраняются.
+- Config migration (`01 General / ConfigVersion`): in an existing file the changed
+  defaults (shaman healing, Eikthyr's lightning, Yagluth's regeneration) are updated once,
+  every other value is kept.
 
-## 0.8.2 — по итогам первого теста Древнего
+## 0.8.2 — After the first test of The Elder
 
-- **Щит держат только гнёзда с порогов HP** (85 / 70 / 55 %). Раньше в щит
-  засчитывались и гнёзда из семян, которые появлялись постоянно, — щит не
-  падал до конца боя. Теперь сломали пороговые — «защита пала», окно.
-- **Семена Древнего**: шанс 5 % (было 30 %), не чаще раза в 20 с, не больше
-  2 гнёзд из семян одновременно.
-- **Лимит толпы** у босса: монстров в 50 м не больше 8 соло, +3 за каждого
-  следующего игрока (`09 Raid / AddsCapSolo`, `AddsCapPerPlayer`,
-  `AddsCapRadius`). На лимите ванильные гнёзда, тотемы, волны и слизь никого
-  не выпускают; лейтенанты, стражи кокона и корни — всегда.
-- **Монеты ×3** у всех боссов, **янтарь ×3** (Эйктюр, Древний).
-- **Сообщения** в центре экрана держатся ×1.5 дольше (`07 Client /
-  MessageDurationMultiplier`, только у игроков с модом).
+- **Only the nests from HP thresholds hold the shield** (85 / 70 / 55%). Before, the
+  nests grown from seeds counted too, and they kept appearing — the shield never dropped.
+  Now, once the threshold nests are broken — "the defence has fallen", burn window.
+- **The Elder's seeds**: 5% chance (was 30%), at most once per 20 s, at most 2 seed nests
+  at a time.
+- **Crowd cap** around the boss: at most 8 monsters within 50 m solo, +3 for every
+  further player (`09 Raid / AddsCapSolo`, `AddsCapPerPlayer`, `AddsCapRadius`). At the cap
+  vanilla nests, totems, waves and slime release nobody; lieutenants, cocoon guards and
+  roots always spawn.
+- **Coins ×3** for every boss, **amber ×3** (Eikthyr, The Elder).
+- **Messages** in the centre of the screen stay ×1.5 longer (`07 Client /
+  MessageDurationMultiplier`, only for players with the mod).
 
-## 0.8.1 — конфиг без перезапуска на выделенном сервере (не проверено в игре)
+## 0.8.1 — Config without a restart on a dedicated server (not tested in game)
 
-- Сохранили `j1ga.extendedbosses.cfg` — мод перечитывает его через секунду
-  (слежение за файлом), на сервере сразу рассылает новые значения клиентам с
-  модом. Выключатель — `08 Sync / WatchConfigFile`. Собственные сохранения
-  мода (F11) не перечитываются лишний раз; при перечитывании файл не
-  перезаписывается.
+- Saved `j1ga.extendedbosses.cfg` — the mod rereads it a second later (file watch) and
+  on the server sends the new values to clients with the mod right away. Switch —
+  `08 Sync / WatchConfigFile`. The mod's own saves (settings window) are not reread; the
+  file is never rewritten on a reread.
 
-## 0.8.0 — отложенные механики (не проверено в игре)
+## 0.8.0 — Postponed mechanics (not tested in game)
 
-- **Семена Древнего** (с 70 %): куда упал его снаряд, с шансом 30 % вырастает
-  гнездо (не больше 4 стоящих гнёзд).
-- **«Мокрый» и «Смола» у Массивного**: с 70 % его удары делают мокрым, с
-  35 % — просмаливают (замедление и горючесть — а тут суртлинги). Эффект
-  вписывается в сам удар на стороне босса; общие данные атак не меняются.
-- **Метка дыхания Модер** (с 45 %): раз в 35 с она садится и 8 с держит в
-  цели отмеченного игрока — её ванильное дыхание идёт на него.
-- **Луч Яглута** (с 45 %): раз в 30 с 8 с держит в цели отмеченного — луч
-  следует за ним; плюс «Смола» на его ударах.
-- **Кокон Королевы** (с 45 %): после каждого её телепорта (не чаще раза в
-  30 с) появляются стражи-ищущие; пока они живы (до 20 с), по ней проходит
-  урон как под щитом.
-- **Стена огня Фейдера** (с 45 %): раз в 45 с — его ванильная стена огня в
-  сторону случайного игрока.
-- Фиксация главнее таблицы угрозы; таунт WeaponArts — главнее всего.
-- Самопроверка: статус-эффекты (`Wet`, `Tared`), спавнеры опасностей.
-- `eb status`: `КОКОН`, `ФИКСАЦИЯ`.
+- **The Elder's seeds** (from 70%): where his projectile lands, a nest grows with a 30%
+  chance (at most 4 standing nests).
+- **"Wet" and "Tared" on Bonemass**: from 70% his hits make you wet, from 35% — tared
+  (slow and flammable — and there are surtlings around). The effect is written into the
+  hit itself on the boss's side; shared attack data is not changed.
+- **Moder's breath mark** (from 45%): every 35 s she lands and for 8 s keeps the marked
+  player as her target — her vanilla breath goes at them.
+- **Yagluth's beam** (from 45%): every 30 s for 8 s keeps the marked player as the
+  target — the beam follows them; plus "Tared" on his hits.
+- **The Queen's cocoon** (from 45%): after each of her teleports (at most once per 30 s)
+  seeker guards appear; while they live (up to 20 s) damage to her goes through as under
+  the shield.
+- **Fader's wall of fire** (from 45%): every 45 s — his vanilla wall of fire towards a
+  random player.
+- Fixation beats the threat table; the WeaponArts taunt beats everything.
+- Self-check: status effects (`Wet`, `Tared`), hazard spawners.
+- `eb status`: `COCOON`, `FIXATION`.
 
-## 0.7.0 — Фейдер (не проверено в игре)
+## 0.7.0 — Fader (not tested in game)
 
-- **Фейдер** (`16 Fader`):
-  - 85 / 70 / 55 % — 1 / 2 / 3 камня-спавнера обугленных
-    (`Spawner_CharredStone`, альтернатива `Spawner_CharredCross`), на 55 %
-    держат щит;
-  - с 70 % — его метеоры (`spawn_fader_meteors`) вокруг отмеченного;
-  - чередуются случайно: **раскалённая броня** — удары ближе 6 м ×0.5 и
-    обжигают атакующего (15 огнём, не чаще раза в секунду); **пепельная
-    завеса** — удары дальше 6 м ×0.25;
-  - 45 % — морген, 30 % — падшая валькирия, 20 % — лорд Рето, 10 % —
-    асксвины и лавовые блобы;
-  - награда: монеты, самоцветы, флейм-руда, расплавленные ядра; экипировка
-    пепельных земель, с шансом — ледяные ядра.
+- **Fader** (`16 Fader`):
+  - 85 / 70 / 55% — 1 / 2 / 3 charred spawner stones (`Spawner_CharredStone`,
+    alternative `Spawner_CharredCross`), at 55% they hold the shield;
+  - from 70% — his meteors (`spawn_fader_meteors`) around the marked player;
+  - alternating at random: **molten armor** — hits closer than 6 m ×0.5 and burn the
+    attacker (15 fire, at most once per second); **ash veil** — hits from farther than
+    6 m ×0.25;
+  - 45% — morgen, 30% — fallen valkyrie, 20% — Lord Reto, 10% — asksvins and lava blobs;
+  - reward: coins, gemstones, flametal ore, molten cores; Ashlands gear, with a chance —
+    frozen cores.
 
-## 0.6.0 — Королева (не проверено в игре)
+## 0.6.0 — The Queen (not tested in game)
 
-- **Королева** (`15 Queen`):
-  - 85 / 70 / 55 % — кладки яиц (`SeekerEgg_alwayshatch`, 2 / 2 / 3, растут
-    с группой как адды): сами вылупляются ищущими; на 55 % держат щит, пока
-    хоть одно не разбито и не вылупилось — гонка «разбить до вылупления»;
-  - с 70 % — кислотный всплеск (`SeekerQueen_spithit`, яд) под отмеченными;
-  - чередуются случайно: **кровожадность** — лечится на 40 % сырого урона
-    своих ударов по игрокам (до брони и блока); **кислотные шипы** — каждый
-    удар по ней возвращает атакующему 10 % урона ядом (не меньше 5, не чаще
-    раза в секунду на игрока);
-  - 45 % — ищущие-громилы, 30 % — гьялль, 20 % — клещи и детёныши;
-  - награда: монеты, рубины, мягкие ткани, чёрные ядра, эйтр; экипировка
-    туманных земель, с шансом — пепельных; с шансом — флейм-руда и
-    самоцветы.
-- Гнёзда могут быть любым сетевым объектом, не только разрушаемым (яйца),
-  и расти с группой как адды.
+- **The Queen** (`15 Queen`):
+  - 85 / 70 / 55% — egg clutches (`SeekerEgg_alwayshatch`, 2 / 2 / 3, growing with the
+    group like adds): they hatch into seekers by themselves; at 55% they hold the shield
+    while any egg is neither broken nor hatched — a race to break them before they hatch;
+  - from 70% — acid splashes (`SeekerQueen_spithit`, poison) under the marked players;
+  - alternating at random: **bloodlust** — heals for 40% of the raw damage of her hits on
+    players (before armor and block); **acid spikes** — every hit on her returns 10% of
+    the damage to the attacker as poison (at least 5, at most once per second per player);
+  - 45% — seeker brutes, 30% — gjall, 20% — ticks and seeker soldiers' young;
+  - reward: coins, rubies, soft tissue, black cores, eitr; Mistlands gear, with a
+    chance — Ashlands; with a chance — flametal ore and gemstones.
+- Nests can be any networked object, not only destructibles (eggs), and grow with the
+  group like adds.
 
-## 0.5.0 — Яглут (не проверено в игре)
+## 0.5.0 — Yagluth (not tested in game)
 
-- **Яглут** (`14 Yagluth`):
-  - 85 / 70 / 55 % — 1 / 2 / 3 тотема фулингов (`goblin_totempole`), из них
-    идут фулинги и лучники (до 3 живых, раз в 12 с), на 55 % держат щит;
-  - с 70 % — его собственный метеоритный дождь (`spawn_meteors`) под
-    отмеченным игроком, урон ванильный;
-  - 55 % — шаманы фулингов лечат Яглута, пока живы;
-  - чередуются случайно: **регенерация** — 0.6 % макс. HP в секунду, пока
-    его 3 с не били морозом; **адаптация** (мягкая) — тип урона, которым
-    чаще всего били последние секунды, ×0.6, остальные ×1.1; в объявлении —
-    какой тип (на языке каждого игрока);
-  - 45 % — брюты, 30 % — анбьёрн, 20 % — три вида скелетов, 15 % —
-    смертельные комары; 10 % — эхо Модер (`Aspect_Moder`, половина HP) —
-    эксперимент, `EchoOfModer = false` по умолчанию;
-  - награда: монеты, серебряные ожерелья, рубины, чёрный металл; экипировка
-    из чёрного металла и льна, с шансом — туманных земель.
-- Метки умеют спавнеры снарядов (`SpawnAbility`: метеоры падают вокруг
-  отмеченного, а не вокруг ближайшего к боссу); урон меток без настройки —
-  ванильный.
-- Действия с флагом-экспериментом (`Gate`), множитель HP меньше 1.
+- **Yagluth** (`14 Yagluth`):
+  - 85 / 70 / 55% — 1 / 2 / 3 fuling totems (`goblin_totempole`), fulings and archers
+    come out of them (up to 3 alive, every 12 s), at 55% they hold the shield;
+  - from 70% — his own meteor shower (`spawn_meteors`) under the marked player, vanilla
+    damage;
+  - 55% — fuling shamans heal Yagluth while alive;
+  - alternating at random: **regeneration** — 0.6% of max HP per second unless he was hit
+    with frost in the last 3 s; **adaptation** (soft) — the damage type he was hit with
+    most in the last seconds ×0.6, the others ×1.1; the announcement names the type (in
+    each player's language);
+  - 45% — brutes, 30% — an unbjorn, 20% — three kinds of skeletons, 15% — deathsquitos;
+    10% — an echo of Moder (`Aspect_Moder`, half HP) — experimental,
+    `EchoOfModer = false` by default;
+  - reward: coins, silver necklaces, rubies, black metal; black-metal and linen gear, with
+    a chance — Mistlands.
+- Marks can use projectile spawners (`SpawnAbility`: meteors fall around the marked
+  player, not around whoever is nearest the boss); mark damage with no setting is vanilla.
+- Actions with an experiment flag (`Gate`), HP multiplier below 1.
 
-## 0.4.0 — Модер (не проверено в игре)
+## 0.4.0 — Moder (not tested in game)
 
-- **Модер** (`13 Moder`):
-  - 85 / 70 / 55 % — 1 / 2 / 3 ледяных сталагмита
-    (`caverock_ice_stalagmite`): из каждого вылупляются дрейки (до 2 живых,
-    раз в 15 с), на 55 % держат щит; сломаны все — оглушение и окно;
-  - 85 % — стая волков, ночью — ульвы;
-  - с 70 % — ледяные вспышки (`FenringIceNova_aoe`, мороз замедляет) под
-    отмеченными игроками;
-  - чередуются случайно (30 с, КД 50–70 с, после оглушения):
-    **ледяная броня** — удары дальше 6 м ×0.25, только пока Модер на земле
-    (окно для ближнего боя); **ледяные шипы** — каждый удар возвращает
-    атакующему 12 % урона морозом (не меньше 5, не чаще раза в секунду);
-  - 45 % — культисты-фенринги, 35 % — каменный голем, 20 % — фенринг и
-    дрейки;
-  - награда: монеты, рубины, серебряные ожерелья, серебро, обсидиан,
-    кристаллы; серебряная и фенринговая экипировка, с шансом — чёрный металл.
-- Волны умеют ночной состав (`NightPrefabs`); у тотема — своё запасное
-  гнездо или его отсутствие.
+- **Moder** (`13 Moder`):
+  - 85 / 70 / 55% — 1 / 2 / 3 ice stalagmites (`caverock_ice_stalagmite`): drakes hatch
+    from each (up to 2 alive, every 15 s), at 55% they hold the shield; all broken —
+    stagger and a burn window;
+  - 85% — a wolf pack, at night — ulvs;
+  - from 70% — ice novas (`FenringIceNova_aoe`, frost slows) under the marked players;
+  - alternating at random (30 s, cooldown 50–70 s, after the stagger): **ice armor** —
+    hits from farther than 6 m ×0.25, only while Moder is on the ground (a window for
+    melee); **ice spikes** — every hit returns 12% of the damage to the attacker as frost
+    (at least 5, at most once per second);
+  - 45% — cultists, 35% — a stone golem, 20% — a fenring and drakes;
+  - reward: coins, rubies, silver necklaces, silver, obsidian, crystals; silver and
+    fenris gear, with a chance — black metal.
+- Waves can have a night composition (`NightPrefabs`); a totem can have its own fallback
+  nest or none.
 
-## 0.3.1 — у Массивного две фазы чередуются (не проверено в игре)
+## 0.3.1 — Bonemass alternates two phases (not tested in game)
 
-- Новый вариант цикла у Массивного — **гнилостный пар** (`Rot`): удары
-  ближе 5 м ×0.5, и каждый такой удар травит атакующего (12 яда, не чаще
-  раза в секунду на игрока — ванильный удар, игроки без мода тоже
-  отравляются); издалека урон полный. Чередуется с затвердеванием случайно,
-  как кора у Древнего (`12 Bonemass / CycleVariant = Random | Harden | Rot`).
-- Настройки Массивного переименованы: `Harden*` → `Cycle*` (длительность,
-  КД, задержка старта), плюс `RotMeleeFactor`, `RotPoisonDamage`.
-- Каталог фаз-циклов для следующих боссов — `ROADMAP.md`, A9.
+- A new cycle variant for Bonemass — **rot vapour** (`Rot`): hits closer than 5 m ×0.5,
+  and every such hit poisons the attacker (12 poison, at most once per second per
+  player — a vanilla hit, players without the mod are poisoned too); from afar the damage
+  is full. Alternates with hardening at random, like the Elder's bark
+  (`12 Bonemass / CycleVariant = Random | Harden | Rot`).
+- Bonemass settings renamed: `Harden*` → `Cycle*` (duration, cooldown, start delay), plus
+  `RotMeleeFactor`, `RotPoisonDamage`.
 
-## 0.3.0 — Массивный, общий цикл сопротивлений (не проверено в игре)
+## 0.3.0 — Bonemass, a shared resistance cycle (not tested in game)
 
-- **Массивный** по таблице B3:
-  - 85 / 70 / 55 % — 1 / 2 / 3 кучи костей (`Spawner_DraugrPile`), на 55 % —
-    щит, пока стоят кучи, и окно уязвимости после их разрушения;
-  - с 70 % — пиявки в воде вокруг (нет воды — нет пиявок) и ядовитые лужи
-    (`bonemass_aoe`) под отмеченными игроками;
-  - **затвердевание** — дробящий ×0.25, огонь ×2 — 30 с после окончания
-    оглушения, затем КД 50–70 с, до смерти; без окна — через 60 с после 55 %;
-  - 45 % — мерзость и **слияние**: раз в 25 с вдали появляется слизь (`Blob`,
-    `BlobElite`) и ползёт к боссу; дошедшая — поглощается и лечит его на 3 %
-    макс. HP;
-  - 40 % — скручни (`Writhan`), 35 % — суртлинги, 25 % — элитные драугры,
-    15 % — духи и летучие мыши;
-  - награда: монеты, рубины, жемчуг, железный лом; железная и корневая
-    экипировка, с шансом серебряная.
-- **Цикл сопротивлений** — общий механизм с вариантами: живая кора Древнего
-  (`Sap` / `Back`) и затвердевание Массивного — на нём же.
-- **Соло** (один игрок) — никогда не выпадает позиционный вариант: у Древнего
-  только `Sap`, какой бы `BarkVariant` ни стоял.
-- `eb status` — `ЗАТВЕРДЕЛ` / `КОРА (сок)` / `КОРА (спина)`.
+- **Bonemass** per table B3:
+  - 85 / 70 / 55% — 1 / 2 / 3 bone piles (`Spawner_DraugrPile`), at 55% — the shield
+    while the piles stand and a burn window after they are destroyed;
+  - from 70% — leeches in the water around (no water — no leeches) and poison pools
+    (`bonemass_aoe`) under the marked players;
+  - **hardening** — blunt ×0.25, fire ×2 — 30 s after the stagger ends, then a
+    50–70 s cooldown, until death; with no window — 60 s after 55%;
+  - 45% — an abomination and **merging**: every 25 s a slime (`Blob`, `BlobElite`)
+    appears far away and crawls to the boss; one that arrives is absorbed and heals him
+    for 3% of max HP;
+  - 40% — wraiths (`Writhan`), 35% — surtlings, 25% — elite draugr, 15% — ghosts and
+    bats;
+  - reward: coins, rubies, pearls, scrap iron; iron and root gear, with a chance silver.
+- **Resistance cycle** — a shared mechanism with variants: the Elder's living bark
+  (`Sap` / `Back`) and Bonemass's hardening run on it.
+- **Solo** (one player) — the positional variant never comes up: the Elder only uses
+  `Sap`, whatever `BarkVariant` is set to.
+- `eb status` — `HARDENED` / `BARK (sap)` / `BARK (back)`.
 
-## 0.2.2 — кора чередуется случайно
+## 0.2.2 — Bark alternates at random
 
-- `11 Elder / BarkVariant = Random` (новое значение по умолчанию): перед
-  каждой корой вариант `Sap` или `Back` выбирается заново, 50/50.
-  `Sap`, `Back`, `Auto` остались для фиксированного варианта.
+- `11 Elder / BarkVariant = Random` (the new default): before each bark the variant `Sap`
+  or `Back` is picked again, 50/50. `Sap`, `Back`, `Auto` remain for a fixed variant.
 
-## 0.2.1 — живая кора Древнего переделана (не проверено в игре)
+## 0.2.1 — The Elder's living bark reworked (not tested in game)
 
-- Кора больше не привязана к щиту гнёзд: цикл «30 с коры → КД 50–70 с
-  (случайно) → снова кора» до смерти. Первая кора — сразу после окончания
-  оглушения (окна уязвимости); если окна нет 60 с после 55 %, цикл стартует
-  сам. Падение щита во время коры прерывает её — окно даёт полный урон.
-- Два варианта, `11 Elder / BarkVariant`:
-  - `Sap` (по умолчанию) — «сырая кора»: огонь ×0.25 (обычная слабость
-    пропадает), рубящий ×1.25, остальное ×0.25 — рубите топорами;
-  - `Back` — спереди ×0.25, полный урон только в спину (дуга 120°) — танк
-    держит Древнего лицом к себе;
-  - `Auto` — `Back` для группы от 3 игроков, иначе `Sap`;
-  - `Random` — см. 0.2.2.
-- Все параметры коры — в `11 Elder`; `eb status` показывает `КОРА (сок)` /
-  `КОРА (спина)`; `eb probe` — ванильные сопротивления существа.
+- The bark is no longer tied to the nests' shield: a cycle "30 s of bark → cooldown
+  50–70 s (random) → bark again" until death. The first bark comes right after the
+  stagger (burn window) ends; with no window for 60 s after 55% the cycle starts by
+  itself. The shield dropping during the bark interrupts it — the window gives full
+  damage.
+- Two variants, `11 Elder / BarkVariant`:
+  - `Sap` (default) — "raw bark": fire ×0.25 (the usual weakness is gone), slash ×1.25,
+    the rest ×0.25 — chop with axes;
+  - `Back` — ×0.25 from the front, full damage only from behind (a 120° arc) — the tank
+    keeps the Elder facing them;
+  - `Auto` — `Back` for a group of 3+, otherwise `Sap`;
+  - `Random` — see 0.2.2.
+- All bark parameters are in `11 Elder`; `eb status` shows `BARK (sap)` / `BARK (back)`;
+  `eb probe` — the creature's vanilla resistances.
 
-## 0.2.0 — Древний, языки, самопроверка (не проверено в игре)
+## 0.2.0 — The Elder, languages, self-check (not tested in game)
 
-- **Два языка.** Все надписи мода — на русском и английском. Игроки с модом
-  видят сообщения на языке своей игры; игрокам без мода сервер шлёт
-  ванильное сообщение на языке из `GuestLanguage` (Russian / English / Both),
-  а имена боссов и мобов идут ванильными токенами (`$enemy_gdking`) и
-  переводятся их же игрой. Сервер узнаёт игроков с модом по «привету» при
-  входе. Описания настроек и ответы консоли — тоже на двух языках.
-- **Самопроверка** при загрузке мира и по `eb check`: все префабы всех
-  боссов — существуют ли, сетевые ли, разрушаемые ли, есть ли AoE и его
-  радиус, предметы ли награды. Итог — одной строкой в логе, проблемы —
-  списком.
-- **Щит** (A4): пока стоят гнёзда босса, он получает ×0.2 урона (×0.1 в
-  Hard). **Окно уязвимости** (A6): когда пало последнее гнездо — оглушение
-  (ванильный `Stagger`) и ×1.5 урона на 10 с.
-- **Смена сопротивлений** (A9): «Живая кора» — колющий ×0.25, огонь ×2,
-  пока держится щит.
-- **Лекари** (A5): шаманы лечат босса на 0.5 % макс. HP в секунду каждый
-  (не больше двух), пока живы и ближе 40 м.
-- **Корни** (A8): вместо удара — кольцо ванильных `TentaRoot` вокруг
-  отмеченного игрока, живут 15 с.
-- **Угроза** (A10): босс бьёт того, кто снял ему больше HP, среди игроков в
-  радиусе привязи 25 м; вне радиуса угроза тает вдвое за 3 с; смена цели —
-  только при превосходстве на 10 % и не чаще раза в 3.5 с; таунт WeaponArts
-  перебивает.
-- Древний по таблице B2: гнёзда 1/2/3 на 85/70/55 %, корни с 70 %, щит и
-  кора на 55 %, тролль (второй при 3+ игроках), медведь, элита с шаманами,
-  скелеты с призраками; награда — бронза и тролличья кожа, с шансом железо.
-- Временные адды (время жизни в ZDO), роли аддов.
+- **Two languages.** All of the mod's text is in Russian and English. Players with the
+  mod see messages in their game's language; to players without the mod the server sends
+  a vanilla message in the `GuestLanguage` language (Russian / English / Both), and boss
+  and monster names go as vanilla tokens (`$enemy_gdking`), translated by their own game.
+  The server recognises players with the mod by a "hello" on connect. Setting
+  descriptions and console replies are bilingual too.
+- **Self-check** on world load and with `eb check`: every prefab of every boss — does it
+  exist, is it networked, destructible, does it have an AoE and its radius, are the
+  rewards items. The result — one line in the log, problems — as a list.
+- **Shield** (A4): while the boss's nests stand, it takes ×0.2 damage (×0.1 on Hard).
+  **Burn window** (A6): when the last nest falls — a stagger (vanilla `Stagger`) and
+  ×1.5 damage for 10 s.
+- **Resistance shift** (A9): "Living bark" — pierce ×0.25, fire ×2 while the shield holds.
+- **Healers** (A5): shamans heal the boss for 0.5% of max HP per second each (at most
+  two) while alive and within 40 m.
+- **Roots** (A8): instead of a hit — a ring of vanilla `TentaRoot` around the marked
+  player, living 15 s.
+- **Threat** (A10): the boss attacks whoever took the most HP off it, among players within
+  a 25 m leash; outside the radius threat halves every 3 s; the target changes only with a
+  10% lead and at most once per 3.5 s; the WeaponArts taunt overrides it.
+- The Elder per table B2: nests 1/2/3 at 85/70/55%, roots from 70%, shield and bark at
+  55%, a troll (a second one with 3+ players), a bear, an elite with shamans, skeletons
+  with ghosts; reward — bronze and troll hide, with a chance iron.
+- Temporary adds (lifetime in the ZDO), add roles.
 
-## 0.1.0 — каркас и Эйктюр (не проверено в игре)
+## 0.1.0 — Skeleton and Eikthyr (not tested in game)
 
-- Каркас боя на владельце босса: фазы по порогу HP, состояние в ZDO босса
-  (битовая маска фаз, слоты тотемов) — фаза не повторится после перезахода
-  или смены владельца.
-- Кирпичи: волна аддов, лейтенант (звёзды + множитель HP в ZDO), тотем
-  (разрушаемый ванильный объект, из которого код спавнит мобов), ванильное
-  гнездо, метки («разбегитесь»: объявление → через 3 с AoE под игроком),
-  рывок.
-- Адды и босс — в одной `m_group`, чтобы не драться между собой; адды
-  охотятся за игроками.
-- Масштаб от группы: эффективное HP босса `1 + 0.5·(N−1)` до 8 игроков
-  вместо ванильных `0.3` до 5; число аддов, звёзды, гнёзда — от N.
-- Профили `Light / Raid / Hard`, режим `Vanilla / Mod` и профиль у каждого
-  босса, переключатели механик — всё без перезахода; синк с сервера.
-- Награда поверх ванильного дропа: монеты, янтарь, руда следующего биома с
-  шансом, улучшенная экипировка (качество 2–3) — 1 вещь на 2.5 игрока.
-- Очистка аддов и тотемов при смерти босса и при переключении в `Vanilla`;
-  сервер убирает «сирот» после рестарта.
-- Сброс боя — опция, по умолчанию выключен.
-- Для игроков с модом — круг радиуса метки на земле.
-- Консоль: `eb status | phase <n> | reset | probe <prefab> | players <n>`.
-- Эйктюр: 80 % — кабаны и некки; 60 % — рывок; 50 % — груда черепов со
-  скелетами Лугов; 30 % — молния по меткам; 15 % — вожак-кабан 2★ с HP ×3.
+- The fight skeleton on the boss's owner: phases by HP threshold, the fight state in the
+  boss's ZDO (a phase bitmask, totem slots) — a phase never repeats after a rejoin or an
+  owner change.
+- Building blocks: an add wave, a lieutenant (stars + HP multiplier in the ZDO), a totem
+  (a destructible vanilla object the code spawns monsters from), a vanilla nest, marks
+  ("spread out": announcement → an AoE under the player 3 s later), a charge.
+- Adds and the boss share one `m_group` so they do not fight each other; adds hunt
+  players.
+- Group scaling: the boss's effective HP `1 + 0.5·(N−1)` up to 8 players instead of the
+  vanilla `0.3` up to 5; the number of adds, stars, nests — from N.
+- Profiles `Light / Raid / Hard`, a `Vanilla / Mod` mode and a profile per boss, mechanic
+  switches — all without a rejoin; synced from the server.
+- A reward on top of the vanilla drop: coins, amber, the next biome's ore with a chance,
+  upgraded gear (quality 2–3) — 1 item per 2.5 players.
+- Adds and totems are cleaned up on the boss's death and on a switch to `Vanilla`; the
+  server removes "orphans" after a restart.
+- Fight reset — optional, off by default.
+- For players with the mod — a circle of the mark's radius on the ground.
+- Console: `eb status | phase <n> | reset | probe <prefab> | players <n>`.
+- Eikthyr: 80% — boars and necks; 60% — a charge; 50% — a skull pile with Meadows
+  skeletons; 30% — lightning on marks; 15% — a 2★ boar leader with HP ×3.

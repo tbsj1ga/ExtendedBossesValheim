@@ -14,13 +14,13 @@ namespace ExtendedBosses
     // relog and a world save. Players without the mod see all of it through the vanilla sync:
     // creatures, props, AoE, HP from the ZDO and centre-screen messages (MessageHud.MessageAll).
     //
-    // ROADMAP.md holds the design; 0.7: the framework and the bosses up to Fader.
+    // FIGHTS.md describes every boss fight as implemented.
     [BepInPlugin(Guid, Name, Version)]
     public partial class ExtendedBossesPlugin : BaseUnityPlugin
     {
         public const string Guid = "j1ga.extendedbosses";
         public const string Name = "Extended Bosses";
-        public const string Version = "0.8.3";
+        public const string Version = "0.8.4";
 
         public static ExtendedBossesPlugin Instance;
 

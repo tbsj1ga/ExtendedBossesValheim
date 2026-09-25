@@ -6,7 +6,7 @@ using UnityEngine;
 namespace ExtendedBosses
 {
     // A fight is data: phases at HP thresholds, each a list of actions (the "bricks" of
-    // ROADMAP.md, section A). The fight controller knows how to run each kind of action; a boss
+    // the raid mechanics). The fight controller knows how to run each kind of action; a boss
     // is only a table here.
     internal enum ActKind { Wave, Lieutenant, Nest, Totem, Marks, Charge, Shield, Resist, Cycle, Fusion, Seeds, HitEffect, Fixate, Cocoon, Hazard }
 

@@ -1,127 +1,125 @@
 # ExtendedBosses
 
-Мод для Valheim: боссы как **рейдовые бои** — фазы по HP, волны аддов,
-гнёзда-спавнеры, мини-боссы из мобов биома, щиты, окна уязвимости, метки,
-зоны на земле, смена сопротивлений, таблица угрозы и награда группе. Всё
-собрано из ванильных префабов, анимаций и RPC, поэтому бой одинаково видят и
-чувствуют игроки **с модом и без него**.
+**English** · [Русский](README-RU.md)
 
-Идея выросла из `HardBosses` (Nexus #877, давно не обновлялся): тот же принцип
-«порог HP → ванильный спавн», но с расширенным набором механик и под группу
-игроков с активными способностями `../WeaponArts`.
+A Valheim mod: bosses as **raid fights** — HP phases, waves of adds, spawner nests,
+biome mini-bosses as lieutenants, shields, burn windows, marks, ground hazards,
+resistance shifts, a threat table and a group reward. Everything is built from vanilla
+prefabs, animations and RPCs, so players **with and without the mod** see and feel the
+same fight.
 
-**Состояние: 0.8.0 — каркас и все боссы от Эйктюра до Фейдера с отложенными механиками, в игре ещё не проверено.** Каталог
-механик, раскладка по боссам и принятые решения — в `ROADMAP.md`, история —
-в `CHANGELOG.md`.
+The idea grew out of `HardBosses` (Nexus #877, long unmaintained): the same "HP
+threshold → vanilla spawn" principle, with a much wider set of mechanics, tuned for a
+group of 1–8 players.
 
-## Принцип
+**Status: 0.8.4 — every boss from Eikthyr to Fader is implemented; only partly tested
+in game.** The fight with each boss, by phase, profile and group size — `FIGHTS.md`;
+plans — `ROADMAP.md`; history — `CHANGELOG.md`.
 
-Логику босса исполняет **клиент-владелец** его ZDO. Мод у владельца следит за
-HP и временем боя, создаёт ванильных существ и объекты, режет или усиливает
-удары, пишет состояние боя в ZDO босса. Остальные видят результат через
-обычную синхронизацию: позиции, анимации, HP, созданные префабы, удары,
-сообщения в центре экрана и в чате.
+## Principle
 
-Чтобы механики работали, кто бы ни бил босса, владеть боссом, его аддами и
-гнёздами должен хост с модом — это делает `../HostOwner`. Гостям мод не нужен.
+The boss's logic runs on the **owner client** of its ZDO. The mod on the owner watches
+the HP and the fight time, creates vanilla creatures and objects, weakens or strengthens
+hits and writes the fight state into the boss's ZDO. Everyone else sees the result
+through the normal sync: positions, animations, HP, spawned prefabs, hits, messages in
+the centre of the screen and in chat.
 
-## Коротко о механиках
+For the mechanics to work whoever hits the boss, the boss, its adds and nests should be
+owned by a host with the mod — the separate HostOwner mod does that (`Bosses = true` in
+`j1ga.hostowner.cfg`). Guests do not need the mod.
 
-| Кирпич | Пример |
+## Mechanics in short
+
+| Building block | Example |
 |---|---|
-| Волны аддов по порогу HP | Древний на 45 % — тролль, на 30 % — медведь |
-| Гнёзда-спавнеры | Древний 85/70/55 % — 1/2/3 гнезда грейдворфов; Массивный — кучи костей |
-| Лейтенанты | Мерзость у Массивного, голем у Модер, Лорд Рето у Фейдера |
-| Щит / лечение от аддов | босс почти неуязвим, пока живы гнёзда или шаманы |
-| Окно уязвимости | сломали все гнёзда — босс оглушён и получает ×1.5 урона |
-| Метки, зоны | «разбегитесь», фиксация на игроке, метеоры, стена огня |
-| Смена сопротивлений | Массивный «затвердел» — дробящее бесполезно, жгите |
-| Угроза, масштаб от группы, награда | босс бьёт того, кто «злит» его больше; соло — проходимо, 6–8 — не легко |
-| Настройка | у каждого босса режим Vanilla / Mod и профиль Light / Raid / Hard — меняются без перезахода |
+| Add waves at HP thresholds | The Elder at 45% — a troll, at 30% — a bear |
+| Spawner nests | The Elder 85/70/55% — 1/2/3 greydwarf nests; Bonemass — bone piles |
+| Lieutenants | an abomination for Bonemass, a golem for Moder, Lord Reto for Fader |
+| Shield / healing from adds | the boss is nearly invulnerable while the nests or shamans live |
+| Burn window | all nests broken — the boss is staggered and takes ×1.5 damage |
+| Marks, zones | "spread out", fixation on a player, meteors, a wall of fire |
+| Resistance shift | Bonemass "hardens" — blunt is useless, burn him |
+| Threat, group scaling, reward | the boss attacks whoever angers it most; solo is doable, 6–8 is not easy |
+| Settings | every boss has a Vanilla / Mod mode and a Light / Raid / Hard profile — switchable without a rejoin |
 
-Бой с каждым боссом по фазам, профилям и размеру группы — `FIGHTS.md`.
-Замысел и решения — `ROADMAP.md`: A — механики, B — исходная раскладка по
-боссам, E — конфиг, G — принятые решения.
+## Installation
 
-## Где что лежит
+Through r2modman / Thunderstore, or put `build/ExtendedBosses.dll` into
+`BepInEx\plugins\ExtendedBosses\` (or `build.ps1 -Install`). Install it on the **host**;
+guests do not need it. To keep the host owning the boss whoever hits it, set
+`Bosses = true` in `j1ga.hostowner.cfg` (HostOwner mod).
 
-| Что | Где |
+## Settings
+
+`BepInEx\config\j1ga.extendedbosses.cfg`, or the BepInEx ConfigurationManager window
+(F1) — everything applies at once, without a rejoin:
+
+| Section | What |
 |---|---|
-| Каталог механик, раскладка по боссам, план, вопросы | `ROADMAP.md` |
-| История версий | `CHANGELOG.md` |
-| Сборка / проверка ссылок | `build.ps1`, `check-refs.ps1` — как в других модах; исходников в `src\` пока нет |
-| Пакет Thunderstore | `thunderstore\` (manifest, icon, README) |
-| Лицензия | `LICENSE`, MIT |
+| 01 General | on/off, profile `Light / Raid / Hard`, where announcements go, the language for players without the mod |
+| 02 Scaling | HP per player (0.5), player cap (8), multipliers, stars from N |
+| 03 Mechanics | switches for waves, nests, lieutenants, marks, abilities, shield, healers, resistances, threat; cleanup |
+| 04 Marks | hit delay, interval, damage multiplier |
+| 05 Rewards | reward: item quality, items per player, next-biome chance |
+| 06 Reset | fight reset (off by default) |
+| 07 Client | mark circles on the ground (local only, not synced) |
+| 08 Sync | the server hands its settings to modded clients; config file watch |
+| 09 Raid | shield, burn window, healing, threat — the numbers |
+| 10 Eikthyr | `Mode = Mod / Vanilla`, profile, totem, lightning, charge |
+| 11 Elder | `Mode`, profile, nest, root creature, living bark |
+| 12 Bonemass | `Mode`, profile, bone pile, poison pool, hardening, slime |
+| 13 Moder | `Mode`, profile, ice stalagmite, ice nova, ice armor / spikes |
+| 14 Yagluth | `Mode`, profile, totem, meteors, regeneration / adaptation, echo of Moder (experimental) |
+| 15 Queen | `Mode`, profile, egg, acid, bloodlust / acid spikes |
+| 16 Fader | `Mode`, profile, spawner stone, meteors, molten armor / ash veil |
 
-## Установка и сборка
+Console (F5, needs `devcommands` or a server): `eb status` — bosses nearby, phases,
+group, damage multiplier, shield/window/resistance; `eb check` — prefab self-check;
+`eb phase <n>` — force a phase; `eb reset`; `eb probe <prefab>` — what a prefab is made
+of; `eb players <n>` — fake the group size for testing (0 — count for real).
+
+## Languages
+
+All text is in Russian and English. A player with the mod sees messages in their game's
+language. To a player without the mod the server can only send a vanilla message with
+ready text, so their language is set by `01 General / GuestLanguage` (`Russian`,
+`English` or `Both`); boss and monster names still show in their game's language.
+Setting descriptions and console replies are bilingual.
+
+## Dedicated server
+
+- The mod on the server: its config is the only source of settings for every client with
+  the mod (`08 Sync`), and it sends the phase messages to everyone in their language.
+  File edits are picked up without a restart (`WatchConfigFile`).
+- The fight runs on the boss's owner client (on a dedicated server that is a player near
+  the boss), so for now every player who may end up owning it needs the mod. HostOwner
+  does not work on a dedicated server.
+- The `eb …` console commands run on the owning player's game, not on the server.
+
+## Building
 
 ```
-powershell -ExecutionPolicy Bypass -File .\build.ps1            # собрать и проверить ссылки
-powershell -ExecutionPolicy Bypass -File .\build.ps1 -Install   # ... и положить в plugins
-powershell -ExecutionPolicy Bypass -File .\build.ps1 -Package   # ... и собрать zip для Thunderstore
+powershell -ExecutionPolicy Bypass -File .\build.ps1            # build and check references
+powershell -ExecutionPolicy Bypass -File .\build.ps1 -Install   # ... and copy into plugins
+powershell -ExecutionPolicy Bypass -File .\build.ps1 -Package   # ... and make the Thunderstore zip
 ```
 
-Компилятор — `csc.exe` из .NET Framework (C# 5), ссылки — из папки игры и
-`BepInEx\core` профиля r2modman; пути в начале `build.ps1`, `check-refs.ps1`
-и `src\ExtendedBosses.csproj`.
+The compiler is `csc.exe` from the .NET Framework (C# 5); references come from the game
+folder and the r2modman profile's `BepInEx\core`; the paths are at the top of
+`build.ps1`, `check-refs.ps1` and `src\ExtendedBosses.csproj`. After the build
+`check-refs.ps1` checks every reference, reflection target and Harmony patch target
+against the installed game.
+
+| What | Where |
+|---|---|
+| Sources | `src\ExtendedBossesPlugin*.cs` — one `partial class`, one file per area |
+| Build output | `build\ExtendedBosses.dll` |
+| Mod version (one place) | the `Version` constant in `src\ExtendedBossesPlugin.cs` |
+| Thunderstore package | `thunderstore\` (manifest, icon 256×256, README) → `build\ExtendedBosses-<version>.zip` |
+| License | `LICENSE`, MIT |
 
 ## AI assistance
 
-This mod is being designed with the help of an AI assistant (Claude by
-Anthropic). Prefab names and game hooks were checked against the game's asset
-manifest and IL; the design decisions, in-game testing and releases are the
-author's.
-
-`build\ExtendedBosses.dll` → `BepInEx\plugins\ExtendedBosses\` (или
-`build.ps1 -Install`). Ставится на **хост**; гостям не нужен. Чтобы хост
-владел боссом, кто бы его ни бил, в `j1ga.hostowner.cfg` нужно
-`Bosses = true`.
-
-## Настройки
-
-`BepInEx\config\j1ga.extendedbosses.cfg`, или окно ConfigurationManager (F11)
-— всё применяется сразу, без перезахода:
-
-| Секция | Что |
-|---|---|
-| 01 General | вкл/выкл, профиль `Light / Raid / Hard`, куда писать объявления, язык для игроков без мода |
-| 02 Scaling | HP за игрока (0.5), потолок игроков (8), множители, звёзды от N |
-| 03 Mechanics | переключатели волн, гнёзд, лейтенантов, меток, способностей, щита, лекарей, сопротивлений, угрозы; очистка |
-| 04 Marks | задержка удара, интервал, множитель урона |
-| 05 Rewards | награда: качество вещей, вещей на игрока, шанс следующего биома |
-| 06 Reset | сброс боя (по умолчанию выкл) |
-| 07 Client | круги меток на земле (только у себя, не синкается) |
-| 08 Sync | сервер раздаёт свои настройки модовым клиентам; слежение за файлом конфига |
-| 09 Raid | щит, окно уязвимости, лечение, угроза — числа |
-| 10 Eikthyr | `Mode = Mod / Vanilla`, профиль, тотем, молния, рывок |
-| 11 Elder | `Mode`, профиль, гнездо, существо-корни, живая кора |
-| 12 Bonemass | `Mode`, профиль, куча костей, ядовитая лужа, затвердевание, слизь |
-| 13 Moder | `Mode`, профиль, ледяной сталагмит, ледяная вспышка, ледяная броня / шипы |
-| 14 Yagluth | `Mode`, профиль, тотем, метеоры, регенерация / адаптация, эхо Модер (эксперимент) |
-| 15 Queen | `Mode`, профиль, яйцо, кислота, кровожадность / кислотные шипы |
-| 16 Fader | `Mode`, профиль, камень-спавнер, метеоры, раскалённая броня / пепельная завеса |
-
-Консоль (F5, нужен `devcommands` или сервер): `eb status` — боссы рядом, фазы,
-группа, множитель урона, щит/окно/сопротивление; `eb check` — самопроверка
-префабов; `eb phase <n>` — форсировать фазу; `eb reset`;
-`eb probe <prefab>` — из чего сделан префаб; `eb players <n>` — подменить
-размер группы для проверки (0 — считать по-настоящему).
-
-## Языки
-
-Все надписи — на русском и английском. Игрок с модом видит сообщения на
-языке своей игры. Игроку без мода сервер может отправить только ванильное
-сообщение с готовым текстом, поэтому его язык задаётся `01 General /
-GuestLanguage` (`Russian`, `English` или `Both`); имена боссов и мобов при
-этом всё равно показываются на языке его игры. Описания настроек в F11 и
-ответы консоли — на обоих языках.
-
-## Выделенный сервер
-
-- Мод на сервере: его конфиг — единственный источник настроек для всех
-  клиентов с модом (`08 Sync`), он же рассылает сообщения фаз каждому на его
-  языке. Правки файла подхватываются без перезапуска (`WatchConfigFile`).
-- Бой выполняет клиент-владелец босса (на выделенном сервере это игрок рядом
-  с боссом), поэтому сейчас мод нужен всем игрокам, которые могут им
-  завладеть. HostOwner на выделенном сервере не работает.
-- Консоль `eb …` — у игрока-владельца в игре, не на сервере.
+This mod was designed and written with the help of an AI assistant (Claude by
+Anthropic). Prefab names and game hooks were checked against the game's asset manifest
+and IL; the design decisions, in-game testing and releases are the author's.

@@ -18,14 +18,14 @@ namespace ExtendedBosses
         private volatile bool _fileChanged;
         private float _reloadAt;
         private const float ReloadDebounce = 1f;
-        private float _lastSettingChange = -100f;   // realtime of the last in-game change (F11, sync) - its own save is not an edit
+        private float _lastSettingChange = -100f;   // realtime of the last in-game change (settings window, sync) - its own save is not an edit
         private bool _reloading;                    // SettingChanged raised by our own Reload is not an in-game change
 
         private void BindWatchConfig()
         {
             _cfgWatchFile = B("08 Sync", "WatchConfigFile", true,
-                "Re-read this file as soon as it is saved (no restart; meant for a dedicated server, where there is no F11 window). On the server the new values are sent to every client with the mod.",
-                "Перечитывать этот файл сразу после сохранения (без перезапуска; для выделенного сервера, где нет окна F11). На сервере новые значения сразу рассылаются всем клиентам с модом.");
+                "Re-read this file as soon as it is saved (no restart; meant for a dedicated server, where there is no settings window). On the server the new values are sent to every client with the mod.",
+                "Перечитывать этот файл сразу после сохранения (без перезапуска; для выделенного сервера, где нет окна настроек). На сервере новые значения сразу рассылаются всем клиентам с модом.");
         }
 
         private void StartWatcher()
