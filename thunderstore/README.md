@@ -25,6 +25,35 @@ own the boss needs the mod.
 Early version: every boss is implemented, in-game testing is in progress — the numbers are
 starting values and all adjustable.
 
+## Compatibility
+
+Tested with **Valheim 1.0.16** (network version 40), **BepInEx 5.4.23.5** (BepInExPack_Valheim 5.4.2351).
+
+## Who needs it
+
+| Who | What |
+|---|---|
+| Host | required — the fight runs on the boss's owner; with HostOwner (`Bosses = true`) that is always the host |
+| Dedicated server | recommended for settings and messages; every player who may own the boss also needs the mod |
+| Players without the mod | see and feel the same fight, messages in the `GuestLanguage` language |
+
+## Known conflicts
+
+- Other boss overhauls (HardBosses and similar) — do not run two at once.
+- Mods that scale boss health or stars by player count or level (e.g. Creature Level and Loot Control) stack with this mod's group scaling; lower `02 Scaling` or theirs.
+
+## Bugs and feedback
+
+GitHub Issues: https://github.com/tbsj1ga/ExtendedBossesValheim/issues — please attach `BepInEx/LogOutput.log`.
+
+## Screenshots
+
+<!-- Uncomment each line once the file is in docs/media/ and pushed. -->
+<!-- ![the last nest breaks — "the defence has fallen", burn window](https://raw.githubusercontent.com/tbsj1ga/ExtendedBossesValheim/main/docs/media/shield-falls.gif) -->
+<!-- ![a wave of adds at an HP threshold](https://raw.githubusercontent.com/tbsj1ga/ExtendedBossesValheim/main/docs/media/adds-wave.png) -->
+<!-- ![a mark with its circle on the ground](https://raw.githubusercontent.com/tbsj1ga/ExtendedBossesValheim/main/docs/media/mark.png) -->
+<!-- ![`eb status` in the console](https://raw.githubusercontent.com/tbsj1ga/ExtendedBossesValheim/main/docs/media/status.png) -->
+
 Fights by boss, settings and the changelog: https://github.com/tbsj1ga/ExtendedBossesValheim
 
 Inspired by HardBosses (Nexus #877).

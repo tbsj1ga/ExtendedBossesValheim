@@ -41,6 +41,35 @@ HP → ванильный спавн», но с намного более шир
 | Угроза, масштаб от группы, награда | босс бьёт того, кто «злит» его больше; соло — проходимо, 6–8 — не легко |
 | Настройка | у каждого босса режим Vanilla / Mod и профиль Light / Raid / Hard — меняются без перезахода |
 
+## Совместимость
+
+Проверено на **Valheim 1.0.16** (network version 40), **BepInEx 5.4.23.5** (BepInExPack_Valheim 5.4.2351).
+
+## Кому ставить
+
+| Кто | Что |
+|---|---|
+| Хост | обязательно — бой выполняет владелец босса; с HostOwner (`Bosses = true`) это всегда хост |
+| Выделенный сервер | желательно, ради настроек и сообщений; мод нужен и каждому игроку, который может завладеть боссом |
+| Игроки без мода | видят и чувствуют тот же бой, сообщения — на языке `GuestLanguage` |
+
+## Известные конфликты
+
+- Другие переделки боссов (HardBosses и похожие) — не ставьте два сразу.
+- Моды, которые масштабируют HP или звёзды боссов от числа игроков или уровня (например, Creature Level and Loot Control), складываются с масштабом этого мода; уменьшите `02 Scaling` или их настройки.
+
+## Ошибки и отзывы
+
+GitHub Issues: https://github.com/tbsj1ga/ExtendedBossesValheim/issues — приложите `BepInEx/LogOutput.log`.
+
+## Скриншоты
+
+<!-- Раскомментируйте строку, когда файл лежит в docs/media/ и отправлен на GitHub. -->
+<!-- ![ломается последнее гнездо — «защита пала», окно](https://raw.githubusercontent.com/tbsj1ga/ExtendedBossesValheim/main/docs/media/shield-falls.gif) -->
+<!-- ![волна аддов на пороге HP](https://raw.githubusercontent.com/tbsj1ga/ExtendedBossesValheim/main/docs/media/adds-wave.png) -->
+<!-- ![метка с кругом на земле](https://raw.githubusercontent.com/tbsj1ga/ExtendedBossesValheim/main/docs/media/mark.png) -->
+<!-- ![`eb status` в консоли](https://raw.githubusercontent.com/tbsj1ga/ExtendedBossesValheim/main/docs/media/status.png) -->
+
 ## Установка
 
 Через r2modman / Thunderstore или положить `build/ExtendedBosses.dll` в
