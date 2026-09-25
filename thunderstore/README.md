@@ -25,7 +25,7 @@ own the boss needs the mod.
 Early version: every boss is implemented, in-game testing is in progress — the numbers are
 starting values and all adjustable.
 
-Fights by boss, settings and the changelog: https://github.com/TBSjiga/ExtendedBosses
+Fights by boss, settings and the changelog: https://github.com/tbsj1ga/ExtendedBossesValheim
 
 Inspired by HardBosses (Nexus #877).
 
