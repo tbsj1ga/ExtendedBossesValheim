@@ -41,6 +41,17 @@ HP → ванильный спавн», но с намного более шир
 | Угроза, масштаб от группы, награда | босс бьёт того, кто «злит» его больше; соло — проходимо, 6–8 — не легко |
 | Настройка | у каждого босса режим Vanilla / Mod и профиль Light / Raid / Hard — меняются без перезахода |
 
+## Скриншоты
+
+| | |
+|---|---|
+| ![Эйктюр отмечает игрока для молнии — разбегайтесь!](https://raw.githubusercontent.com/tbsj1ga/ExtendedBossesValheim/main/docs/media/mark-lightning.webp) | ![Древний: корни под отмеченным, из семени растёт новое гнездо](https://raw.githubusercontent.com/tbsj1ga/ExtendedBossesValheim/main/docs/media/roots-and-seeds.webp) |
+| Эйктюр отмечает игрока для молнии — разбегайтесь! | Древний: корни под отмеченным, из семени растёт новое гнездо |
+
+![Объявления фаз — видят все игроки, с модом и без](https://raw.githubusercontent.com/tbsj1ga/ExtendedBossesValheim/main/docs/media/phase-messages.png)
+
+*Объявления фаз — видят все игроки, с модом и без*
+
 ## Совместимость
 
 Проверено на **Valheim 1.0.16** (network version 40), **BepInEx 5.4.23.5** (BepInExPack_Valheim 5.4.2351).
@@ -61,14 +72,6 @@ HP → ванильный спавн», но с намного более шир
 ## Ошибки и отзывы
 
 GitHub Issues: https://github.com/tbsj1ga/ExtendedBossesValheim/issues — приложите `BepInEx/LogOutput.log`.
-
-## Скриншоты
-
-<!-- Раскомментируйте строку, когда файл лежит в docs/media/ и отправлен на GitHub. -->
-<!-- ![ломается последнее гнездо — «защита пала», окно](https://raw.githubusercontent.com/tbsj1ga/ExtendedBossesValheim/main/docs/media/shield-falls.gif) -->
-<!-- ![волна аддов на пороге HP](https://raw.githubusercontent.com/tbsj1ga/ExtendedBossesValheim/main/docs/media/adds-wave.png) -->
-<!-- ![метка с кругом на земле](https://raw.githubusercontent.com/tbsj1ga/ExtendedBossesValheim/main/docs/media/mark.png) -->
-<!-- ![`eb status` в консоли](https://raw.githubusercontent.com/tbsj1ga/ExtendedBossesValheim/main/docs/media/status.png) -->
 
 ## Установка
 
@@ -145,6 +148,15 @@ powershell -ExecutionPolicy Bypass -File .\build.ps1 -Package   # ... и соб�
 | Версия мода (одно место) | константа `Version` в `src\ExtendedBossesPlugin.cs` |
 | Пакет Thunderstore | `thunderstore\` (manifest, icon 256×256, README) → `build\ExtendedBosses-<версия>.zip` |
 | Лицензия | `LICENSE`, MIT |
+
+## Другие моды j1gA
+
+| | Мод |
+|---|---|
+| [![LivingMap](https://raw.githubusercontent.com/tbsj1ga/LivingMapValheim/main/docs/media/icon-128.png)](https://thunderstore.io/c/valheim/p/j1gA/LivingMap/) | **[LivingMap](https://thunderstore.io/c/valheim/p/j1gA/LivingMap/)** — Постройки, дороги и вырубки на карте и мини-карте. |
+| [![StationSpeed](https://raw.githubusercontent.com/tbsj1ga/StationSpeedValheim/main/docs/media/icon-128.png)](https://thunderstore.io/c/valheim/p/j1gA/StationSpeed/) | **[StationSpeed](https://thunderstore.io/c/valheim/p/j1gA/StationSpeed/)** — Ускорение плавилен, печей, бочек и грядок — согласованно даже для игроков без мода. |
+| [![WeaponArts](https://raw.githubusercontent.com/tbsj1ga/WeaponArtsValheim/main/docs/media/icon-128.png)](https://thunderstore.io/c/valheim/p/j1gA/WeaponArts/) | **[WeaponArts](https://thunderstore.io/c/valheim/p/j1gA/WeaponArts/)** — Одна клавиша — своя активная способность у каждого оружия: стаггер, таунт, хилы, берсерк, криты. |
+| [![HostOwner](https://raw.githubusercontent.com/tbsj1ga/HostOwnerValheim/main/docs/media/icon-128.png)](https://thunderstore.io/c/valheim/p/j1gA/HostOwner/) | **[HostOwner](https://thunderstore.io/c/valheim/p/j1gA/HostOwner/)** — Хост забирает владение станциями и боссами рядом, чтобы его моды работали для всех. |
 
 ## Помощь ИИ
 

@@ -6,6 +6,15 @@ fall, burn windows, marks, ground hazards, resistance shifts and a threat table 
 only from vanilla prefabs, animations and RPCs, so players **without the mod** see and
 feel the same fight.
 
+| | |
+|---|---|
+| ![Eikthyr marks a player for lightning — spread out!](https://raw.githubusercontent.com/tbsj1ga/ExtendedBossesValheim/main/docs/media/mark-lightning.webp) | ![The Elder: roots under the marked player, a seed grows a new nest](https://raw.githubusercontent.com/tbsj1ga/ExtendedBossesValheim/main/docs/media/roots-and-seeds.webp) |
+| Eikthyr marks a player for lightning — spread out! | The Elder: roots under the marked player, a seed grows a new nest |
+
+![Phase announcements — every player sees them, with or without the mod](https://raw.githubusercontent.com/tbsj1ga/ExtendedBossesValheim/main/docs/media/phase-messages.png)
+
+*Phase announcements — every player sees them, with or without the mod*
+
 - **Profiles** `Light` (bosses with reinforcements), `Raid` (default) and `Hard`, globally
   or per boss; any boss can be set back to `Vanilla`. Everything switches without a
   rejoin.
@@ -46,17 +55,12 @@ Tested with **Valheim 1.0.16** (network version 40), **BepInEx 5.4.23.5** (BepIn
 
 GitHub Issues: https://github.com/tbsj1ga/ExtendedBossesValheim/issues — please attach `BepInEx/LogOutput.log`.
 
-## Screenshots
+## More mods by j1gA
 
-<!-- Uncomment each line once the file is in docs/media/ and pushed. -->
-<!-- ![the last nest breaks — "the defence has fallen", burn window](https://raw.githubusercontent.com/tbsj1ga/ExtendedBossesValheim/main/docs/media/shield-falls.gif) -->
-<!-- ![a wave of adds at an HP threshold](https://raw.githubusercontent.com/tbsj1ga/ExtendedBossesValheim/main/docs/media/adds-wave.png) -->
-<!-- ![a mark with its circle on the ground](https://raw.githubusercontent.com/tbsj1ga/ExtendedBossesValheim/main/docs/media/mark.png) -->
-<!-- ![`eb status` in the console](https://raw.githubusercontent.com/tbsj1ga/ExtendedBossesValheim/main/docs/media/status.png) -->
+| | Mod |
+|---|---|
+| [![LivingMap](https://raw.githubusercontent.com/tbsj1ga/LivingMapValheim/main/docs/media/icon-128.png)](https://thunderstore.io/c/valheim/p/j1gA/LivingMap/) | **[LivingMap](https://thunderstore.io/c/valheim/p/j1gA/LivingMap/)** — Your buildings, roads and cleared forest on the map and the minimap. |
+| [![StationSpeed](https://raw.githubusercontent.com/tbsj1ga/StationSpeedValheim/main/docs/media/icon-128.png)](https://thunderstore.io/c/valheim/p/j1gA/StationSpeed/) | **[StationSpeed](https://thunderstore.io/c/valheim/p/j1gA/StationSpeed/)** — Faster smelters, kilns, fermenters and crops — consistent even for players without the mod. |
+| [![WeaponArts](https://raw.githubusercontent.com/tbsj1ga/WeaponArtsValheim/main/docs/media/icon-128.png)](https://thunderstore.io/c/valheim/p/j1gA/WeaponArts/) | **[WeaponArts](https://thunderstore.io/c/valheim/p/j1gA/WeaponArts/)** — One key, one active ability per weapon: stagger, taunt, heals, berserk, crits. |
+| [![HostOwner](https://raw.githubusercontent.com/tbsj1ga/HostOwnerValheim/main/docs/media/icon-128.png)](https://thunderstore.io/c/valheim/p/j1gA/HostOwner/) | **[HostOwner](https://thunderstore.io/c/valheim/p/j1gA/HostOwner/)** — The host takes ownership of stations and bosses near it, so its mods work for everyone. |
 
-Fights by boss, settings and the changelog: https://github.com/tbsj1ga/ExtendedBossesValheim
-
-Inspired by HardBosses (Nexus #877).
-
-*Designed and written with the help of an AI assistant (Claude by Anthropic); the design
-decisions, verification against the game code and in-game testing are the author's.*

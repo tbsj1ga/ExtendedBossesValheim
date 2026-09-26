@@ -1,9 +1,8 @@
 # Media for the README
 
-Put these files here, push, then uncomment the matching lines in `README.md`, `README-RU.md` and `thunderstore/README.md`.
-Keep GIFs 4-8 s, 640-800 px wide, under 5 MB.
+- `icon-128.png` — the icon for the "More mods by j1gA" sections of the other mods
+- `mark-lightning.webp` — Eikthyr marks a player for lightning — spread out!
+- `roots-and-seeds.webp` — The Elder: roots under the marked player, a seed grows a new nest
+- `phase-messages.png` — Phase announcements — every player sees them, with or without the mod
 
-- `shield-falls.gif` — the last nest breaks — "the defence has fallen", burn window
-- `adds-wave.png` — a wave of adds at an HP threshold
-- `mark.png` — a mark with its circle on the ground
-- `status.png` — `eb status` in the console
+Animations: WebP, 4-8 s, 640-1280 px wide, under 4 MB.

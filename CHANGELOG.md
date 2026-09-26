@@ -5,6 +5,11 @@
 The version is set in one place — `ExtendedBossesPlugin.Version` in
 `src/ExtendedBossesPlugin.cs`.
 
+## 0.8.5
+
+- Package page: a gallery of animations and screenshots, and a section with the author's
+  other mods (icons, one line each, links). No code changes.
+
 ## 0.8.4 — Publishing prep
 
 - Documentation in English (README, CHANGELOG, FIGHTS, ROADMAP) with Russian copies
