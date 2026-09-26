@@ -16,7 +16,7 @@ self-check) but not yet played.
 - [ ] Mini-bosses (Hildir's bosses, Lord Reto as a fight of his own).
 - [ ] Fader's shield generators.
 - [ ] Dedicated server: a way to keep the boss owned by one modded client without
-      HostOwner.
+      [HostOwner](https://thunderstore.io/c/valheim/p/j1gA/HostOwner/).
 
 ## Principles that stay
 

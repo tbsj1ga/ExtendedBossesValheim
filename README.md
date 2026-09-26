@@ -25,7 +25,7 @@ through the normal sync: positions, animations, HP, spawned prefabs, hits, messa
 the centre of the screen and in chat.
 
 For the mechanics to work whoever hits the boss, the boss, its adds and nests should be
-owned by a host with the mod — the separate HostOwner mod does that (`Bosses = true` in
+owned by a host with the mod — the separate [HostOwner](https://thunderstore.io/c/valheim/p/j1gA/HostOwner/) mod does that (`Bosses = true` in
 `j1ga.hostowner.cfg`). Guests do not need the mod.
 
 ## Mechanics in short
@@ -61,7 +61,7 @@ Tested with **Valheim 1.0.16** (network version 40), **BepInEx 5.4.23.5** (BepIn
 
 | Who | What |
 |---|---|
-| Host | required — the fight runs on the boss's owner; with HostOwner (`Bosses = true`) that is always the host |
+| Host | required — the fight runs on the boss's owner; with [HostOwner](https://thunderstore.io/c/valheim/p/j1gA/HostOwner/) (`Bosses = true`) that is always the host |
 | Dedicated server | recommended for settings and messages; every player who may own the boss also needs the mod |
 | Players without the mod | see and feel the same fight, messages in the `GuestLanguage` language |
 
@@ -79,7 +79,7 @@ GitHub Issues: https://github.com/tbsj1ga/ExtendedBossesValheim/issues — pleas
 Through r2modman / Thunderstore, or put `build/ExtendedBosses.dll` into
 `BepInEx\plugins\ExtendedBosses\` (or `build.ps1 -Install`). Install it on the **host**;
 guests do not need it. To keep the host owning the boss whoever hits it, set
-`Bosses = true` in `j1ga.hostowner.cfg` (HostOwner mod).
+`Bosses = true` in `j1ga.hostowner.cfg` ([HostOwner](https://thunderstore.io/c/valheim/p/j1gA/HostOwner/) mod).
 
 ## Settings
 
@@ -124,7 +124,7 @@ Setting descriptions and console replies are bilingual.
   the mod (`08 Sync`), and it sends the phase messages to everyone in their language.
   File edits are picked up without a restart (`WatchConfigFile`).
 - The fight runs on the boss's owner client (on a dedicated server that is a player near
-  the boss), so for now every player who may end up owning it needs the mod. HostOwner
+  the boss), so for now every player who may end up owning it needs the mod. [HostOwner](https://thunderstore.io/c/valheim/p/j1gA/HostOwner/)
   does not work on a dedicated server.
 - The `eb …` console commands run on the owning player's game, not on the server.
 

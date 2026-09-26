@@ -27,7 +27,7 @@ feel the same fight.
 - The server's settings apply to every client with the mod; config edits are picked up
   without a restart.
 
-Install on the **host**; guests do not need it. With the HostOwner mod (`Bosses = true`)
+Install on the **host**; guests do not need it. With the [HostOwner](https://thunderstore.io/c/valheim/p/j1gA/HostOwner/) mod (`Bosses = true`)
 the host keeps owning the boss whoever hits it. On a dedicated server every player who may
 own the boss needs the mod.
 
@@ -42,7 +42,7 @@ Tested with **Valheim 1.0.16** (network version 40), **BepInEx 5.4.23.5** (BepIn
 
 | Who | What |
 |---|---|
-| Host | required — the fight runs on the boss's owner; with HostOwner (`Bosses = true`) that is always the host |
+| Host | required — the fight runs on the boss's owner; with [HostOwner](https://thunderstore.io/c/valheim/p/j1gA/HostOwner/) (`Bosses = true`) that is always the host |
 | Dedicated server | recommended for settings and messages; every player who may own the boss also needs the mod |
 | Players without the mod | see and feel the same fight, messages in the `GuestLanguage` language |
 

@@ -5,6 +5,10 @@
 The version is set in one place — `ExtendedBossesPlugin.Version` in
 `src/ExtendedBossesPlugin.cs`.
 
+## 0.8.6
+
+- Package page: HostOwner is a link to its Thunderstore page. No code changes.
+
 ## 0.8.5
 
 - Package page: a gallery of animations and screenshots, and a section with the author's
