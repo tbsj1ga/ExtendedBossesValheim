@@ -157,10 +157,10 @@ items — bronze, troll hide; a chance — iron.
 | 70% | 2 more piles; **leeches** (base 2) — only in water nearby; **poison pools** on marks (25 poison); his hits make you **wet** | piles and leeches | more leeches, +1★; pools more often |
 | 55% | 3 more piles, **shield**; after the window — phase cycles | piles without a shield or phases | shield ×0.1 |
 | 45% | an abomination; **merging**: every 25 s slime (base 2) crawls in from afar (20–26 m); the whole wave together can heal at most 6%, split evenly between the blobs | abomination, no slime | more slime, +1★ |
-| 40% | wraiths (base 1) | the same | more, +1★ |
+| 40% | writhans (base 1) | the same | more, +1★ |
 | 35% | surtlings (base 2); his hits make you **tared** | surtlings | more, +1★ |
 | 25% | elite draugr (base 1) | the same | more, +1★ |
-| 15% | a ghost + 2 bats (base 1) | the same | more, +1★ |
+| 15% | a wraith + 2 swamp bats (base 1) | the same | more, +1★ |
 
 **Phase cycles** (random variant):
 - **Hardening** — blunt ×0.25, fire ×2: burn him;

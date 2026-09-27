@@ -5,6 +5,12 @@
 The version is set in one place — `ExtendedBossesPlugin.Version` in
 `src/ExtendedBossesPlugin.cs`.
 
+## 0.8.7
+
+- Package page and README: how a fight goes, and every boss's phases and abilities in
+  short. FIGHTS: Bonemass's 40% and 15% adds named correctly (writhans; a wraith and swamp
+  bats). No code changes.
+
 ## 0.8.6
 
 - Package page: HostOwner is a link to its Thunderstore page. No code changes.
@@ -170,7 +176,7 @@ The version is set in one place — `ExtendedBossesPlugin.Version` in
   - 45% — an abomination and **merging**: every 25 s a slime (`Blob`, `BlobElite`)
     appears far away and crawls to the boss; one that arrives is absorbed and heals him
     for 3% of max HP;
-  - 40% — wraiths (`Writhan`), 35% — surtlings, 25% — elite draugr, 15% — ghosts and
+  - 40% — writhans (`Writhan`), 35% — surtlings, 25% — elite draugr, 15% — ghosts and
     bats;
   - reward: coins, rubies, pearls, scrap iron; iron and root gear, with a chance silver.
 - **Resistance cycle** — a shared mechanism with variants: the Elder's living bark

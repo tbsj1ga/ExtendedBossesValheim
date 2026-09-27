@@ -34,6 +34,97 @@ own the boss needs the mod.
 Early version: every boss is implemented, in-game testing is in progress — the numbers are
 starting values and all adjustable.
 
+## How a fight goes
+
+The boss's own attacks and AI stay vanilla — everything below is added on top. Described
+for the default `Raid` profile.
+
+- **Nests.** As the fight goes on, the boss raises destructible spawners of its biome —
+  greydwarf nests, bone piles, eggs…
+- **Shield.** While the nests stand, the boss takes only a fraction of the damage.
+  **Break them all** → the boss is staggered and takes **×1.5 damage for 10 s**. Ignore
+  them and the shield crumbles on its own after a while — without the bonus.
+- **Phases.** About once a minute the boss enters a special state for 30 s — armor
+  against one damage type, regeneration, damage reflection… The message in the centre of
+  the screen tells you how to answer it.
+- **Marks.** The boss names a player and 3 s later strikes where they stand. Step away
+  from your friends.
+- **Lieutenants.** Mini-bosses of the biome join the fight, along with waves of adds.
+- **Reward.** On top of the vanilla drop: coins, valuables, next-biome resources and
+  upgraded gear for bigger groups.
+
+`Light` keeps the adds and nests but drops shields, phases and marks; `Hard` is `Raid`,
+denser and tougher. All the numbers:
+[FIGHTS.md](https://github.com/tbsj1ga/ExtendedBossesValheim/blob/main/FIGHTS.md).
+
+## The bosses
+
+### Eikthyr — the tutorial
+No shield and no phases: every mechanic once, gently.
+- **Charge** — every 20 s he dashes at double speed at a player who keeps their distance.
+- **Skull pile** — raises Meadows skeletons until you break it.
+- **Lightning mark** — the marked player is struck 3 s later.
+- **Reinforcements:** boars and necks, and a herd leader — a 2★ boar with triple health.
+
+### The Elder
+- **Greydwarf nests** hold his shield.
+- **Roots** — roots burst out around the marked player.
+- **Seeds** — his projectiles sometimes take root and grow a new nest.
+- **Living bark** (phase): *Sap* — only slashing hits (axes, swords) get through;
+  *Back* — armored in front, full damage from behind: the tank keeps him facing away from
+  the group.
+- **Shamans heal him** — kill them first.
+- **Reinforcements:** a troll, a bear, greydwarf elites, a skeleton and a ghost.
+
+### Bonemass
+- **Bone piles** hold his shield.
+- **Leeches** come out of the water nearby; **poison pools** under marked players; his
+  hits leave you **Wet**, later **Tared**.
+- **Merging** — blobs crawl towards him from afar, and each one that reaches him heals
+  him. Intercept them.
+- **Phases:** *Hardening* — blunt barely hurts, fire does double: burn him. *Rot
+  vapour* — close hits are halved and poison the attacker: fight from range.
+- **Reinforcements:** an abomination, writhans, surtlings, elite draugr, a wraith and
+  swamp bats.
+
+### Moder
+- **Ice stalagmites** hatch drakes and hold her shield.
+- **Ice nova** under marked players — frost and slow.
+- **Breath mark** — she lands and fixes on the marked player for a few seconds.
+- **Phases:** *Ice armor* — while she is on the ground, ranged hits do a quarter: get
+  into melee. *Ice spikes* — every hit reflects part of its damage back as frost.
+- **Reinforcements:** a wolf pack (ulvs at night), cultists, a stone golem, a fenring.
+
+### Yagluth
+- **Fuling totems** call fulings and archers and hold his shield.
+- **Fuling shamans heal him.**
+- **Meteor mark** — his own meteors fall around the marked player.
+- **Beam** — he fixes on the marked player for a few seconds; his hits leave you
+  **Tared**.
+- **Phases:** *Regeneration* — heals over time; any frost hit stops it. *Adaptation* —
+  resists the damage type you use most and takes more from the others; the message names
+  the type.
+- **Reinforcements:** fuling brutes, an unbjorn, three skeletons, deathsquitos; an echo of
+  Moder (optional, off by default).
+
+### The Queen
+- **Egg clutches** hatch into seekers; the shield holds while any egg is whole — break
+  them before they hatch.
+- **Acid mark** — acid splashes under the marked player.
+- **Cocoon** — after she teleports, a seeker and a brood guard her; while they live she
+  is shielded.
+- **Phases:** *Bloodlust* — she heals from her hits on players: block, don't get hit.
+  *Acid spikes* — every hit reflects part of its damage back as poison.
+- **Reinforcements:** seeker brutes, a gjall, ticks and young seekers.
+
+### Fader
+- **Charred spawner stones** hold his shield.
+- **Meteor mark** — meteors fall around the marked player.
+- **Wall of fire** — raised towards a random player again and again.
+- **Phases:** *Molten armor* — close hits are halved and burn the attacker: fight from
+  range. *Ash veil* — ranged hits do a quarter: everyone into melee.
+- **Reinforcements:** a morgen, a fallen valkyrie, Lord Reto, an asksvin and a lava blob.
+
 ## Compatibility
 
 Tested with **Valheim 1.0.16** (network version 40), **BepInEx 5.4.23.5** (BepInExPack_Valheim 5.4.2351).
