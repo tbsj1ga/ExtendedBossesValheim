@@ -5,6 +5,20 @@
 The version is set in one place — `ExtendedBossesPlugin.Version` in
 `src/ExtendedBossesPlugin.cs`.
 
+## 0.8.8 — Bonemass's slime, the Elder's shamans, rewards (not tested in game)
+
+- **Bonemass**: slime comes every 45 s (was 25) and in smaller waves (base 1, was 2); the
+  setting `12 Bonemass / SlimeInterval` is updated once in an existing config.
+- **The Elder**: shamans heal 0.5% of max HP per second each (was 0.3) - its own
+  setting `11 Elder / HealerPercentPerSecond`; Yagluth's shamans keep the common 0.3.
+- **Eikthyr**: the skull pile drops nothing.
+- **Highlight** (players with the mod): nests, totems and the slime crawling to Bonemass
+  glow softly (`07 Client / HighlightObjects`).
+- **Rewards, every boss**: coins x2; about a stack of each material of the biome; about
+  half a stack of each material of the next biome, always (was a 15% chance); gear only of
+  the next biome (the last boss: its own) and only for a group of 2+ (`05 Rewards /
+  GearMinPlayers`), 2-4 players - 1 item, 5-7 - 2, 8 - 3. `NextBiomeChance` removed.
+
 ## 0.8.7
 
 - Package page and README: how a fight goes, and every boss's phases and abilities in

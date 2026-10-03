@@ -477,7 +477,8 @@ namespace ExtendedBosses
             if (rt.Healers <= 0 || !HealersOn(rt.Def)) return;
             float max = boss.GetMaxHealth();
             if (boss.GetHealth() >= max) return;
-            float amount = max * Sv(_cfgHealPercent) / 100f * Mathf.Min(rt.Healers, 2) * TickInterval;
+            float pct = rt.Def.CfgHealPercent != null ? Sv(rt.Def.CfgHealPercent) : Sv(_cfgHealPercent);
+            float amount = max * pct / 100f * Mathf.Min(rt.Healers, 2) * TickInterval;
             if (amount > 0f) boss.Heal(amount, false);
         }
 
@@ -921,6 +922,11 @@ namespace ExtendedBosses
             ZDO tz = Zdo(go.transform);
             if (tz == null) return false;
             tz.Set(KBoss, rt.BossId);
+            if (act.NoDrop)
+            {
+                tz.Set(KNoDrop, true);           // re-applied after a relog by the glow scan
+                StripDrops(go);
+            }
 
             ZDO bz = Zdo(boss);
             int slot = bz.GetInt(KTotems);

@@ -92,31 +92,46 @@ namespace ExtendedBosses
             int n = GroupSize(boss);
             Vector3 pos = boss.transform.position;
             float val = Sv(_cfgValuables);
-            float next = Sv(_cfgNextBiomeChance);
             RewardDef r = def.Reward;
             int drops = 0;
 
+            // valuables and this biome's materials (about a stack), then the next biome's
+            // materials (about half a stack) - always
             for (int i = 0; i < r.Valuables.Count; i++)
                 drops += DropLoot(r.Valuables[i], n, val, pos);
             for (int i = 0; i < r.NextBiome.Count; i++)
-                if (UnityEngine.Random.value < next) drops += DropLoot(r.NextBiome[i], n, val, pos);
+                drops += DropLoot(r.NextBiome[i], n, val, pos);
 
-            int pieces = Mathf.FloorToInt(n / Mathf.Max(1f, Sv(_cfgPlayersPerItem)));
-            for (int i = 0; i < pieces; i++)
+            // gear: only of the next biome (the last boss: its own), only for a group of 2+;
+            // one piece per PlayersPerItem players, at least one
+            string[] pool = r.NextGear.Length > 0 ? r.NextGear : r.Gear;
+            int minPlayers = Si(_cfgGearMinPlayers);
+            int pieces = n < minPlayers ? 0 : Mathf.Max(1, Mathf.FloorToInt(n / Mathf.Max(1f, Sv(_cfgPlayersPerItem))));
+            for (int i = 0; i < pieces && pool.Length > 0; i++)
             {
-                string[] pool = r.NextGear.Length > 0 && UnityEngine.Random.value < next ? r.NextGear : r.Gear;
-                if (pool.Length == 0) continue;
                 int qMin = Si(_cfgQualityMin), qMax = Mathf.Max(qMin, Si(_cfgQualityMax));
                 if (DropItem(pool[UnityEngine.Random.Range(0, pool.Length)], 1, UnityEngine.Random.Range(qMin, qMax + 1), pos)) drops++;
             }
-            Debug(def.Prefab + ": reward for " + n + " player(s), " + drops + " stack(s)");
+            Debug(def.Prefab + ": reward for " + n + " player(s), " + drops + " stack(s), " + pieces + " piece(s) of gear");
         }
 
         private int DropLoot(Loot l, int players, float mul, Vector3 pos)
         {
-            float amount = UnityEngine.Random.Range(l.Min, l.Max + 1);
-            if (l.PerPlayer) amount *= 1f + 0.5f * (players - 1);
-            int total = Mathf.RoundToInt(amount * mul);
+            float amount;
+            if (l.StackFraction > 0f)
+            {
+                // a material: about this share of its stack (90-100 %), not scaled by the group
+                GameObject pf = ZNetScene.instance.GetPrefab(l.Prefab);
+                ItemDrop idp = pf != null ? pf.GetComponent<ItemDrop>() : null;
+                int stack = idp != null ? Mathf.Max(1, idp.m_itemData.m_shared.m_maxStackSize) : 1;
+                amount = stack * l.StackFraction * UnityEngine.Random.Range(0.9f, 1f);
+            }
+            else
+            {
+                amount = UnityEngine.Random.Range(l.Min, l.Max + 1);
+                if (l.PerPlayer) amount *= 1f + 0.5f * (players - 1);
+            }
+            int total = Mathf.Max(l.StackFraction > 0f ? 1 : 0, Mathf.RoundToInt(amount * mul));
             return total > 0 && DropItem(l.Prefab, total, 0, pos) ? 1 : 0;
         }
 

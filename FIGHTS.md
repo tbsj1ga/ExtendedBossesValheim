@@ -72,6 +72,8 @@ what actually comes:
 - **crowd cap**: at most 8 monsters within 50 m of the boss for one player and +3 for
   each further player (`09 Raid / AddsCap*`); at the cap nests, totems, waves and slime
   release nobody (lieutenants, cocoon guards and roots always spawn).
+- **highlight**: nests, totems and the slime crawling to Bonemass glow softly for players
+  with the mod (`07 Client / HighlightObjects`), so they are easy to find in a crowd.
 
 ### The general shape of a fight (Raid)
 
@@ -102,11 +104,12 @@ the mod see a red circle of the radius); every 20 s (Hard 15 s).
 
 ### Reward (the same in every profile)
 
-- The biome's valuables — every time; those marked "×N" grow by 50% for every player
+- Coins and valuables — every time; those marked "×N" grow by 50% for every player
   beyond the first.
-- Next-biome resources — each with a 15% chance.
-- Gear upgraded to quality 2–3: 1–2 players — none, 3–4 — 1 item, 5–7 — 2, 8 — 3; each
-  with a 15% chance of coming from the next biome.
+- Materials of the biome — about a stack of each (90–100%); materials of the next biome —
+  about half a stack of each. Always, whatever the group size.
+- Gear — only of the next biome (the last boss: its own), upgraded to quality 2–3, only
+  for a group of 2+: 2–4 players — 1 item, 5–7 — 2, 8 — 3.
 
 ---
 
@@ -118,12 +121,12 @@ A tutorial fight: no shield, window or phase cycles.
 |---|---|---|---|
 | 80% | boars + necks, base 2 of each | the same | more, +1★ |
 | 60% | **charge**: every 20 s a ×2 speed-up for 2.5 s towards a target farther than 6 m | no | the same |
-| 50% | skull pile (`skull_pile`, if not destructible — `BonePileSpawner`): Meadows skeletons every 12 s, up to 3 alive | the same | every 9 s, skeletons +1★ |
+| 50% | skull pile (`skull_pile`, if not destructible — `BonePileSpawner`): Meadows skeletons every 12 s, up to 3 alive; the pile drops nothing | the same | every 9 s, skeletons +1★ |
 | 30% | **lightning on marks**: 15 lightning damage | no | every 15 s |
 | 15% | a leader — a 2★ boar with triple HP | the same | the same |
 
-Reward: coins 60–90 ×N, amber 3 ×N; a chance — copper and tin ore; items — flint,
-leather, wooden shield; a chance — bronze.
+Reward: coins 120–180 ×N, amber 3 ×N; about half a stack each of copper and tin ore;
+gear (2+ players) — bronze.
 
 ---
 
@@ -136,7 +139,7 @@ leather, wooden shield; a chance — bronze.
 | 55% | 3 more nests, **shield**; after the window — **living bark** | nests without a shield, no bark | shield ×0.1 |
 | 45% | a troll (two from 3 players) | the same | the same |
 | 30% | a bear (`Bjorn`) | the same | the same |
-| 20% | elites (base 2) and **shamans** (base 1): heal the Elder for 0.3%/s each (up to two) while alive and within 40 m | shamans do not heal | more, +1★ |
+| 20% | elites (base 2) and **shamans** (base 1): heal the Elder for 0.5%/s each (up to two) while alive and within 40 m | shamans do not heal | more, +1★ |
 | 10% | a skeleton + a ghost (base 1) | the same | more, +1★ |
 
 **Living bark** (random variant each time):
@@ -144,8 +147,8 @@ leather, wooden shield; a chance — bronze.
 - **Back** — everything ×0.25 from the front, full damage from behind (a 120° arc): the
   tank keeps the Elder facing them. Never comes up solo.
 
-Reward: coins 120–180 ×N, amber 3–6 ×N, a ruby, copper and tin; a chance — scrap iron;
-items — bronze, troll hide; a chance — iron.
+Reward: coins 240–360 ×N, amber 3–6 ×N, a ruby; about a stack each of copper and tin
+ore, about half a stack of scrap iron; gear (2+ players) — iron.
 
 ---
 
@@ -156,7 +159,7 @@ items — bronze, troll hide; a chance — iron.
 | 85% | 1 bone pile (`Spawner_DraugrPile`) | the same | the same |
 | 70% | 2 more piles; **leeches** (base 2) — only in water nearby; **poison pools** on marks (25 poison); his hits make you **wet** | piles and leeches | more leeches, +1★; pools more often |
 | 55% | 3 more piles, **shield**; after the window — phase cycles | piles without a shield or phases | shield ×0.1 |
-| 45% | an abomination; **merging**: every 25 s slime (base 2) crawls in from afar (20–26 m); the whole wave together can heal at most 6%, split evenly between the blobs | abomination, no slime | more slime, +1★ |
+| 45% | an abomination; **merging**: every 45 s slime (base 1) crawls in from afar (20–26 m); the whole wave together can heal at most 6%, split evenly between the blobs | abomination, no slime | more slime, +1★ |
 | 40% | writhans (base 1) | the same | more, +1★ |
 | 35% | surtlings (base 2); his hits make you **tared** | surtlings | more, +1★ |
 | 25% | elite draugr (base 1) | the same | more, +1★ |
@@ -167,8 +170,8 @@ items — bronze, troll hide; a chance — iron.
 - **Rot vapour** — hits closer than 5 m ×0.5, and each poisons the attacker (12 poison,
   at most once per second): strike from afar.
 
-Reward: coins 180–270 ×N, rubies, pearls ×N, scrap iron; a chance — silver; items —
-iron, root; a chance — silver.
+Reward: coins 360–540 ×N, rubies, pearls ×N; about a stack of scrap iron, about half a
+stack of silver ore; gear (2+ players) — silver, wolf.
 
 ---
 
@@ -189,8 +192,9 @@ iron, root; a chance — silver.
 - **Ice spikes** — every hit returns 12% of the damage to the attacker as frost (at least
   5, at most once per second).
 
-Reward: coins 240–360 ×N, rubies, silver necklaces ×N, silver, obsidian, crystals; a
-chance — black metal; items — silver, wolf, fenris; a chance — black metal.
+Reward: coins 480–720 ×N, rubies, silver necklaces ×N; about a stack each of silver ore,
+obsidian and crystals, about half a stack of black metal scrap; gear (2+ players) — black
+metal, padded.
 
 ---
 
@@ -212,8 +216,9 @@ chance — black metal; items — silver, wolf, fenris; a chance — black metal
 - **Adaptation** — the damage type he was hit with most in the last seconds ×0.6, the
   others ×1.1; the announcement names the type.
 
-Reward: coins 300–450 ×N, silver necklaces ×N, rubies, black metal; a chance — soft
-tissue, a black core; items — black metal, linen; a chance — Mistlands.
+Reward: coins 600–900 ×N, silver necklaces ×N, rubies; about a stack of black metal
+scrap, about half a stack each of soft tissue and black cores; gear (2+ players) —
+Mistlands.
 
 ---
 
@@ -234,8 +239,9 @@ tissue, a black core; items — black metal, linen; a chance — Mistlands.
 - **Acid spikes** — every hit returns 10% of the damage to the attacker as poison (at
   least 5, at most once per second).
 
-Reward: coins 360–540 ×N, rubies, soft tissue, black cores, eitr ×N; a chance —
-flametal ore, gemstones; items — Mistlands; a chance — Ashlands.
+Reward: coins 720–1080 ×N, rubies, a gemstone of each colour; about a stack each of soft
+tissue, black cores and eitr, about half a stack of flametal ore; gear (2+ players) —
+Ashlands.
 
 ---
 
@@ -256,8 +262,8 @@ flametal ore, gemstones; items — Mistlands; a chance — Ashlands.
   once per second): strike from afar;
 - **Ash veil** — hits from farther than 6 m ×0.25: everyone into melee.
 
-Reward: coins 450–750 ×N, gemstones, flametal ore, molten cores; a chance — frozen
-cores; items — Ashlands.
+Reward: coins 900–1500 ×N, gemstones; about a stack each of flametal ore and molten
+cores, about half a stack of frost cores; gear (2+ players) — Ashlands.
 
 ---
 

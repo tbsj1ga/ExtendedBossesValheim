@@ -63,7 +63,7 @@ namespace ExtendedBosses
         private ConfigEntry<int> _cfgQualityMin;
         private ConfigEntry<int> _cfgQualityMax;
         private ConfigEntry<float> _cfgPlayersPerItem;
-        private ConfigEntry<float> _cfgNextBiomeChance;
+        private ConfigEntry<int> _cfgGearMinPlayers;
         private ConfigEntry<float> _cfgValuables;
 
         // 06 Reset
@@ -189,16 +189,16 @@ namespace ExtendedBosses
 
             const string R = "05 Rewards";
             _cfgRewards = B(R, "Enabled", true,
-                "Extra loot on top of the vanilla drop: valuables of the biome and upgraded gear, more with a bigger group.",
-                "Доп. добыча поверх ванильного дропа: ценности биома и улучшенная экипировка, больше для большей группы.");
+                "Extra loot on top of the vanilla drop: coins and gems (more with a bigger group), about a stack of each material of the biome, about half a stack of each material of the next biome, upgraded gear of the next biome for a group.",
+                "Доп. добыча поверх ванильного дропа: монеты и камни (больше для большей группы), около стака каждого материала биома, около половины стака каждого материала следующего биома, улучшенная экипировка следующего биома для группы.");
             _cfgQualityMin = I(R, "QualityMin", 2, 1, 4, "Gear drops already upgraded to at least this level...", "Экипировка выпадает уже улучшенной минимум до этого уровня…");
             _cfgQualityMax = I(R, "QualityMax", 3, 1, 4, "...and at most this level (capped by the item's own max).", "…и максимум до этого (не выше предела самого предмета).");
+            _cfgGearMinPlayers = I(R, "GearMinPlayers", 2, 1, 20,
+                "Gear (of the next biome) drops only for a group of at least this many players.",
+                "Экипировка (следующего биома) выпадает только группе не меньше стольких игроков.");
             _cfgPlayersPerItem = F(R, "PlayersPerItem", 2.5f, 1f, 10f,
-                "One piece of gear per this many players (3 players = 1, 5 = 2, 8 = 3).", "Одна вещь на столько игроков (3 игрока — 1, 5 — 2, 8 — 3).");
-            _cfgNextBiomeChance = F(R, "NextBiomeChance", 0.15f, 0f, 1f,
-                "Chance per piece of gear to be from the next biome; also the chance of each next-biome resource.",
-                "Шанс, что вещь будет из следующего биома; и шанс каждого ресурса следующего биома.");
-            _cfgValuables = F(R, "ValuablesMultiplier", 1f, 0f, 10f, "Multiplier of coins, gems and ore.", "Множитель монет, камней и руды.");
+                "One piece of gear per this many players, at least one (2-4 players = 1, 5-7 = 2, 8 = 3).", "Одна вещь на столько игроков, не меньше одной (2–4 игрока — 1, 5–7 — 2, 8 — 3).");
+            _cfgValuables = F(R, "ValuablesMultiplier", 1f, 0f, 10f, "Multiplier of every reward amount (coins, gems, materials).", "Множитель количества всей награды (монеты, камни, материалы).");
 
             const string Rs = "06 Reset";
             _cfgReset = B(Rs, "Enabled", false,
@@ -257,7 +257,7 @@ namespace ExtendedBosses
         // ------------------------------------------------------------------
         // migration: defaults that changed are reset once in an existing file (other values kept)
         // ------------------------------------------------------------------
-        private const int CurrentConfigVersion = 2;
+        private const int CurrentConfigVersion = 3;
 
         private void MigrateConfig()
         {
@@ -272,6 +272,12 @@ namespace ExtendedBosses
                 if (eik != null) ResetToDefault(eik.CfgMarkDamage, reset);
                 BossDef yag = BossByPrefab("GoblinKing");
                 if (yag != null) ResetToDefault(yag.CfgRegen, reset);
+            }
+            if (v < 3)
+            {
+                // 0.8.8: Bonemass's slime comes less often
+                BossDef bm = BossByPrefab("Bonemass");
+                if (bm != null) ResetToDefault(bm.CfgFusionInterval, reset);
             }
             _cfgConfigVersion.Value = CurrentConfigVersion;
             if (reset.Count > 0) Logger.LogInfo("Config updated to version " + CurrentConfigVersion + ", new defaults: " + string.Join(", ", reset.ToArray()));

@@ -225,6 +225,7 @@ namespace ExtendedBosses
                     p.RestoreAllCharges();
                     p._fights.Clear();
                     p.ClearCircles();
+                    p.ClearGlows();
                     p._helloSent = false;
                     p._moddedPeers.Clear();
                 }

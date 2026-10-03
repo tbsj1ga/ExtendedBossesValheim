@@ -72,6 +72,7 @@ namespace ExtendedBosses
         public float Chance;            // Seeds: chance per landed projectile
         public string Effect;           // HitEffect: vanilla status effect put on the boss's hits (Wet, Tared)
         public bool Land;               // Fixate: a flying boss lands first (Moder's breath)
+        public bool NoDrop;             // Totem/Nest: the placed object drops nothing when destroyed (Eikthyr's skull pile)
     }
 
     internal class PhaseDef
@@ -87,15 +88,19 @@ namespace ExtendedBosses
         public int Min;
         public int Max;
         public bool PerPlayer;          // amount scales with the group
+        public float StackFraction;     // > 0: amount is this share of the item's stack size (materials), Min/Max ignored
         public Loot(string prefab, int min, int max, bool perPlayer) { Prefab = prefab; Min = min; Max = max; PerPlayer = perPlayer; }
+
+        // a material: about this share of a full stack (1 = a stack, 0.5 = half), whatever the group size
+        public static Loot Stack(string prefab, float fraction) { Loot l = new Loot(prefab, 0, 0, false); l.StackFraction = fraction; return l; }
     }
 
     internal class RewardDef
     {
         public List<Loot> Valuables = new List<Loot>();     // every kill
-        public List<Loot> NextBiome = new List<Loot>();     // each with NextBiomeChance
+        public List<Loot> NextBiome = new List<Loot>();     // next biome materials, always (about half a stack)
         public string[] Gear = new string[0];               // this biome
-        public string[] NextGear = new string[0];           // next biome, with NextBiomeChance per piece
+        public string[] NextGear = new string[0];           // next biome: the only gear that drops (Gear: for the last boss)
     }
 
     internal class BossDef
@@ -134,6 +139,7 @@ namespace ExtendedBosses
         public ConfigEntry<float> CfgAdaptFactor;
         public ConfigEntry<float> CfgAdaptOthers;
         public ConfigEntry<float> CfgLifesteal;
+        public ConfigEntry<float> CfgHealPercent;      // healers of this boss, % of max HP per second (null = 09 Raid default)
         public readonly Dictionary<string, ConfigEntry<bool>> Gates = new Dictionary<string, ConfigEntry<bool>>();
         public ConfigEntry<float> CfgFusionInterval;
         public ConfigEntry<float> CfgFusionHeal;
@@ -221,7 +227,7 @@ namespace ExtendedBosses
             Phase(b, 60f, "eikthyr.60").Acts.Add(new Act { Kind = ActKind.Charge });
             Phase(b, 50f, "eikthyr.50").Acts.Add(new Act
             {
-                Kind = ActKind.Totem, Prop = "skull_pile", Count = 1f,
+                Kind = ActKind.Totem, Prop = "skull_pile", Count = 1f, NoDrop = true,
                 Prefabs = new[] { "Skeleton_Meadows_noarcher", "Skeleton_Meadows_noarcher", "Skeleton_Meadows" },
                 Interval = 12f, MaxAlive = 3
             });
@@ -232,10 +238,10 @@ namespace ExtendedBosses
             });
             Phase(b, 15f, "eikthyr.15").Acts.Add(new Act { Kind = ActKind.Lieutenant, Prefabs = new[] { "Boar" }, Level = 3, HpMul = 3f });
 
-            b.Reward.Valuables.Add(new Loot("Coins", 60, 90, true));
+            b.Reward.Valuables.Add(new Loot("Coins", 120, 180, true));
             b.Reward.Valuables.Add(new Loot("Amber", 3, 3, true));
-            b.Reward.NextBiome.Add(new Loot("CopperOre", 2, 4, false));
-            b.Reward.NextBiome.Add(new Loot("TinOre", 2, 4, false));
+            b.Reward.NextBiome.Add(Loot.Stack("CopperOre", 0.5f));
+            b.Reward.NextBiome.Add(Loot.Stack("TinOre", 0.5f));
             b.Reward.Gear = new[] { "AxeFlint", "SpearFlint", "KnifeFlint", "Club", "Bow", "ShieldWood",
                                     "ArmorLeatherChest", "ArmorLeatherLegs", "HelmetLeather", "CapeDeerHide" };
             b.Reward.NextGear = new[] { "AxeBronze", "MaceBronze", "SwordBronze", "SpearBronze", "AtgeirBronze",
@@ -307,12 +313,12 @@ namespace ExtendedBosses
 
             Phase(b, 10f, "elder.10").Acts.Add(new Act { Kind = ActKind.Wave, Prefabs = new[] { "Skeleton", "Ghost" }, Count = 1f });
 
-            b.Reward.Valuables.Add(new Loot("Coins", 120, 180, true));
+            b.Reward.Valuables.Add(new Loot("Coins", 240, 360, true));
             b.Reward.Valuables.Add(new Loot("Amber", 3, 6, true));
             b.Reward.Valuables.Add(new Loot("Ruby", 1, 1, false));
-            b.Reward.Valuables.Add(new Loot("CopperOre", 4, 8, false));
-            b.Reward.Valuables.Add(new Loot("TinOre", 4, 8, false));
-            b.Reward.NextBiome.Add(new Loot("IronScrap", 2, 4, false));
+            b.Reward.Valuables.Add(Loot.Stack("CopperOre", 1f));
+            b.Reward.Valuables.Add(Loot.Stack("TinOre", 1f));
+            b.Reward.NextBiome.Add(Loot.Stack("IronScrap", 0.5f));
             b.Reward.Gear = new[] { "AxeBronze", "MaceBronze", "SwordBronze", "SpearBronze", "AtgeirBronze", "KnifeCopper", "BowFineWood",
                                     "ArmorBronzeChest", "ArmorBronzeLegs", "HelmetBronze", "ShieldBronzeBuckler",
                                     "ArmorTrollLeatherChest", "ArmorTrollLeatherLegs", "HelmetTrollLeather", "CapeTrollHide" };
@@ -331,6 +337,9 @@ namespace ExtendedBosses
                     "живая кора: Sap — огонь ×0.25, рубящий ×1.25, остальное ×0.25; Back — спереди ×0.25, в спину полный", "Sap", "Back");
                 d.CfgBackArc = pl.F(d.Section, "BackArc", 120f, 30f, 270f,
                     "Back variant: width of the arc behind the Elder that counts as 'the back', degrees.", "Вариант Back: ширина дуги позади Древнего, которая считается спиной, градусов.");
+                d.CfgHealPercent = pl.F(d.Section, "HealerPercentPerSecond", 0.5f, 0f, 10f,
+                    "Each living shaman near the Elder heals it this % of max HP per second (at most 2 count). Overrides 09 Raid / HealPercentPerSecond for the Elder.",
+                    "Каждый живой шаман рядом с Древним лечит его на столько % макс. HP в секунду (учитываются не больше 2). Для Древнего заменяет 09 Raid / HealPercentPerSecond.");
             };
             return b;
         }
@@ -376,7 +385,7 @@ namespace ExtendedBosses
 
             p = Phase(b, 45f, "bonemass.45");
             p.Acts.Add(new Act { Kind = ActKind.Lieutenant, Prefabs = new[] { "Abomination" } });
-            p.Acts.Add(new Act { Kind = ActKind.Fusion, Prefabs = new[] { "Blob", "Blob", "BlobElite" }, Count = 2f, Interval = 25f, Heal = 6f, MarkKey = "bonemass.fusion" });
+            p.Acts.Add(new Act { Kind = ActKind.Fusion, Prefabs = new[] { "Blob", "Blob", "BlobElite" }, Count = 1f, Interval = 45f, Heal = 6f, MarkKey = "bonemass.fusion" });
 
             Phase(b, 40f, "bonemass.40").Acts.Add(new Act { Kind = ActKind.Wave, Prefabs = new[] { "Writhan" }, Count = 1f });
             p = Phase(b, 35f, "bonemass.35");
@@ -385,11 +394,11 @@ namespace ExtendedBosses
             Phase(b, 25f, "bonemass.25").Acts.Add(new Act { Kind = ActKind.Wave, Prefabs = new[] { "Draugr_Elite" }, Count = 1f });
             Phase(b, 15f, "bonemass.15").Acts.Add(new Act { Kind = ActKind.Wave, Prefabs = new[] { "Wraith", "Bat_Swamp", "Bat_Swamp" }, Count = 1f });
 
-            b.Reward.Valuables.Add(new Loot("Coins", 180, 270, true));
+            b.Reward.Valuables.Add(new Loot("Coins", 360, 540, true));
             b.Reward.Valuables.Add(new Loot("Ruby", 1, 2, false));
             b.Reward.Valuables.Add(new Loot("AmberPearl", 1, 1, true));
-            b.Reward.Valuables.Add(new Loot("IronScrap", 6, 10, false));
-            b.Reward.NextBiome.Add(new Loot("SilverOre", 2, 4, false));
+            b.Reward.Valuables.Add(Loot.Stack("IronScrap", 1f));
+            b.Reward.NextBiome.Add(Loot.Stack("SilverOre", 0.5f));
             b.Reward.Gear = new[] { "SwordIron", "MaceIron", "AxeIron", "AtgeirIron", "SpearElderbark", "BowHuntsman",
                                     "ArmorIronChest", "ArmorIronLegs", "HelmetIron", "ShieldBanded", "ShieldIronTower",
                                     "ArmorRootChest", "ArmorRootLegs", "HelmetRoot" };
@@ -414,7 +423,7 @@ namespace ExtendedBosses
                 d.CfgCycleRetaliate = pl.F(d.Section, "RotPoisonDamage", 12f, 0f, 200f,
                     "Rotten steam: poison dealt back to a close attacker per hit (at most once a second per player).",
                     "Гнилостный пар: яд, который получает атакующий вблизи за удар (не чаще раза в секунду на игрока).");
-                d.CfgFusionInterval = pl.F(d.Section, "SlimeInterval", 25f, 5f, 180f,
+                d.CfgFusionInterval = pl.F(d.Section, "SlimeInterval", 45f, 5f, 180f,
                     "From 45%: seconds between slime waves crawling to Bonemass.", "С 45 %: секунд между волнами слизи, ползущей к Массивному.");
                 d.CfgFusionHeal = pl.F(d.Section, "SlimeWaveHealPercent", 6f, 0f, 50f,
                     "% of max HP one slime wave can heal Bonemass in total, shared among its slimes (a bigger wave does not heal more).",
@@ -472,13 +481,13 @@ namespace ExtendedBosses
             p.Acts.Add(new Act { Kind = ActKind.Wave, Prefabs = new[] { "Fenring" }, Count = 1f });
             p.Acts.Add(new Act { Kind = ActKind.Wave, Prefabs = drakes, Count = 2f });
 
-            b.Reward.Valuables.Add(new Loot("Coins", 240, 360, true));
+            b.Reward.Valuables.Add(new Loot("Coins", 480, 720, true));
             b.Reward.Valuables.Add(new Loot("Ruby", 1, 2, false));
             b.Reward.Valuables.Add(new Loot("SilverNecklace", 1, 1, true));
-            b.Reward.Valuables.Add(new Loot("SilverOre", 6, 10, false));
-            b.Reward.Valuables.Add(new Loot("Obsidian", 4, 8, false));
-            b.Reward.Valuables.Add(new Loot("Crystal", 2, 4, false));
-            b.Reward.NextBiome.Add(new Loot("BlackMetalScrap", 2, 4, false));
+            b.Reward.Valuables.Add(Loot.Stack("SilverOre", 1f));
+            b.Reward.Valuables.Add(Loot.Stack("Obsidian", 1f));
+            b.Reward.Valuables.Add(Loot.Stack("Crystal", 1f));
+            b.Reward.NextBiome.Add(Loot.Stack("BlackMetalScrap", 0.5f));
             b.Reward.Gear = new[] { "SwordSilver", "MaceSilver", "SpearWolfFang", "KnifeSilver", "BowDraugrFang", "ShieldSilver",
                                     "ArmorWolfChest", "ArmorWolfLegs", "HelmetDrake", "CapeWolf",
                                     "ArmorFenringChest", "ArmorFenringLegs", "HelmetFenring" };
@@ -554,12 +563,12 @@ namespace ExtendedBosses
             // experiment, off by default: the echo of the previous boss, half its HP
             Phase(b, 10f, "yagluth.10").Acts.Add(new Act { Kind = ActKind.Lieutenant, Prefabs = new[] { "Aspect_Moder" }, HpMul = 0.5f, Gate = "EchoOfModer" });
 
-            b.Reward.Valuables.Add(new Loot("Coins", 300, 450, true));
+            b.Reward.Valuables.Add(new Loot("Coins", 600, 900, true));
             b.Reward.Valuables.Add(new Loot("SilverNecklace", 1, 2, true));
             b.Reward.Valuables.Add(new Loot("Ruby", 2, 3, false));
-            b.Reward.Valuables.Add(new Loot("BlackMetalScrap", 8, 14, false));
-            b.Reward.NextBiome.Add(new Loot("Softtissue", 2, 4, false));
-            b.Reward.NextBiome.Add(new Loot("BlackCore", 1, 1, false));
+            b.Reward.Valuables.Add(Loot.Stack("BlackMetalScrap", 1f));
+            b.Reward.NextBiome.Add(Loot.Stack("Softtissue", 0.5f));
+            b.Reward.NextBiome.Add(Loot.Stack("BlackCore", 0.5f));
             b.Reward.Gear = new[] { "SwordBlackmetal", "AxeBlackMetal", "AtgeirBlackmetal", "KnifeBlackMetal", "MaceNeedle",
                                     "ShieldBlackmetal", "ShieldBlackmetalTower",
                                     "ArmorPaddedCuirass", "ArmorPaddedGreaves", "HelmetPadded", "CapeLinen", "CapeLox" };
@@ -636,15 +645,15 @@ namespace ExtendedBosses
             Phase(b, 30f, "queen.30").Acts.Add(new Act { Kind = ActKind.Lieutenant, Prefabs = new[] { "Gjall" } });
             Phase(b, 20f, "queen.20").Acts.Add(new Act { Kind = ActKind.Wave, Prefabs = new[] { "Tick", "SeekerBrood" }, Count = 2f });
 
-            b.Reward.Valuables.Add(new Loot("Coins", 360, 540, true));
+            b.Reward.Valuables.Add(new Loot("Coins", 720, 1080, true));
             b.Reward.Valuables.Add(new Loot("Ruby", 2, 3, false));
-            b.Reward.Valuables.Add(new Loot("Softtissue", 4, 8, false));
-            b.Reward.Valuables.Add(new Loot("BlackCore", 1, 2, false));
-            b.Reward.Valuables.Add(new Loot("Eitr", 2, 4, true));
-            b.Reward.NextBiome.Add(new Loot("FlametalOreNew", 2, 4, false));
-            b.Reward.NextBiome.Add(new Loot("GemstoneRed", 1, 1, false));
-            b.Reward.NextBiome.Add(new Loot("GemstoneGreen", 1, 1, false));
-            b.Reward.NextBiome.Add(new Loot("GemstoneBlue", 1, 1, false));
+            b.Reward.Valuables.Add(Loot.Stack("Softtissue", 1f));
+            b.Reward.Valuables.Add(Loot.Stack("BlackCore", 1f));
+            b.Reward.Valuables.Add(Loot.Stack("Eitr", 1f));
+            b.Reward.NextBiome.Add(Loot.Stack("FlametalOreNew", 0.5f));
+            b.Reward.Valuables.Add(new Loot("GemstoneRed", 1, 1, false));
+            b.Reward.Valuables.Add(new Loot("GemstoneGreen", 1, 1, false));
+            b.Reward.Valuables.Add(new Loot("GemstoneBlue", 1, 1, false));
             b.Reward.Gear = new[] { "SwordMistwalker", "AxeJotunBane", "THSwordKrom", "KnifeSkollAndHati", "SpearCarapace", "AtgeirHimminAfl",
                                     "MaceEldner", "BowSpineSnap", "CrossbowArbalest", "ShieldCarapace",
                                     "ArmorCarapaceChest", "ArmorCarapaceLegs", "HelmetCarapace",
@@ -717,13 +726,13 @@ namespace ExtendedBosses
             Phase(b, 20f, "fader.20").Acts.Add(new Act { Kind = ActKind.Lieutenant, Prefabs = new[] { "Charred_Melee_Dyrnwyn" } });
             Phase(b, 10f, "fader.10").Acts.Add(new Act { Kind = ActKind.Wave, Prefabs = new[] { "Asksvin", "BlobLava" }, Count = 1f });
 
-            b.Reward.Valuables.Add(new Loot("Coins", 450, 750, true));
+            b.Reward.Valuables.Add(new Loot("Coins", 900, 1500, true));
             b.Reward.Valuables.Add(new Loot("GemstoneRed", 1, 2, false));
             b.Reward.Valuables.Add(new Loot("GemstoneGreen", 1, 2, false));
             b.Reward.Valuables.Add(new Loot("GemstoneBlue", 1, 2, false));
-            b.Reward.Valuables.Add(new Loot("FlametalOreNew", 6, 12, false));
-            b.Reward.Valuables.Add(new Loot("MoltenCore", 1, 2, false));
-            b.Reward.NextBiome.Add(new Loot("FrostCore", 1, 2, false));
+            b.Reward.Valuables.Add(Loot.Stack("FlametalOreNew", 1f));
+            b.Reward.Valuables.Add(Loot.Stack("MoltenCore", 1f));
+            b.Reward.NextBiome.Add(Loot.Stack("FrostCore", 0.5f));
             b.Reward.Gear = new[] { "SwordNiedhogg", "AxeBerzerkr", "THSwordSlayer", "SpearSplitner", "SledgeDemolisher",
                                     "BowAshlands", "CrossbowRipper", "ShieldFlametal", "ShieldFlametalTower",
                                     "ArmorFlametalChest", "ArmorFlametalLegs", "HelmetFlametal", "StaffGreenRoots" };

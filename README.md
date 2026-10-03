@@ -69,8 +69,9 @@ for the default `Raid` profile.
 - **Marks.** The boss names a player and 3 s later strikes where they stand. Step away
   from your friends.
 - **Lieutenants.** Mini-bosses of the biome join the fight, along with waves of adds.
-- **Reward.** On top of the vanilla drop: coins, valuables, next-biome resources and
-  upgraded gear for bigger groups.
+- **Reward.** On top of the vanilla drop: coins and valuables, about a stack of each
+  material of the biome, about half a stack of the next biome's, and upgraded gear of the
+  next biome for a group of 2+.
 
 `Light` keeps the adds and nests but drops shields, phases and marks; `Hard` is `Raid`,
 denser and tougher. All the numbers:
@@ -81,7 +82,7 @@ denser and tougher. All the numbers:
 ### Eikthyr — the tutorial
 No shield and no phases: every mechanic once, gently.
 - **Charge** — every 20 s he dashes at double speed at a player who keeps their distance.
-- **Skull pile** — raises Meadows skeletons until you break it.
+- **Skull pile** — raises Meadows skeletons until you break it (it glows for players with the mod and drops nothing).
 - **Lightning mark** — the marked player is struck 3 s later.
 - **Reinforcements:** boars and necks, and a herd leader — a 2★ boar with triple health.
 
@@ -183,7 +184,7 @@ guests do not need it. To keep the host owning the boss whoever hits it, set
 | 02 Scaling | HP per player (0.5), player cap (8), multipliers, stars from N |
 | 03 Mechanics | switches for waves, nests, lieutenants, marks, abilities, shield, healers, resistances, threat; cleanup |
 | 04 Marks | hit delay, interval, damage multiplier |
-| 05 Rewards | reward: item quality, items per player, next-biome chance |
+| 05 Rewards | reward: gear quality, from how many players and how many items, amount multiplier |
 | 06 Reset | fight reset (off by default) |
 | 07 Client | mark circles on the ground (local only, not synced) |
 | 08 Sync | the server hands its settings to modded clients; config file watch |

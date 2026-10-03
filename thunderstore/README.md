@@ -20,8 +20,9 @@ feel the same fight.
   rejoin.
 - **Group scaling** for 1–8 players: boss HP, adds, nests, stars and marks grow with the
   group; solo stays doable.
-- **Reward** on top of the vanilla drop: coins, valuables, next-biome resources and
-  upgraded gear for bigger groups.
+- **Reward** on top of the vanilla drop: coins and valuables, about a stack of each
+  material of the biome, about half a stack of the next biome's, and upgraded gear of the
+  next biome for a group of 2+.
 - **English and Russian** messages; players without the mod get them in the language set
   by `GuestLanguage`.
 - The server's settings apply to every client with the mod; config edits are picked up
@@ -50,8 +51,9 @@ for the default `Raid` profile.
 - **Marks.** The boss names a player and 3 s later strikes where they stand. Step away
   from your friends.
 - **Lieutenants.** Mini-bosses of the biome join the fight, along with waves of adds.
-- **Reward.** On top of the vanilla drop: coins, valuables, next-biome resources and
-  upgraded gear for bigger groups.
+- **Reward.** On top of the vanilla drop: coins and valuables, about a stack of each
+  material of the biome, about half a stack of the next biome's, and upgraded gear of the
+  next biome for a group of 2+.
 
 `Light` keeps the adds and nests but drops shields, phases and marks; `Hard` is `Raid`,
 denser and tougher. All the numbers:
@@ -62,7 +64,7 @@ denser and tougher. All the numbers:
 ### Eikthyr — the tutorial
 No shield and no phases: every mechanic once, gently.
 - **Charge** — every 20 s he dashes at double speed at a player who keeps their distance.
-- **Skull pile** — raises Meadows skeletons until you break it.
+- **Skull pile** — raises Meadows skeletons until you break it (it glows for players with the mod and drops nothing).
 - **Lightning mark** — the marked player is struck 3 s later.
 - **Reinforcements:** boars and necks, and a herd leader — a 2★ boar with triple health.
 
