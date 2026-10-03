@@ -26,6 +26,7 @@ namespace ExtendedBosses
         internal static readonly int KCycleAdapt = "j1ga.extendedbosses.cycleadapt".GetStableHashCode(); // boss: DamageType an Adapt variant resists
         internal static readonly int KCycleKind ="j1ga.extendedbosses.cyclekind".GetStableHashCode();  // boss: 1 = Sap, 2 = Back (fixed per bark)
         internal const string KBoss = "j1ga.extendedbosses.boss";                                      // add/totem: ZDOID of its boss
+        internal static readonly System.Collections.Generic.KeyValuePair<int, int> KBossPair = ZDO.GetHashZDOID(KBoss);   // the same key, hashed once (read in per-tick and per-second scans)
         internal static readonly int KHpMul = "j1ga.extendedbosses.hpmul".GetStableHashCode();        // add: effective HP multiplier
         internal static readonly int KSrc = "j1ga.extendedbosses.src".GetStableHashCode();            // add: totem slot + 1 (0 = none)
         internal static readonly int KRole = "j1ga.extendedbosses.role".GetStableHashCode();          // add: RoleHealer, ...
@@ -459,7 +460,7 @@ namespace ExtendedBosses
                 Character c = all[i];
                 if (c == null || c == boss || c.IsDead()) continue;
                 ZDO z = Zdo(c);
-                if (z == null || z.GetZDOID(KBoss) != rt.BossId) continue;
+                if (z == null || z.GetZDOID(KBossPair) != rt.BossId) continue;
                 long exp = z.GetLong(KExpire, 0L);
                 if (exp > 0L && net >= exp) { _tmpExpired.Add(c.gameObject); continue; }
                 int role = z.GetInt(KRole);
@@ -1199,7 +1200,7 @@ namespace ExtendedBosses
                 Character c = all[i];
                 if (c == null || c == boss) continue;
                 ZDO z = Zdo(c);
-                if (z == null || z.GetZDOID(KBoss) != bossId) continue;
+                if (z == null || z.GetZDOID(KBossPair) != bossId) continue;
                 if (DestroyNetObject(c.gameObject)) n++;
             }
             ZDO bz = Zdo(boss);
@@ -1236,7 +1237,7 @@ namespace ExtendedBosses
                 Character c = all[i];
                 if (c == null || c.IsDead()) continue;
                 ZDO z = Zdo(c);
-                if (z == null || z.GetZDOID(KBoss) != bossId) continue;
+                if (z == null || z.GetZDOID(KBossPair) != bossId) continue;
                 if (src != 0 && z.GetInt(KSrc) != src) continue;
                 n++;
             }
@@ -1285,7 +1286,7 @@ namespace ExtendedBosses
             {
                 ZDO z = kv.Key;
                 if (z == null || kv.Value == null) continue;
-                ZDOID boss = z.GetZDOID(KBoss);
+                ZDOID boss = z.GetZDOID(KBossPair);
                 if (boss == ZDOID.None || ZDOMan.instance.GetZDO(boss) != null) continue;
                 if (orphans == null) orphans = new List<GameObject>();
                 orphans.Add(kv.Value.gameObject);

@@ -42,7 +42,7 @@ namespace ExtendedBosses
             {
                 ZDO z = kv.Key;
                 ZNetView nv = kv.Value;
-                if (z == null || nv == null || z.GetZDOID(KBoss) == ZDOID.None) continue;
+                if (z == null || nv == null || z.GetZDOID(KBossPair) == ZDOID.None) continue;
                 GameObject go = nv.gameObject;
                 if (z.GetBool(KNoDrop, false)) StripDrops(go);
 
@@ -79,10 +79,20 @@ namespace ExtendedBosses
             return g;
         }
 
+        // The component stays (its Awake subscribed it to the object's destruction - removing it
+        // would leave that subscription calling a destroyed component); only its drop table is
+        // emptied. The table is this instance's own copy, the prefab is untouched.
         private static void StripDrops(GameObject go)
         {
             DropOnDestroyed[] drops = go.GetComponentsInChildren<DropOnDestroyed>(true);
-            for (int i = 0; i < drops.Length; i++) UnityEngine.Object.Destroy(drops[i]);
+            for (int i = 0; i < drops.Length; i++)
+            {
+                DropTable t = drops[i].m_dropWhenDestroyed;
+                if (t == null) continue;
+                t.m_dropChance = 0f;
+                t.m_dropMin = 0;
+                t.m_dropMax = 0;
+            }
         }
 
         private void ClearGlows()

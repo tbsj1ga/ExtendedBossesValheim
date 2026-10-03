@@ -5,6 +5,14 @@
 The version is set in one place — `ExtendedBossesPlugin.Version` in
 `src/ExtendedBossesPlugin.cs`.
 
+## 0.8.9 — Fix for 0.8.8 (not tested in game)
+
+- The skull pile's drops are now switched off by emptying its drop table. 0.8.8 removed
+  the drop component, whose subscription to the pile's destruction stayed and would fail
+  when the pile was broken - possibly leaving it in the world.
+- The boss tag of adds and nests is read with a pre-hashed key in the per-tick and
+  per-second scans (no string work per object).
+
 ## 0.8.8 — Bonemass's slime, the Elder's shamans, rewards (not tested in game)
 
 - **Bonemass**: slime comes every 45 s (was 25) and in smaller waves (base 1, was 2); the

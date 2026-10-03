@@ -102,7 +102,7 @@ namespace ExtendedBosses
                 try
                 {
                     ZDO z = Zdo(__instance);
-                    if (z != null && z.GetZDOID(KBoss) != ZDOID.None) __instance.m_group = RaidGroup;
+                    if (z != null && z.GetZDOID(KBossPair) != ZDOID.None) __instance.m_group = RaidGroup;
                 }
                 catch (Exception e) { p.Fail("Character.Awake", e); }
             }

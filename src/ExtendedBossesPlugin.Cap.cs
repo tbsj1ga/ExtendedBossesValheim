@@ -60,7 +60,7 @@ namespace ExtendedBosses
         {
             ZDO z = Zdo(area);
             if (z == null) return true;
-            ZDOID bossId = z.GetZDOID(KBoss);
+            ZDOID bossId = z.GetZDOID(KBossPair);
             if (bossId == ZDOID.None) return true;      // not ours: vanilla behaviour
             GameObject go = ZNetScene.instance.FindInstance(bossId);
             Character boss = go != null ? go.GetComponent<Character>() : null;
