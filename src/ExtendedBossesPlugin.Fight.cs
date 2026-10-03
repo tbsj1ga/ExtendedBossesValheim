@@ -211,6 +211,7 @@ namespace ExtendedBosses
             TickAdds(boss, rt, net);
             DecayTyped(rt);
             TickTotems(boss, rt, z, players, now);
+            ClaimNoDrop(z);
             TickShield(boss, rt, z, net);
             TickCycle(boss, rt, z, net, players);
             TickHeal(boss, rt);

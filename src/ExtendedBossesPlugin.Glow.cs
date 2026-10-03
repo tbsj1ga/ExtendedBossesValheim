@@ -38,7 +38,6 @@ namespace ExtendedBosses
             bool on = _cfgHighlight.Value;
 
             HashSet<int> seen = new HashSet<int>();
-            HashSet<ZDOID> seenNoDrop = new HashSet<ZDOID>();
             foreach (KeyValuePair<ZDO, ZNetView> kv in inst)
             {
                 ZDO z = kv.Key;
@@ -48,8 +47,6 @@ namespace ExtendedBosses
                 if (z.GetBool(KNoDrop, false))
                 {
                     StripDrops(go);
-                    RememberNoDrop(z, go);
-                    seenNoDrop.Add(z.m_uid);
                 }
 
                 Character c = go.GetComponent<Character>();
@@ -59,8 +56,6 @@ namespace ExtendedBosses
                 seen.Add(id);
                 if (!_glows.ContainsKey(id)) _glows[id] = AddGlow(go, slime);
             }
-
-            TickNoDrop(now, seenNoDrop);
 
             // lights of objects that are gone (destroyed, unloaded) or switched off
             _tmpGlowIds.Clear();

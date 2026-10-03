@@ -5,6 +5,14 @@
 The version is set in one place — `ExtendedBossesPlugin.Version` in
 `src/ExtendedBossesPlugin.cs`.
 
+## 0.8.11 — the skull pile: owned by the fight, not cleaned up after (not tested in game)
+
+- The 0.8.10 clean-up of items left on the broken pile's spot is removed: items are
+  picked up instantly, so they would already be in an inventory. Instead the client
+  running the fight keeps owning the pile, so its destruction is always handled by a client
+  with the mod, where the drop is switched off - also when a player without the mod breaks
+  it.
+
 ## 0.8.10 — after a group test (not tested in game)
 
 - **Eikthyr's skull pile really drops nothing.** `skull_pile` is a build piece, and a
