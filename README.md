@@ -186,11 +186,11 @@ guests do not need it. To keep the host owning the boss whoever hits it, set
 | 04 Marks | hit delay, interval, damage multiplier |
 | 05 Rewards | reward: gear quality, from how many players and how many items, amount multiplier |
 | 06 Reset | fight reset (off by default) |
-| 07 Client | mark circles on the ground (local only, not synced) |
+| 07 Client | mark circles on the ground, highlight of nests, totems and slime, how long messages stay (local only, not synced) |
 | 08 Sync | the server hands its settings to modded clients; config file watch |
-| 09 Raid | shield, burn window, healing, threat — the numbers |
+| 09 Raid | shield (and its 90 s limit), burn window, healing, threat, damage floor, crowd cap — the numbers |
 | 10 Eikthyr | `Mode = Mod / Vanilla`, profile, totem, lightning, charge |
-| 11 Elder | `Mode`, profile, nest, root creature, living bark |
+| 11 Elder | `Mode`, profile, nest, root creature, living bark, shaman healing |
 | 12 Bonemass | `Mode`, profile, bone pile, poison pool, hardening, slime |
 | 13 Moder | `Mode`, profile, ice stalagmite, ice nova, ice armor / spikes |
 | 14 Yagluth | `Mode`, profile, totem, meteors, regeneration / adaptation, echo of Moder (experimental) |

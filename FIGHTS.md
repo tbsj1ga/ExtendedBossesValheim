@@ -1,4 +1,4 @@
-# ExtendedBosses — boss fights (version 0.8.4)
+# ExtendedBosses — boss fights (version 0.8.11)
 
 **English** · [Русский](FIGHTS-RU.md)
 
@@ -95,6 +95,11 @@ what actually comes:
 Each threshold fires **once per fight**: if the boss heals above a threshold and drops to
 it again, the phase does not repeat (only a fight reset can repeat it, `06 Reset`, off by
 default).
+
+Nests, totems and adds appear on open ground in a ring around the boss — never on top of
+a tree trunk or a pillar of the arena. A boss that has lost its target mid-fight (the group
+is busy with lieutenants out of its sight) goes for the nearest player instead of
+wandering off.
 
 Messages stay in the centre of the screen ×1.5 as long as vanilla (`07 Client /
 MessageDurationMultiplier`, only for players with the mod).
