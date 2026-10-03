@@ -5,6 +5,19 @@
 The version is set in one place — `ExtendedBossesPlugin.Version` in
 `src/ExtendedBossesPlugin.cs`.
 
+## 0.8.10 — after a group test (not tested in game)
+
+- **Eikthyr's skull pile really drops nothing.** `skull_pile` is a build piece, and a
+  destroyed piece gives its resources (the skulls) back - the drop table was never the
+  source. Now, on every client with the mod, both a piece's resource drop and a drop table
+  are skipped for the pile; and since the pile may belong to a player without the mod, the
+  items it would give back are removed from its spot for 4 s after it breaks.
+- **Nests, totems and adds appear on open ground**: no longer on top of a tree trunk or a
+  pillar of the arena (the point is retried until nothing stands above the ground). The
+  Elder's seed nests too.
+- **A boss mid-fight without a target takes the nearest player** instead of idling and
+  wandering off its arena (Bonemass walked away while the group fought lieutenants).
+
 ## 0.8.9 — Fix for 0.8.8 (not tested in game)
 
 - The skull pile's drops are now switched off by emptying its drop table. 0.8.8 removed

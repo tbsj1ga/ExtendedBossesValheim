@@ -12,15 +12,29 @@ namespace ExtendedBosses
         // ------------------------------------------------------------------
         // creatures and objects
         // ------------------------------------------------------------------
+        // A point in the ring on open ground: the solid height (the highest collider) must be
+        // the ground there, give or take a low floor - not the top of a tree trunk or of a pillar
+        // of the arena. Up to 12 tries; then the last one, put on the terrain.
         internal Vector3 RingPoint(Vector3 center, float rMin, float rMax)
         {
             if (rMax < rMin) rMax = rMin;
-            float ang = UnityEngine.Random.Range(0f, Mathf.PI * 2f);
-            float dist = UnityEngine.Random.Range(rMin, rMax);
-            Vector3 p = center + new Vector3(Mathf.Cos(ang) * dist, 0f, Mathf.Sin(ang) * dist);
             ZoneSystem zs = ZoneSystem.instance;
-            p.y = zs != null ? zs.GetSolidHeight(p) : center.y;
-            if (Mathf.Abs(p.y - center.y) > 12f) p.y = center.y;   // cliff or cave: stay at the boss's height
+            Vector3 p = center;
+            for (int tries = 0; tries < 12; tries++)
+            {
+                float ang = UnityEngine.Random.Range(0f, Mathf.PI * 2f);
+                float dist = UnityEngine.Random.Range(rMin, rMax);
+                p = center + new Vector3(Mathf.Cos(ang) * dist, 0f, Mathf.Sin(ang) * dist);
+                if (zs == null) { p.y = center.y; return p; }
+                float ground = zs.GetGroundHeight(p);
+                float solid = zs.GetSolidHeight(p);
+                if (Mathf.Abs(ground - center.y) > 12f) continue;           // cliff or pit
+                if (solid - ground > 0.6f) continue;                         // something stands here
+                p.y = Mathf.Max(ground, solid);
+                return p;
+            }
+            p.y = zs != null ? zs.GetGroundHeight(p) : center.y;
+            if (Mathf.Abs(p.y - center.y) > 12f) p.y = center.y;
             return p;
         }
 

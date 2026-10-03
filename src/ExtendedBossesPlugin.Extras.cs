@@ -157,9 +157,7 @@ namespace ExtendedBosses
                     if (Time.time < rt.NextSeed || SeedsAlive(bz) >= act.MaxAlive) return;
                     if (UnityEngine.Random.value >= act.Chance) return;
                     rt.NextSeed = Time.time + act.Interval;
-                    Vector3 at = point;
-                    ZoneSystem zs = ZoneSystem.instance;
-                    if (zs != null) at.y = zs.GetSolidHeight(at);
+                    Vector3 at = RingPoint(point, 0f, 4f);   // open ground near where it landed, not on a tree it hit
                     if (PlaceTotem(owner, rt, act, i, a, at))
                     {
                         if (!string.IsNullOrEmpty(act.MarkKey)) Announce(act.MarkKey, NameToken(owner));

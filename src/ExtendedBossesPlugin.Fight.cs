@@ -221,6 +221,7 @@ namespace ExtendedBosses
             TickHazard(boss, rt, mask, now);
             TickCocoon(boss, rt, mask, players, now);
             TickThreat(boss, rt);
+            TickEngage(boss, mask);
         }
 
         private void RunPhase(Character boss, FightRt rt, int index, int players, float now)

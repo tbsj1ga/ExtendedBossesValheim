@@ -92,6 +92,26 @@ namespace ExtendedBosses
             if (ai.GetTargetCreature() != cur) SetTarget(ai, cur);
         }
 
+        // A boss mid-fight with no target (everyone is busy with lieutenants out of its sight)
+        // would idle and wander off its arena; it takes the nearest living player instead.
+        private void TickEngage(Character boss, int mask)
+        {
+            if (mask == 0) return;                                  // the fight has not begun
+            MonsterAI ai = boss.GetComponent<MonsterAI>();
+            if (ai == null || ai.GetTargetCreature() != null) return;
+            Player best = null;
+            float bestD = Sv(_cfgScalingRange);
+            List<Player> players = Player.GetAllPlayers();
+            for (int i = 0; i < players.Count; i++)
+            {
+                Player p = players[i];
+                if (p == null || p.IsDead()) continue;
+                float d = Flat(p.transform.position - boss.transform.position);
+                if (d < bestD) { bestD = d; best = p; }
+            }
+            if (best != null) SetTarget(ai, best);
+        }
+
         private void SetTarget(MonsterAI ai, Character target)
         {
             if (_miSetTarget == null) _miSetTarget = AccessTools.Method(typeof(MonsterAI), "SetTarget", new Type[] { typeof(Character) });
