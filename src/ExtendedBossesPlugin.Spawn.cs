@@ -19,6 +19,13 @@ namespace ExtendedBosses
         {
             if (rMax < rMin) rMax = rMin;
             ZoneSystem zs = ZoneSystem.instance;
+            // a flying boss (Moder) is far above the ground: measure from the ground under it,
+            // or every point fails the cliff test and the fallback hangs the object in the air
+            if (zs != null)
+            {
+                float under = zs.GetGroundHeight(center);
+                if (center.y - under > 3f) center.y = under;
+            }
             Vector3 p = center;
             for (int tries = 0; tries < 12; tries++)
             {
@@ -105,6 +112,14 @@ namespace ExtendedBosses
             if (!Sb(_cfgRewards)) return;
             int n = GroupSize(boss);
             Vector3 pos = boss.transform.position;
+            // a boss killed in the air (Moder) would scatter the reward down the slopes: put it on
+            // the ground under the body
+            ZoneSystem zsr = ZoneSystem.instance;
+            if (zsr != null)
+            {
+                float ground = zsr.GetGroundHeight(pos);
+                if (pos.y - ground > 3f) pos.y = ground;
+            }
             float val = Sv(_cfgValuables);
             RewardDef r = def.Reward;
             int drops = 0;

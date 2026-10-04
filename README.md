@@ -108,7 +108,7 @@ No shield and no phases: every mechanic once, gently.
   swamp bats.
 
 ### Moder
-- **Ice stalagmites** hatch drakes and hold her shield.
+- **Ice stalagmites** hatch drakes and hold her shield. More drakes fly in all fight long.
 - **Ice nova** under marked players — frost and slow.
 - **Breath mark** — she lands and fixes on the marked player for a few seconds.
 - **Phases:** *Ice armor* — while she is on the ground, ranged hits do a quarter: get
@@ -192,7 +192,7 @@ guests do not need it. To keep the host owning the boss whoever hits it, set
 | 10 Eikthyr | `Mode = Mod / Vanilla`, profile, totem, lightning, charge |
 | 11 Elder | `Mode`, profile, nest, root creature, living bark, shaman healing |
 | 12 Bonemass | `Mode`, profile, bone pile, poison pool, hardening, slime |
-| 13 Moder | `Mode`, profile, ice stalagmite, ice nova, ice armor / spikes |
+| 13 Moder | `Mode`, profile, ice stalagmite, ice nova, ice armor / spikes, flash interval, drakes flying in |
 | 14 Yagluth | `Mode`, profile, totem, meteors, regeneration / adaptation, echo of Moder (experimental) |
 | 15 Queen | `Mode`, profile, egg, acid, bloodlust / acid spikes |
 | 16 Fader | `Mode`, profile, spawner stone, meteors, molten armor / ash veil |

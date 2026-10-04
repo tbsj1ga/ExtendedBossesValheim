@@ -257,7 +257,7 @@ namespace ExtendedBosses
         // ------------------------------------------------------------------
         // migration: defaults that changed are reset once in an existing file (other values kept)
         // ------------------------------------------------------------------
-        private const int CurrentConfigVersion = 3;
+        private const int CurrentConfigVersion = 4;
 
         private void MigrateConfig()
         {
@@ -278,6 +278,12 @@ namespace ExtendedBosses
                 // 0.8.8: Bonemass's slime comes less often
                 BossDef bm = BossByPrefab("Bonemass");
                 if (bm != null) ResetToDefault(bm.CfgFusionInterval, reset);
+            }
+            if (v < 4)
+            {
+                // 0.8.12: Moder's cycle phases come a little more often
+                BossDef md = BossByPrefab("Dragon");
+                if (md != null) { ResetToDefault(md.CfgCycleCdMin, reset); ResetToDefault(md.CfgCycleCdMax, reset); }
             }
             _cfgConfigVersion.Value = CurrentConfigVersion;
             if (reset.Count > 0) Logger.LogInfo("Config updated to version " + CurrentConfigVersion + ", new defaults: " + string.Join(", ", reset.ToArray()));

@@ -50,8 +50,12 @@ namespace ExtendedBosses
         public float Lifetime;          // creatures: removed after this many seconds (0 = stay)
         public bool InWater;            // Wave: only at spots under water (leeches); none found = none spawned
         public string Prop;             // Totem: the destructible prop; Marks: the telegraph effect
+        public string StrikeFx;         // Marks: a visual played where the strike lands (an invisible damage area gets one)
         public float Interval = 12f;    // Totem, Fusion: seconds between spawns
         public int MaxAlive = 3;        // Totem: adds alive per totem
+        public int ExtraAliveFrom = 4;  // Totem: one more alive from this many players (0 = never)
+        public int AlivePerPlayer = 0;  // Totem: at most this many alive per player from ALL totems of the boss together (0 = no limit)
+        public float MarkRange = 0f;    // Marks: only players this close to the boss are marked (0 = 02 Scaling / ScalingRange)
         public float Damage;            // Marks: damage of the strike
         public HitData.DamageType DamageType = HitData.DamageType.Lightning;
         public string MarkKey;          // Marks: text key announced per mark ({0} boss, {1} player); Fusion: per wave
@@ -140,6 +144,11 @@ namespace ExtendedBosses
         public ConfigEntry<float> CfgAdaptOthers;
         public ConfigEntry<float> CfgLifesteal;
         public ConfigEntry<float> CfgHealPercent;      // healers of this boss, % of max HP per second (null = 09 Raid default)
+        public ConfigEntry<float> CfgMarkInterval;     // this boss's marks, seconds (null = 04 Marks / Interval)
+        public string FlyerPrefab;                     // flyers: adds coming all fight long, own cap (Moder: drakes)
+        public ConfigEntry<float> CfgFlyerInterval;
+        public ConfigEntry<int> CfgFlyerMax;
+        public float CycleCdMinDefault = 50f, CycleCdMaxDefault = 70f;   // defaults of the boss's Cycle cooldown settings
         public readonly Dictionary<string, ConfigEntry<bool>> Gates = new Dictionary<string, ConfigEntry<bool>>();
         public ConfigEntry<float> CfgFusionInterval;
         public ConfigEntry<float> CfgFusionHeal;
@@ -209,8 +218,8 @@ namespace ExtendedBosses
                     allowed.ToArray());
             }
             d.CfgCycleDuration = F(d.Section, prefix + "Duration", 30f, 5f, 120f, "Seconds each " + whatEn + " lasts.", "Длительность (" + whatRu + "), секунд.");
-            d.CfgCycleCdMin = F(d.Section, prefix + "CooldownMin", 50f, 5f, 300f, "Cooldown between: from...", "Перерыв между: от…");
-            d.CfgCycleCdMax = F(d.Section, prefix + "CooldownMax", 70f, 5f, 300f, "...to (random each time).", "…до (случайно каждый раз).");
+            d.CfgCycleCdMin = F(d.Section, prefix + "CooldownMin", d.CycleCdMinDefault, 5f, 300f, "Cooldown between: from...", "Перерыв между: от…");
+            d.CfgCycleCdMax = F(d.Section, prefix + "CooldownMax", d.CycleCdMaxDefault, 5f, 300f, "...to (random each time).", "…до (случайно каждый раз).");
             d.CfgCycleDelay = F(d.Section, prefix + "StartDelay", 60f, 0f, 300f,
                 "The first one comes when the stagger after the fallen shield ends; if the shield still stands this long after 55%, it starts anyway.",
                 "Первый раз — когда кончается оглушение после падения щита; если щит стоит дольше этого после 55 %, начинается всё равно.");
@@ -440,27 +449,30 @@ namespace ExtendedBosses
         private static BossDef Moder()
         {
             BossDef b = new BossDef { Prefab = "Dragon", Section = "13 Moder" };
+            b.CycleCdMinDefault = 40f;      // her abilities come a little more often than the others'
+            b.CycleCdMaxDefault = 55f;
             const string spike = "caverock_ice_stalagmite";
             string[] drakes = { "Hatchling" };
+            b.FlyerPrefab = "Hatchling";
 
             PhaseDef p = Phase(b, 85f, "moder.85");
-            p.Acts.Add(new Act { Kind = ActKind.Totem, Prop = spike, Count = 1f, Prefabs = drakes, Interval = 15f, MaxAlive = 2, Fallback = null });
+            p.Acts.Add(new Act { Kind = ActKind.Totem, Prop = spike, Count = 1f, Prefabs = drakes, Interval = 15f, MaxAlive = 2, ExtraAliveFrom = 0, AlivePerPlayer = 2, Fallback = null });
             p.Acts.Add(new Act { Kind = ActKind.Wave, Prefabs = new[] { "Wolf" }, NightPrefabs = new[] { "Ulv" }, Count = 2f });
 
             p = Phase(b, 70f, "moder.70");
-            p.Acts.Add(new Act { Kind = ActKind.Totem, Prop = spike, Count = 2f, Prefabs = drakes, Interval = 15f, MaxAlive = 2, Fallback = null });
+            p.Acts.Add(new Act { Kind = ActKind.Totem, Prop = spike, Count = 2f, Prefabs = drakes, Interval = 15f, MaxAlive = 2, ExtraAliveFrom = 0, AlivePerPlayer = 2, Fallback = null });
             p.Acts.Add(new Act
             {
-                Kind = ActKind.Marks, Prefabs = new[] { "FenringIceNova_aoe" }, Prop = "vfx_prespawn", MarkKey = "moder.mark",
+                Kind = ActKind.Marks, Prefabs = new[] { "FenringIceNova_aoe" }, Prop = "vfx_prespawn", MarkKey = "moder.mark", StrikeFx = "fx_DvergerMage_Nova_ring", MarkRange = 40f,
                 Count = 1f, Damage = 25f, DamageType = HitData.DamageType.Frost
             });
 
             p = Phase(b, 55f, "moder.55");
-            p.Acts.Add(new Act { Kind = ActKind.Totem, Prop = spike, Count = 3f, Prefabs = drakes, Interval = 15f, MaxAlive = 2, Fallback = null });
+            p.Acts.Add(new Act { Kind = ActKind.Totem, Prop = spike, Count = 3f, Prefabs = drakes, Interval = 15f, MaxAlive = 2, ExtraAliveFrom = 0, AlivePerPlayer = 2, Fallback = null });
             p.Acts.Add(new Act { Kind = ActKind.Shield });
             p.Acts.Add(new Act
             {
-                Kind = ActKind.Cycle, Duration = 30f, CooldownMin = 50f, CooldownMax = 70f, Delay = 60f,
+                Kind = ActKind.Cycle, Duration = 30f, CooldownMin = 40f, CooldownMax = 55f, Delay = 60f,
                 Variants = new List<CycleVariant>
                 {
                     // ice armor: arrows bounce off while she is on the ground - melee window
@@ -475,11 +487,11 @@ namespace ExtendedBosses
             p = Phase(b, 45f, "moder.45");
             p.Acts.Add(new Act { Kind = ActKind.Wave, Prefabs = new[] { "Fenring_Cultist" }, Count = 1f });
             // breath mark: she lands and takes the marked player as her target for a while
-            p.Acts.Add(new Act { Kind = ActKind.Fixate, Land = true, Interval = 35f, Duration = 8f, MarkKey = "moder.breath" });
+            p.Acts.Add(new Act { Kind = ActKind.Fixate, Land = true, Interval = 25f, Duration = 8f, MarkKey = "moder.breath" });
             Phase(b, 35f, "moder.35").Acts.Add(new Act { Kind = ActKind.Lieutenant, Prefabs = new[] { "StoneGolem" } });
             p = Phase(b, 20f, "moder.20");
             p.Acts.Add(new Act { Kind = ActKind.Wave, Prefabs = new[] { "Fenring" }, Count = 1f });
-            p.Acts.Add(new Act { Kind = ActKind.Wave, Prefabs = drakes, Count = 2f });
+            p.Acts.Add(new Act { Kind = ActKind.Wave, Prefabs = drakes, Count = 1f });
 
             b.Reward.Valuables.Add(new Loot("Coins", 480, 720, true));
             b.Reward.Valuables.Add(new Loot("Ruby", 1, 2, false));
@@ -503,6 +515,14 @@ namespace ExtendedBosses
                     "Vanilla AoE prefab of the ice flash under a marked player from 70%.", "Ванильный AoE-префаб ледяной вспышки под отмеченным игроком с 70 %.");
                 d.CfgMarkEffect = pl.S(d.Section, "MarkEffect", "vfx_prespawn",
                     "Vanilla effect on the marked player before the flash (players with the mod).", "Ванильный эффект на отмеченном игроке до вспышки (у игроков с модом).");
+                d.CfgMarkInterval = pl.F(d.Section, "MarkInterval", 15f, 5f, 120f,
+                    "Seconds between her ice flashes (x0.75 in Hard). Overrides 04 Marks / Interval for Moder.",
+                    "Секунд между её ледяными вспышками (×0.75 в Hard). Для Модер заменяет 04 Marks / Interval.");
+                d.CfgFlyerInterval = pl.F(d.Section, "DrakeFlightInterval", 30f, 5f, 300f,
+                    "All fight long, every this many seconds 1-2 drakes fly in (x0.75 in Hard); not counted with the stalagmites' drakes.",
+                    "Весь бой раз в столько секунд прилетают 1–2 дрейка (×0.75 в Hard); считаются отдельно от дрейков сталагмитов.");
+                d.CfgFlyerMax = pl.I(d.Section, "DrakeFlightMax", 2, 0, 10,
+                    "At most this many of the flying-in drakes alive at once (0 = off).", "Не больше стольких прилетевших дрейков одновременно (0 = выкл.).");
                 d.CfgMarkDamage = pl.F(d.Section, "MarkDamage", 25f, 0f, 500f,
                     "Frost damage of the flash (before 04 Marks DamageMultiplier); frost also slows.", "Урон морозом вспышки (до множителя из 04 Marks); мороз ещё и замедляет.");
                 pl.BindCycle(d, "Cycle", "IceArmor: hits from afar x0.25 while she is on the ground; Thorns: every hit is paid back with frost",

@@ -1,4 +1,4 @@
-# ExtendedBosses — boss fights (version 0.8.11)
+# ExtendedBosses — boss fights (version 0.8.12)
 
 **English** · [Русский](FIGHTS-RU.md)
 
@@ -115,6 +115,7 @@ the mod see a red circle of the radius); every 20 s (Hard 15 s).
   about half a stack of each. Always, whatever the group size.
 - Gear — only of the next biome (the last boss: its own), upgraded to quality 2–3, only
   for a group of 2+: 2–4 players — 1 item, 5–7 — 2, 8 — 3.
+- Everything is dropped on the ground under the boss (Moder dies in the air).
 
 ---
 
@@ -184,18 +185,23 @@ stack of silver ore; gear (2+ players) — silver, wolf.
 
 | HP | Raid | Light | Hard |
 |---|---|---|---|
-| 85% | 1 ice stalagmite: drakes hatch every 15 s, up to 2 alive; **pack** — wolves (base 2), at night — ulvs | the same | drakes every 11 s, +1★; bigger pack |
-| 70% | 2 more stalagmites; **ice novas** on marks (25 frost, slow) | stalagmites | novas more often |
+| 85% | 1 ice stalagmite: a drake hatches every 15 s, up to 2 alive per stalagmite and **at most 2 per player from all stalagmites together**; **pack** — wolves (base 2), at night — ulvs | the same | drakes every 11 s, +1★; bigger pack |
+| 70% | 2 more stalagmites; **ice novas** on marks every 15 s, only on players within 40 m of her (25 frost, slow) | stalagmites | novas more often |
 | 55% | 3 more stalagmites, **shield**; after the window — phase cycles | stalagmites without a shield | shield ×0.1 |
-| 45% | cultists (base 1); **breath mark**: every 35 s she lands and for 8 s keeps the marked player as her target | cultists | mark more often |
+| 45% | cultists (base 1); **breath mark**: every 25 s she lands and for 8 s keeps the marked player as her target | cultists | mark more often |
 | 35% | a stone golem | the same | the same |
-| 20% | a fenring (base 1) + drakes (base 2) | the same | more, +1★ |
+| 20% | a fenring (base 1) + drakes (base 1) | the same | more, +1★ |
 
 **Phase cycles** (random variant):
 - **Ice armor** — hits from farther than 6 m ×0.25 while she is **on the ground** (no
   effect in the air): a window for melee;
 - **Ice spikes** — every hit returns 12% of the damage to the attacker as frost (at least
   5, at most once per second).
+
+Her phase cycles come more often than other bosses': a 40–55 s break between phases.
+
+All fight long, every 30 s (Hard ~23 s) 1–2 drakes fly in from afar — at most 2 of them
+alive at once, apart from the stalagmites' drakes.
 
 Reward: coins 480–720 ×N, rubies, silver necklaces ×N; about a stack each of silver ore,
 obsidian and crystals, about half a stack of black metal scrap; gear (2+ players) — black

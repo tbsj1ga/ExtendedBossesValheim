@@ -5,6 +5,39 @@
 The version is set in one place — `ExtendedBossesPlugin.Version` in
 `src/ExtendedBossesPlugin.cs`.
 
+## 0.8.12 — Moder: fewer drakes, abilities more often; the reward on the ground (not tested in game)
+
+- **A threshold never fires twice when the boss changes owner.** Every client with the
+  mod remembers which thresholds of a boss have fired; a client that takes the boss over
+  (the owner died, HostOwner took it back) merges that memory into the boss data before
+  checking thresholds. Before, a new owner with a moment-old copy could run a threshold
+  again - in a group of 4 Moder put up far more than her 6 stalagmites. A fight reset is
+  counted in the boss data, so a reset still starts the thresholds over.
+- Every fired threshold is written to the log (`BepInEx/LogOutput.log`) without `Debug`:
+  the boss, the threshold, the group size and the number of totems; a restored threshold
+  memory is logged too.
+- **Moder's stalagmites, adds and nests are placed on the ground, not in the sky.** The
+  spawn point was measured from the boss, and a boss flying more than 12 m up failed every
+  ground test - the stalagmites hung in the air at her height: invisible, out of reach,
+  hatching drakes all fight long and holding the shield until its 90 s timeout. A boss
+  more than 3 m above the ground now places everything around the ground under it.
+- **Moder's ice flash is visible**: an ice ring (`fx_DvergerMage_Nova_ring`) plays where it
+  lands; before, only the red circle showed and the hit itself was invisible.
+- **Drakes under control.** Stalagmites hatch as before (a drake every 15 s, up to 2 alive
+  per stalagmite), but all stalagmites together keep at most **2 drakes per player** alive.
+  Besides, all fight long every 30 s 1-2 drakes fly in from afar (25-35 m), at most 2 of
+  them alive at once, counted apart from the stalagmites (`13 Moder / DrakeFlightInterval`,
+  `DrakeFlightMax`). The 20% wave brings 1 drake as a base (was 2).
+- **Ice flash marks only near Moder**: players within 40 m of her; the message says what
+  the red circle means ("an ice blast in a moment, step out of it").
+- **Her abilities come more often.** Ice novas on marks every 15 s (was 20 s; new setting
+  `13 Moder / MarkInterval`), the breath mark every 25 s (was 35 s), a 40–55 s break
+  between phase cycles (was 50–70 s). The config is migrated: the cycle break of an
+  existing file is reset to the new default once.
+- **The reward lies on the ground under the boss.** Moder dies in the air, and the group
+  reward was dropped where she hung - the gear could fall off the cliffs and be lost. A
+  boss more than 3 m above the ground now drops it at ground level.
+
 ## 0.8.11 — the skull pile: owned by the fight, not cleaned up after (not tested in game)
 
 - The 0.8.10 clean-up of items left on the broken pile's spot is removed: items are

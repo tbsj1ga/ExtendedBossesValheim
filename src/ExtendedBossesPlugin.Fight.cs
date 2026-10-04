@@ -12,6 +12,7 @@ namespace ExtendedBosses
     {
         // ZDO keys
         internal static readonly int KPhase = "j1ga.extendedbosses.phase".GetStableHashCode();        // boss: int bitmask of fired phases
+        internal static readonly int KResets = "j1ga.extendedbosses.resets".GetStableHashCode();      // boss: int, +1 on every fight reset (tells a stale phase memo from a reset)
         internal static readonly int KTotems = "j1ga.extendedbosses.totems".GetStableHashCode();      // boss: number of totem slots
         internal static readonly int KShieldAct = "j1ga.extendedbosses.shield".GetStableHashCode();   // boss: act code + 1 of the armed shield
         internal static readonly int KResistAct = "j1ga.extendedbosses.resist".GetStableHashCode();   // boss: act code + 1 of the resist phase
@@ -28,7 +29,7 @@ namespace ExtendedBosses
         internal const string KBoss = "j1ga.extendedbosses.boss";                                      // add/totem: ZDOID of its boss
         internal static readonly System.Collections.Generic.KeyValuePair<int, int> KBossPair = ZDO.GetHashZDOID(KBoss);   // the same key, hashed once (read in per-tick and per-second scans)
         internal static readonly int KHpMul = "j1ga.extendedbosses.hpmul".GetStableHashCode();        // add: effective HP multiplier
-        internal static readonly int KSrc = "j1ga.extendedbosses.src".GetStableHashCode();            // add: totem slot + 1 (0 = none)
+        internal static readonly int KSrc = "j1ga.extendedbosses.src".GetStableHashCode();            // add: totem slot + 1 (0 = none, -3 = flyer)
         internal static readonly int KRole = "j1ga.extendedbosses.role".GetStableHashCode();          // add: RoleHealer, ...
         internal static readonly int KExpire = "j1ga.extendedbosses.expire".GetStableHashCode();      // add: net ticks to remove it at
         internal static readonly int KFuseHeal = "j1ga.extendedbosses.fuseheal".GetStableHashCode();  // fusing add: % of boss max HP it heals on arrival
@@ -52,6 +53,7 @@ namespace ExtendedBosses
             public Character Boss;
             public bool Seen;
             public float NextMark;
+            public float NextFlyer;
             public readonly List<Strike> Strikes = new List<Strike>();
             public float NextCharge;
             public float ChargeEnd;
@@ -96,6 +98,13 @@ namespace ExtendedBosses
         private readonly List<ZDOID> _tmpIds = new List<ZDOID>();
         private int _forcePlayers;             // 'eb players <n>' for testing; 0 = count
 
+        // Phases every client with the mod has seen fired, per boss. The boss owner can change
+        // mid-fight (a death, HostOwner taking the boss back); a new owner whose copy of the boss
+        // data is a moment old would see an already fired threshold as new and run it again
+        // (a second set of stalagmites). The memo is merged back into the boss data first.
+        private sealed class PhaseMemo { public int Resets; public int Mask; }
+        private readonly Dictionary<ZDOID, PhaseMemo> _phaseMemo = new Dictionary<ZDOID, PhaseMemo>();
+
         internal static long NetTicks()
         {
             ZNet z = ZNet.instance;
@@ -117,6 +126,7 @@ namespace ExtendedBosses
                 if (c == null || !c.IsBoss() || c.IsDead()) continue;
                 ZDO z = Zdo(c);
                 if (z == null || BossOf(z) == null) continue;
+                RememberPhases(c.GetZDOID(), z);
                 if (!IsOwner(c)) continue;
                 _tmpBosses.Add(c);
             }
@@ -138,6 +148,35 @@ namespace ExtendedBosses
                 StopCharge(rt);
                 _fights.Remove(_tmpIds[i]);
             }
+        }
+
+        private void RememberPhases(ZDOID id, ZDO z)
+        {
+            int resets = z.GetInt(KResets);
+            int mask = z.GetInt(KPhase);
+            PhaseMemo m;
+            if (!_phaseMemo.TryGetValue(id, out m)) { m = new PhaseMemo(); m.Resets = resets; _phaseMemo[id] = m; }
+            if (resets > m.Resets) { m.Resets = resets; m.Mask = mask; }       // the fight was reset: start over
+            else if (resets == m.Resets) m.Mask |= mask;
+            // resets < m.Resets: a stale copy - keep the memo
+        }
+
+        // owner: put phases the boss data forgot back (see PhaseMemo)
+        private int RestorePhases(Character boss, BossDef def, ZDO z)
+        {
+            int mask = z.GetInt(KPhase);
+            PhaseMemo m;
+            if (!_phaseMemo.TryGetValue(boss.GetZDOID(), out m)) return mask;
+            int resets = z.GetInt(KResets);
+            if (m.Resets < resets) return mask;
+            int merged = m.Resets > resets ? m.Mask : (mask | m.Mask);
+            if (merged != mask || m.Resets != resets)
+            {
+                z.Set(KPhase, merged);
+                z.Set(KResets, m.Resets);
+                Logger.LogInfo(def.Prefab + ": restored fired phases from local memory (boss data had " + mask + ", memory " + merged + ")");
+            }
+            return merged;
         }
 
         private FightRt Rt(Character boss, BossDef def)
@@ -192,7 +231,7 @@ namespace ExtendedBosses
             SetBossGroup(boss, true);
 
             int players = GroupSize(boss);
-            int mask = z.GetInt(KPhase);
+            int mask = RestorePhases(boss, def, z);
             float pct = boss.GetHealthPercentage() * 100f;
             long net = NetTicks();
 
@@ -205,12 +244,15 @@ namespace ExtendedBosses
                 if ((mask & bit) != 0 || pct > def.Phases[i].Pct) continue;
                 mask |= bit;
                 z.Set(KPhase, mask);
+                PhaseMemo pm;
+                if (_phaseMemo.TryGetValue(boss.GetZDOID(), out pm)) pm.Mask |= bit;
                 RunPhase(boss, rt, i, players, now);
             }
 
             TickAdds(boss, rt, net);
             DecayTyped(rt);
             TickTotems(boss, rt, z, players, now);
+            TickFlyers(boss, rt, mask, pct, players, now);
             ClaimNoDrop(z);
             TickShield(boss, rt, z, net);
             TickCycle(boss, rt, z, net, players);
@@ -245,7 +287,8 @@ namespace ExtendedBosses
                 }
                 catch (Exception e) { Fail(def.Prefab + " phase " + index + " act " + a, e); }
             }
-            Debug(def.Prefab + ": phase " + index + " (" + ph.Pct + "%) fired, " + ran + " action(s), players " + players);
+            // always logged: a phase is a rare event, and it is what a group test is checked by
+            Logger.LogInfo(def.Prefab + ": phase " + index + " (" + ph.Pct + "%) fired, " + ran + " action(s), players " + players + ", totems now " + Zdo(boss).GetInt(KTotems));
             if (ran > 0 && !string.IsNullOrEmpty(ph.Say)) Announce(ph.Say, NameToken(boss));
         }
 
@@ -967,8 +1010,9 @@ namespace ExtendedBosses
                 float interval = act.Interval * (ProfileOf(rt.Def) == ProfileHard ? 0.75f : 1f);
                 rt.TotemNext[i] = now + interval;
 
-                int maxAlive = act.MaxAlive + (players >= 4 ? 1 : 0);
+                int maxAlive = act.MaxAlive + (act.ExtraAliveFrom > 0 && players >= act.ExtraAliveFrom ? 1 : 0);
                 if (CountAdds(rt.BossId, i + 1) >= maxAlive) continue;
+                if (act.AlivePerPlayer > 0 && CountTotemAdds(rt, bz, slots) >= act.AlivePerPlayer * players) continue;
                 if (AtCap(boss)) continue;
                 string prefab = act.Prefabs[UnityEngine.Random.Range(0, act.Prefabs.Length)];
                 SpawnCreature(rt.BossId, prefab, AddLevel(rt.Def, act.Level, players), act.HpMul, totem.transform.position, i + 1, 1.5f, 4f, act.Role, act.Lifetime);
@@ -1005,10 +1049,10 @@ namespace ExtendedBosses
             if (act == null || !MechanicOn(rt.Def, ActKind.Marks)) return;
             if (rt.NextMark <= 0f) rt.NextMark = now + 3f;
             if (now < rt.NextMark) return;
-            float interval = Sv(_cfgMarkInterval) * (ProfileOf(rt.Def) == ProfileHard ? 0.75f : 1f);
+            float interval = (rt.Def.CfgMarkInterval != null ? Sv(rt.Def.CfgMarkInterval) : Sv(_cfgMarkInterval)) * (ProfileOf(rt.Def) == ProfileHard ? 0.75f : 1f);
             rt.NextMark = now + interval;
 
-            List<Player> targets = PlayersNear(boss.transform.position, Sv(_cfgScalingRange));
+            List<Player> targets = PlayersNear(boss.transform.position, act.MarkRange > 0f ? act.MarkRange : Sv(_cfgScalingRange));
             if (targets.Count == 0) return;
             int count = Mathf.Max(1, Mathf.RoundToInt(act.Count)) + (players >= 5 ? 1 : 0);
             float delay = Sv(_cfgMarkDelay);
@@ -1083,6 +1127,19 @@ namespace ExtendedBosses
             }
             // a local-only prefab: show players with the mod a harmless copy
             if (pf.GetComponent<ZNetView>() == null) SendFx(FxStrike, ZDOID.None, pos, 0f, 0f, prefab);
+            // the damage area itself may show nothing (Moder's ice flash): play a visual over it
+            if (!string.IsNullOrEmpty(s.Act.StrikeFx)) PlayFx(rt.Def, s.Act.StrikeFx, pos);
+        }
+
+        // a networked effect is spawned once and every player sees it; a local one is played here
+        // and sent to the other players with the mod
+        private void PlayFx(BossDef def, string prefab, Vector3 pos)
+        {
+            GameObject pf = ZNetScene.instance.GetPrefab(prefab);
+            if (pf == null) { Warn(def.Prefab + ": effect prefab '" + prefab + "' not found."); return; }
+            if (pf.GetComponent<ZNetView>() != null) { UnityEngine.Object.Instantiate(pf, pos, Quaternion.identity); return; }
+            SpawnVisual(prefab, pos);
+            SendFx(FxStrike, ZDOID.None, pos, 0f, 0f, prefab);
         }
 
         private static HitData.DamageTypes DamageOf(HitData.DamageType type, float amount)
@@ -1168,6 +1225,9 @@ namespace ExtendedBosses
             if (z != null)
             {
                 z.Set(KPhase, 0);
+                z.Set(KResets, z.GetInt(KResets) + 1);
+                PhaseMemo rm;
+                if (_phaseMemo.TryGetValue(boss.GetZDOID(), out rm)) { rm.Resets = z.GetInt(KResets); rm.Mask = 0; }
                 z.Set(KShieldAct, 0);
                 z.Set(KResistAct, 0);
                 z.Set(KWindowUntil, 0L);
@@ -1184,6 +1244,7 @@ namespace ExtendedBosses
             rt.Threat.Clear();
             rt.ThreatTarget = ZDOID.None;
             rt.NextMark = 0f;
+            rt.NextFlyer = 0f;
             rt.NoPlayersSince = -1f;
             rt.ShieldActive = rt.WindowActive = false;
             rt.ResistAct = null;
@@ -1228,6 +1289,44 @@ namespace ExtendedBosses
             if (!nv.IsOwner()) nv.ClaimOwnership();
             ZNetScene.instance.Destroy(go);
             return true;
+        }
+
+        // ------------------------------------------------------------------
+        // flyers: all fight long 1-2 adds fly in now and then (Moder: drakes), own cap, apart
+        // from the totems' adds
+        // ------------------------------------------------------------------
+        private const int FlyerSrc = -3;
+
+        private void TickFlyers(Character boss, FightRt rt, int mask, float pct, int players, float now)
+        {
+            BossDef d = rt.Def;
+            if (string.IsNullOrEmpty(d.FlyerPrefab) || d.CfgFlyerMax == null || !MechanicOn(d, ActKind.Wave)) return;
+            if (mask == 0 && pct >= 99.9f) { rt.NextFlyer = 0f; return; }     // the fight has not begun
+            int max = Si(d.CfgFlyerMax);
+            if (max <= 0) return;
+            float interval = Sv(d.CfgFlyerInterval) * (ProfileOf(d) == ProfileHard ? 0.75f : 1f);
+            if (rt.NextFlyer <= 0f) rt.NextFlyer = now + interval;          // the first ones a while after the pull
+            if (now < rt.NextFlyer) return;
+            rt.NextFlyer = now + interval;
+            int room = max - CountAdds(rt.BossId, FlyerSrc);
+            if (room <= 0 || AtCap(boss)) return;
+            int n = Mathf.Min(room, UnityEngine.Random.Range(1, 3));
+            // they come from afar, not out of thin air next to the group
+            for (int i = 0; i < n; i++)
+                SpawnCreature(rt.BossId, d.FlyerPrefab, AddLevel(d, 1, players), 1f, boss.transform.position, FlyerSrc, 25f, 35f, 0, 0f);
+            Debug(d.Prefab + ": " + n + " flyer(s) " + d.FlyerPrefab);
+        }
+
+        // adds hatched by any totem of the boss (nests excluded)
+        private int CountTotemAdds(FightRt rt, ZDO bz, int slots)
+        {
+            int n = 0;
+            for (int i = 0; i < slots; i++)
+            {
+                if (bz.GetInt(TotemActKey(i)) == NestCode) continue;
+                n += CountAdds(rt.BossId, i + 1);
+            }
+            return n;
         }
 
         internal int CountAdds(ZDOID bossId, int src)

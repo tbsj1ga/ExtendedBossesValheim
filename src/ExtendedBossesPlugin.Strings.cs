@@ -68,7 +68,7 @@ namespace ExtendedBosses
             { "moder.45", new[] { "{0} calls the cultists - their fire burns her ice too!", "{0} зовёт культистов — их огонь жжёт и её лёд!" } },
             { "moder.35", new[] { "{0} wakes the stone golem!", "{0} будит каменного голема!" } },
             { "moder.20", new[] { "{0}: All my brood, to me!", "{0}: Всё моё потомство — ко мне!" } },
-            { "moder.mark", new[] { "{0} breathes frost under {1} - spread out!", "{0} дышит морозом под игрока {1} — разойдитесь!" } },
+            { "moder.mark", new[] { "{0} marks {1} - an ice blast in the red circle in a moment, step out of it!", "{0} метит игрока {1} — сейчас в красном круге ударит ледяной взрыв, выйдите из него!" } },
             { "moder.breath", new[] { "{0} lands and fixes her eyes on {1} - the rest, stay out of her breath!", "{0} садится и смотрит на игрока {1} — остальные, не стойте под её дыханием!" } },
 
             // ---- Yagluth

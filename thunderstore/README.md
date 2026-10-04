@@ -90,7 +90,7 @@ No shield and no phases: every mechanic once, gently.
   swamp bats.
 
 ### Moder
-- **Ice stalagmites** hatch drakes and hold her shield.
+- **Ice stalagmites** hatch drakes and hold her shield. More drakes fly in all fight long.
 - **Ice nova** under marked players — frost and slow.
 - **Breath mark** — she lands and fixes on the marked player for a few seconds.
 - **Phases:** *Ice armor* — while she is on the ground, ranged hits do a quarter: get
