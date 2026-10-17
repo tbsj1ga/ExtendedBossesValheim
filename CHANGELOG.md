@@ -5,6 +5,10 @@
 The version is set in one place — `ExtendedBossesPlugin.Version` in
 `src/ExtendedBossesPlugin.cs`.
 
+## 0.8.14
+
+- The changelog is tidied up: the version headings carry only what changed. No code changes.
+
 ## 0.8.13 — real boss HP, one targeted attack at a time; Yagluth made safe
 
 - **Boss HP is real HP now (every boss).** The group's HP (`02 Scaling`, same table as
