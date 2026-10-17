@@ -10,8 +10,9 @@ namespace ExtendedBosses
         // damage to the boss and its adds, on the owner
         // ------------------------------------------------------------------
         // Character.RPC_Damage runs on the owner of the struck creature; vanilla then divides the
-        // damage by its own player scaling in ApplyDamage. For a boss we multiply by vanilla/ours
-        // (so the result is our scaling alone), by the shield or the burn window, and per damage
+        // damage by its own player scaling in ApplyDamage. A boss carries the group's HP as real
+        // max HP (TickHealth), so for it we undo the vanilla division (ScaleFactor; it also covers
+        // a group that changed after the pull), multiply by the shield or the burn window, and per damage
         // type by the active resistance phase. Lieutenants carry an HP multiplier in their ZDO
         // and take damage divided by it (max HP is recomputed from the prefab on every load, so
         // a real SetMaxHealth would not survive). The postfix turns the HP actually lost into
@@ -84,6 +85,7 @@ namespace ExtendedBosses
                     if (a == null || !a.IsBoss() || !IsOwner(a)) return;
                     p.ApplyHitEffect(a, hit);
                     p.Lifesteal(a, hit);
+                    p.FixateBonus(a, __instance, hit);
                 }
                 catch (Exception e) { p.Fail("Character.Damage", e); }
             }

@@ -69,7 +69,7 @@ namespace ExtendedBosses
             { "moder.35", new[] { "{0} wakes the stone golem!", "{0} будит каменного голема!" } },
             { "moder.20", new[] { "{0}: All my brood, to me!", "{0}: Всё моё потомство — ко мне!" } },
             { "moder.mark", new[] { "{0} marks {1} - an ice blast in the red circle in a moment, step out of it!", "{0} метит игрока {1} — сейчас в красном круге ударит ледяной взрыв, выйдите из него!" } },
-            { "moder.breath", new[] { "{0} lands and fixes her eyes on {1} - the rest, stay out of her breath!", "{0} садится и смотрит на игрока {1} — остальные, не стойте под её дыханием!" } },
+            { "moder.breath", new[] { "{0} lands and chooses her victim - {1}: for 8 s she hunts only you and hits harder; the rest, keep out of her breath and strike!", "{0} садится и выбирает жертву — {1}: 8 с она охотится только на тебя и бьёт сильнее; остальные — не стойте под дыханием и бейте!" } },
 
             // ---- Yagluth
             { "yagluth.85", new[] { "{0}: My tribe, rise! (break the fuling totem)", "{0}: Моё племя, встань! (сломайте тотем фулингов)" } },
@@ -85,7 +85,8 @@ namespace ExtendedBosses
             { "yagluth.15", new[] { "{0}: Swarm, drink their blood!", "{0}: Рой, пей их кровь!" } },
             { "yagluth.10", new[] { "{0} calls an echo of the dragon queen!", "{0} призывает эхо королевы драконов!" } },
             { "yagluth.mark", new[] { "{0} calls meteors on {1} - run!", "{0} зовёт метеоры на игрока {1} — бегите!" } },
-            { "yagluth.beam", new[] { "{0} locks his gaze on {1} - break line of sight!", "{0} не сводит глаз с игрока {1} — укройтесь от луча!" } },
+            { "yagluth.roar", new[] { "{0} draws breath for a roar - get farther than {1} m from him or raise your shield!", "{0} набирает воздух для рёва — отойдите дальше {1} м или поднимите щит!" } },
+            { "yagluth.beam", new[] { "{0} has chosen his victim - {1}: for 8 s he hunts only you and hits harder; the rest, strike while he is busy!", "{0} выбрал жертву — {1}: 8 с он охотится только на тебя и бьёт сильнее; остальные — бейте, пока он занят!" } },
 
             // ---- The Queen
             { "queen.85", new[] { "{0} lays a clutch! (smash the eggs before they hatch)", "{0} откладывает кладку! (разбейте яйца, пока не вылупились)" } },

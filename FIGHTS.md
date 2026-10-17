@@ -1,4 +1,4 @@
-# ExtendedBosses — boss fights (version 0.8.12)
+# ExtendedBosses — boss fights (version 0.8.13)
 
 **English** · [Русский](FIGHTS-RU.md)
 
@@ -28,7 +28,7 @@ The profile is `01 General / Profile` (for all) or `1x <Boss> / Profile` (for on
 | Marks, fixations, wall of fire | **no** | yes | 1.33× as often |
 | Eikthyr's charge, on-hit effects (Wet, Tared), the Queen's cocoon | **no** | yes | yes |
 | Threat table | **no** (vanilla target choice) | yes | yes |
-| Boss effective HP | as Raid | see below | ×1.25 of Raid |
+| Boss HP | as Raid | see below | ×1.25 of Raid |
 | Reward | the same | the same | the same |
 
 `Light` is "bosses with reinforcements": adds, nests and mini-bosses without the raid
@@ -38,7 +38,9 @@ Every mechanic can also be switched off on its own in `03 Mechanics`.
 
 ### Group size (N — living players within 100 m of the boss, at most 8)
 
-**Boss effective HP** (how many times longer to kill than solo in vanilla):
+**Boss HP** (how many times longer to kill than solo in vanilla). Since 0.8.13 this is the
+boss's real max HP - set before the first hit, by the group within 100 m at that moment;
+vanilla's own per-player damage cut is undone, so damage numbers on the boss are true:
 
 | N | 1 | 2 | 3 | 4 | 5 | 6 | 8 |
 |---|---|---|---|---|---|---|---|
@@ -66,7 +68,8 @@ what actually comes:
   (`SoloLieutenantHealth`) — every mechanic falls on one person;
 - lieutenants: **+1★** from 4 players; ordinary adds: **+1★** from 7 players (at most two
   stars);
-- marks: 1 player at a time, 2 from 5 players;
+- marks: half the group at once, rounded down (1 for 1–3 players, 2 for 4–5, 3 for 6–7, 4 for 8), and players the boss is not fighting first; a victim is never the boss's current target if anyone else is there;
+- adds: half of the new ones (waves, totems, flying-in) go for a player the boss is not fighting — the farthest within 30 m of it (`09 Raid / AddsAimAtOthersChance`, `AddsAimRange`);
 - the Elder's troll: two from 3 players;
 - positional phases (hit from behind) never come up for a single player;
 - **crowd cap**: at most 8 monsters within 50 m of the boss for one player and +3 for
@@ -106,6 +109,11 @@ MessageDurationMultiplier`, only for players with the mod).
 
 Marks: an announcement with the name → a hit under the player 3 s later (players with
 the mod see a red circle of the radius); every 20 s (Hard 15 s).
+
+The boss's targeted mod attacks — marks, choosing a victim, Eikthyr's charge, Fader's wall
+of fire — never overlap: while one runs (and 2 s after), the others wait. While a boss has
+chosen its victim (Moder's landing, Yagluth's gaze), its hits on that player deal +10%
+(`09 Raid / FixateDamageBonus`).
 
 ### Reward (the same in every profile)
 
@@ -188,7 +196,7 @@ stack of silver ore; gear (2+ players) — silver, wolf.
 | 85% | 1 ice stalagmite: a drake hatches every 15 s, up to 2 alive per stalagmite and **at most 2 per player from all stalagmites together**; **pack** — wolves (base 2), at night — ulvs | the same | drakes every 11 s, +1★; bigger pack |
 | 70% | 2 more stalagmites; **ice novas** on marks every 15 s, only on players within 40 m of her (25 frost, slow) | stalagmites | novas more often |
 | 55% | 3 more stalagmites, **shield**; after the window — phase cycles | stalagmites without a shield | shield ×0.1 |
-| 45% | cultists (base 1); **breath mark**: every 25 s she lands and for 8 s keeps the marked player as her target | cultists | mark more often |
+| 45% | cultists (base 1); **chooses a victim**: every 25 s she lands and for 8 s hunts that player, her hits on him +10% | cultists | mark more often |
 | 35% | a stone golem | the same | the same |
 | 20% | a fenring (base 1) + drakes (base 1) | the same | more, +1★ |
 
@@ -213,10 +221,10 @@ metal, padded.
 
 | HP | Raid | Light | Hard |
 |---|---|---|---|
-| 85% | 1 fuling totem: fulings and archers every 12 s, up to 3 alive | the same | every 9 s, +1★ |
-| 70% | 2 more totems; his **meteors** around the marked player (vanilla damage) | totems | meteors more often |
-| 55% | 3 more totems, **shield**, fuling **shamans** (base 1) heal him; after the window — phase cycles | totems and shamans without healing | shield ×0.1 |
-| 45% | brutes (base 1); **beam**: every 30 s for 8 s keeps the marked player as the target; his hits make you **tared** | brutes | beam more often |
+| 85% | 1 fuling totem: fulings and archers every 12 s, up to 3 alive per totem and **at most 2 per player from all totems together** | the same | every 9 s, +1★ |
+| 70% | 2 more totems; his **meteors** around a marked player within 40 m of him (vanilla damage) | totems | meteors more often |
+| 55% | 3 more totems, **shield**, fuling **shamans** (base 1) heal him; **roar** every 45 s: a 2 s warning, then everyone within 30 m is knocked off balance and tarred (30 blunt; a raised shield or a dodge avoids it); after the window — phase cycles | totems and shamans without healing | shield ×0.1, roar every 34 s |
+| 45% | brutes (base 1); **chooses a victim**: every 30 s for 8 s hunts that player and hits him +10%; his hits make you **tared** | brutes | beam more often |
 | 30% | an unbjorn | the same | the same |
 | 20% | three skeletons (plain, archer, poison — base 1) | the same | more, +1★ |
 | 15% | deathsquitos (base 1) | the same | more, +1★ |

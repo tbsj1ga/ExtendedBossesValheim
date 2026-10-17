@@ -97,7 +97,7 @@ namespace ExtendedBosses
                 details.Append("  ").Append(tag).Append(prefab).Append(" (Status): ").Append(problem ?? "OK").Append("\n");
                 return;
             }
-            GameObject pf = ZNetScene.instance.GetPrefab(prefab);
+            GameObject pf = ResolvePrefab(prefab);
             if (pf == null) problem = "not found";
             else
             {
@@ -132,7 +132,7 @@ namespace ExtendedBosses
                         break;
                     }
                     case Need.Effect:
-                        if (nv != null) problem = "networked, will not be shown as a local effect";
+                        if (nv != null) info = "networked: spawned once by the boss owner, every player sees it";
                         break;
                     case Need.Item:
                         if (pf.GetComponent<ItemDrop>() == null) problem = "not an item";

@@ -45,6 +45,53 @@ namespace ExtendedBosses
             return p;
         }
 
+        // A prefab by name. Most are in ZNetScene; some local ones are not registered there and
+        // live only inside an attack of a boss weapon (Yagluth's spawn_meteors sits in his
+        // GoblinKing_Meteors attack) - those are looked up in the attacks of the bosses' own
+        // items and of every ObjectDB item, once per name.
+        private static readonly Dictionary<string, GameObject> _attackPrefabs = new Dictionary<string, GameObject>();
+
+        internal static GameObject ResolvePrefab(string name)
+        {
+            if (string.IsNullOrEmpty(name) || ZNetScene.instance == null) return null;
+            GameObject pf = ZNetScene.instance.GetPrefab(name);
+            if (pf != null) return pf;
+            if (_attackPrefabs.TryGetValue(name, out pf)) return pf;
+            ExtendedBossesPlugin p = Instance;
+            if (p != null)
+                for (int i = 0; i < p._bosses.Count && pf == null; i++)
+                {
+                    GameObject boss = ZNetScene.instance.GetPrefab(p._bosses[i].Prefab);
+                    Humanoid h = boss != null ? boss.GetComponent<Humanoid>() : null;
+                    if (h == null) continue;
+                    pf = FindInItems(h.m_defaultItems, name) ?? FindInItems(h.m_randomWeapon, name);
+                }
+            if (pf == null && ObjectDB.instance != null) pf = FindInItems(ObjectDB.instance.m_items, name);
+            _attackPrefabs[name] = pf;      // null too: not searched again
+            return pf;
+        }
+
+        private static GameObject FindInItems(IList<GameObject> items, string name)
+        {
+            if (items == null) return null;
+            for (int i = 0; i < items.Count; i++)
+            {
+                ItemDrop it = items[i] != null ? items[i].GetComponent<ItemDrop>() : null;
+                if (it == null || it.m_itemData == null || it.m_itemData.m_shared == null) continue;
+                GameObject g = FromAttack(it.m_itemData.m_shared.m_attack, name) ?? FromAttack(it.m_itemData.m_shared.m_secondaryAttack, name);
+                if (g != null) return g;
+            }
+            return null;
+        }
+
+        private static GameObject FromAttack(Attack a, string name)
+        {
+            if (a == null) return null;
+            if (a.m_attackProjectile != null && a.m_attackProjectile.name == name) return a.m_attackProjectile;
+            if (a.m_spawnOnTrigger != null && a.m_spawnOnTrigger.name == name) return a.m_spawnOnTrigger;
+            return null;
+        }
+
         internal static GameObject SpawnObject(GameObject prefab, Vector3 pos)
         {
             Quaternion rot = Quaternion.Euler(0f, UnityEngine.Random.Range(0f, 360f), 0f);
@@ -244,13 +291,19 @@ namespace ExtendedBosses
         private static void SpawnVisual(string prefab, Vector3 pos)
         {
             if (string.IsNullOrEmpty(prefab)) return;
-            GameObject pf = ZNetScene.instance.GetPrefab(prefab);
+            GameObject pf = ResolvePrefab(prefab);
             if (pf == null || pf.GetComponent<ZNetView>() != null) return;
             GameObject holder = new GameObject("extendedbosses_fx");
             holder.SetActive(false);
             GameObject go = UnityEngine.Object.Instantiate(pf, pos, Quaternion.identity, holder.transform);
             Aoe[] aoes = go.GetComponentsInChildren<Aoe>(true);
             for (int i = 0; i < aoes.Length; i++) UnityEngine.Object.DestroyImmediate(aoes[i]);
+            // a spawner (Yagluth's meteors) would drop real projectiles on every client: the owner's
+            // meteors are networked and seen by all anyway
+            SpawnAbility[] sas = go.GetComponentsInChildren<SpawnAbility>(true);
+            for (int i = 0; i < sas.Length; i++) UnityEngine.Object.DestroyImmediate(sas[i]);
+            Projectile[] prs = go.GetComponentsInChildren<Projectile>(true);
+            for (int i = 0; i < prs.Length; i++) UnityEngine.Object.DestroyImmediate(prs[i]);
             go.transform.SetParent(null, true);
             UnityEngine.Object.Destroy(holder);
             UnityEngine.Object.Destroy(go, 10f);

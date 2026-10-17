@@ -112,6 +112,51 @@ namespace ExtendedBosses
             if (best != null) SetTarget(ai, best);
         }
 
+        internal static Character BossTarget(Character boss)
+        {
+            MonsterAI ai = boss != null ? boss.GetComponent<MonsterAI>() : null;
+            return ai != null ? ai.GetTargetCreature() : null;
+        }
+
+        // index of a random player who is not the boss's current target (the tank is busy
+        // enough with the boss itself); the tank only when nobody else is there
+        internal static int PickNotTank(List<Player> list, Character tank)
+        {
+            int others = 0;
+            for (int i = 0; i < list.Count; i++) if (list[i] != tank) others++;
+            if (others == 0) return UnityEngine.Random.Range(0, list.Count);
+            int n = UnityEngine.Random.Range(0, others);
+            for (int i = 0; i < list.Count; i++)
+            {
+                if (list[i] == tank) continue;
+                if (n-- == 0) return i;
+            }
+            return 0;
+        }
+
+        // A new add may go for a player the boss is not fighting - the farthest one still within
+        // 09 Raid / AddsAimRange of the boss - so ranged players get pressure too. The rest of
+        // the adds (and when nobody fits) pick their target the vanilla way.
+        internal void AimAdd(Character boss, Character add)
+        {
+            if (add == null || UnityEngine.Random.value >= Sv(_cfgAimChance)) return;
+            MonsterAI ai = add.GetComponent<MonsterAI>();
+            if (ai == null) return;
+            Character tank = BossTarget(boss);
+            float range = Sv(_cfgAimRange);
+            Player best = null;
+            float bestD = -1f;
+            List<Player> players = Player.GetAllPlayers();
+            for (int i = 0; i < players.Count; i++)
+            {
+                Player p = players[i];
+                if (p == null || p.IsDead() || p == tank) continue;
+                float d = Flat(p.transform.position - boss.transform.position);
+                if (d <= range && d > bestD) { bestD = d; best = p; }
+            }
+            if (best != null) SetTarget(ai, best);
+        }
+
         private void SetTarget(MonsterAI ai, Character target)
         {
             if (_miSetTarget == null) _miSetTarget = AccessTools.Method(typeof(MonsterAI), "SetTarget", new Type[] { typeof(Character) });

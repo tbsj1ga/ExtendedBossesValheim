@@ -89,6 +89,8 @@ namespace ExtendedBosses
         private ConfigEntry<float> _cfgOutOfLeashHalfLife;
         private ConfigEntry<float> _cfgShieldMax;
         private ConfigEntry<float> _cfgMinDamage;
+        private ConfigEntry<float> _cfgFixateBonus;
+        private ConfigEntry<float> _cfgAimChance, _cfgAimRange;
         private ConfigEntry<int> _cfgConfigVersion;
 
         private static readonly string[] Profiles = { ProfileLight, ProfileRaid, ProfileHard };
@@ -231,6 +233,14 @@ namespace ExtendedBosses
             _cfgShieldMax = F(Rd, "ShieldMaxSeconds", 90f, 0f, 600f,
                 "A shield falls by itself after this many seconds even if nests still stand (no burn window then). 0 = never.",
                 "Щит спадает сам через столько секунд, даже если гнёзда стоят (окна уязвимости тогда нет). 0 — никогда.");
+            _cfgFixateBonus = F(Rd, "FixateDamageBonus", 10f, 0f, 100f,
+                "While a boss has chosen its victim (Moder's landing, Yagluth's gaze), its hits on that player deal this much more, %.",
+                "Пока босс выбрал жертву (посадка Модер, взгляд Яглута), его удары по этому игроку сильнее на столько %.");
+            _cfgAimChance = F(Rd, "AddsAimAtOthersChance", 0.5f, 0f, 1f,
+                "Chance that a new add (wave, totem, flying-in) goes for a player the boss is not fighting - the farthest one within AddsAimRange.",
+                "Шанс, что новый адд (волна, тотем, прилетевший) пойдёт на игрока, которого босс не бьёт, — самого дальнего в пределах AddsAimRange.");
+            _cfgAimRange = F(Rd, "AddsAimRange", 30f, 5f, 100f,
+                "Players farther than this from the boss are never picked by such adds (m).", "Игроков дальше этого от босса такие адды не выбирают (м).");
             _cfgMinDamage = F(Rd, "MinDamageFactor", 0.1f, 0f, 1f,
                 "All the mechanics together (shield, cocoon, resist and cycle phases) never cut damage to the boss below this (x). Cycle phases also never start under a shield or cocoon.",
                 "Все механики вместе (щит, кокон, сопротивления и фазы-циклы) никогда не режут урон по боссу ниже этого (×). Фазы-циклы к тому же не начинаются под щитом или коконом.");
@@ -333,7 +343,8 @@ namespace ExtendedBosses
                 case ActKind.Seeds: return Sb(_cfgNests);
                 case ActKind.HitEffect: return Sb(_cfgSpecials) && full;
                 case ActKind.Fixate:
-                case ActKind.Hazard: return Sb(_cfgMarks) && full;
+                case ActKind.Hazard:
+                case ActKind.Roar: return Sb(_cfgMarks) && full;
                 case ActKind.Cocoon: return Sb(_cfgShield) && full;
             }
             return false;

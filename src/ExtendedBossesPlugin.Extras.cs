@@ -34,17 +34,83 @@ namespace ExtendedBosses
             if (rt.FixTarget != ZDOID.None && now >= rt.FixUntil) rt.FixTarget = ZDOID.None;
             if (rt.NextFix <= 0f) rt.NextFix = now + 5f;
             if (now < rt.NextFix) return;
+            if (now < rt.BusyUntil) { rt.NextFix = rt.BusyUntil + 1f; return; }   // one targeted attack at a time
             rt.NextFix = now + act.Interval * (ProfileOf(rt.Def) == ProfileHard ? 0.75f : 1f);
 
             List<Player> targets = PlayersNear(boss.transform.position, Sv(_cfgScalingRange));
             if (targets.Count == 0) return;
-            Player p = targets[UnityEngine.Random.Range(0, targets.Count)];
+            Player p = targets[PickNotTank(targets, BossTarget(boss))];   // the tank is not a victim
             rt.FixTarget = p.GetZDOID();
             rt.FixUntil = now + act.Duration;
+            rt.BusyUntil = Mathf.Max(rt.BusyUntil, rt.FixUntil + 2f);
             if (act.Land && boss.IsFlying()) boss.Land();
             if (!string.IsNullOrEmpty(act.MarkKey)) Announce(act.MarkKey, NameToken(boss), p.GetPlayerName());
             SendFx(FxMark, rt.FixTarget, p.transform.position, 2f, act.Duration, null);
             Debug(rt.Def.Prefab + ": fixated on " + p.GetPlayerName() + " for " + F1(act.Duration) + " s");
+        }
+
+        // ------------------------------------------------------------------
+        // roar (Yagluth): a warning, then every player around the boss is knocked off balance
+        // and gets the act's status (tar: slowed). A plain vanilla hit from the boss: a raised
+        // shield blocks it and a dodge avoids it like any other hit, and its stagger comes through
+        // the hit itself, decided on the player's own client - players without the mod get it the
+        // same.
+        // ------------------------------------------------------------------
+        private const float RoarWarn = 2f;
+
+        private void TickRoar(Character boss, FightRt rt, int mask, float now)
+        {
+            Act act = ActiveAct(rt.Def, mask, ActKind.Roar);
+            if (act == null || !MechanicOn(rt.Def, ActKind.Roar)) { rt.RoarAt = 0f; return; }
+            BossDef d = rt.Def;
+            float radius = d.CfgRoarRadius != null ? Sv(d.CfgRoarRadius) : act.Radius;
+
+            if (rt.RoarAt > 0f)
+            {
+                if (now < rt.RoarAt) return;
+                rt.RoarAt = 0f;
+                float dmg = d.CfgRoarDamage != null ? Sv(d.CfgRoarDamage) : act.Damage;
+                List<Player> hit = PlayersNear(boss.transform.position, radius);
+                for (int i = 0; i < hit.Count; i++) RoarHit(boss, hit[i], dmg, act.Effect);
+                Debug(d.Prefab + ": roar hit " + hit.Count + " player(s)");
+                return;
+            }
+
+            if (rt.NextRoar <= 0f) rt.NextRoar = now + 8f;
+            if (now < rt.NextRoar) return;
+            if (now < rt.BusyUntil) { rt.NextRoar = rt.BusyUntil + 1f; return; }   // one targeted attack at a time
+            float interval = d.CfgRoarInterval != null ? Sv(d.CfgRoarInterval) : act.Interval;
+            rt.NextRoar = now + interval * (ProfileOf(d) == ProfileHard ? 0.75f : 1f);
+            rt.RoarAt = now + RoarWarn;
+            rt.BusyUntil = Mathf.Max(rt.BusyUntil, rt.RoarAt + 2f);
+            if (!string.IsNullOrEmpty(act.MarkKey)) Announce(act.MarkKey, NameToken(boss), Mathf.RoundToInt(radius).ToString());
+            SendFx(FxMark, boss.GetZDOID(), boss.transform.position, radius, RoarWarn, null);   // the circle around him
+        }
+
+        private static void RoarHit(Character boss, Player p, float dmg, string effect)
+        {
+            Vector3 dir = p.transform.position - boss.transform.position;
+            dir.y = 0f;
+            dir = dir.sqrMagnitude > 0.01f ? dir.normalized : boss.transform.forward;
+            HitData hit = new HitData();
+            hit.m_damage.m_blunt = dmg;
+            hit.m_point = p.GetCenterPoint();
+            hit.m_dir = dir;
+            hit.m_pushForce = 60f;
+            hit.m_staggerMultiplier = 20f;
+            if (!string.IsNullOrEmpty(effect)) hit.m_statusEffectHash = effect.GetStableHashCode();
+            hit.SetAttacker(boss);
+            p.Damage(hit);
+        }
+
+        // the boss owner, its hit on a player: the chosen victim of a fixation takes more
+        internal void FixateBonus(Character boss, Character victim, HitData hit)
+        {
+            FightRt rt = RtIfRunning(boss);
+            if (rt == null || rt.FixTarget == ZDOID.None || Time.time >= rt.FixUntil) return;
+            if (victim.GetZDOID() != rt.FixTarget) return;
+            float bonus = Sv(_cfgFixateBonus);
+            if (bonus > 0f) hit.ApplyModifier(1f + bonus / 100f);
         }
 
         // Called first from the UpdateTarget postfix: an active fixation beats the threat table.
@@ -66,10 +132,12 @@ namespace ExtendedBosses
             if (act == null || !MechanicOn(rt.Def, ActKind.Hazard)) return;
             if (rt.NextHazard <= 0f) rt.NextHazard = now + 5f;
             if (now < rt.NextHazard) return;
+            if (now < rt.BusyUntil) { rt.NextHazard = rt.BusyUntil + 1f; return; }
             rt.NextHazard = now + act.Interval * (ProfileOf(rt.Def) == ProfileHard ? 0.75f : 1f);
 
-            GameObject pf = ZNetScene.instance.GetPrefab(act.Prefabs[0]);
+            GameObject pf = ResolvePrefab(act.Prefabs[0]);
             if (pf == null) { Warn(rt.Def.Prefab + ": hazard prefab '" + act.Prefabs[0] + "' not found."); return; }
+            rt.BusyUntil = Mathf.Max(rt.BusyUntil, now + 3f);
             // faces a random player, so a wall is raised between the boss and part of the raid
             Quaternion rot = boss.transform.rotation;
             List<Player> players = PlayersNear(boss.transform.position, Sv(_cfgScalingRange));

@@ -8,7 +8,7 @@ namespace ExtendedBosses
     // A fight is data: phases at HP thresholds, each a list of actions (the "bricks" of
     // the raid mechanics). The fight controller knows how to run each kind of action; a boss
     // is only a table here.
-    internal enum ActKind { Wave, Lieutenant, Nest, Totem, Marks, Charge, Shield, Resist, Cycle, Fusion, Seeds, HitEffect, Fixate, Cocoon, Hazard }
+    internal enum ActKind { Wave, Lieutenant, Nest, Totem, Marks, Charge, Shield, Resist, Cycle, Fusion, Seeds, HitEffect, Fixate, Cocoon, Hazard, Roar }
 
     // One variant of a resistance cycle (Elder's sap/back bark, Bonemass's hardening).
     internal class CycleVariant
@@ -75,6 +75,7 @@ namespace ExtendedBosses
         public bool ScaleAsAdds;        // Nest/Totem: count scales like adds instead of the nest rule
         public float Chance;            // Seeds: chance per landed projectile
         public string Effect;           // HitEffect: vanilla status effect put on the boss's hits (Wet, Tared)
+        public float Radius;            // Roar: players within this distance of the boss are hit
         public bool Land;               // Fixate: a flying boss lands first (Moder's breath)
         public bool NoDrop;             // Totem/Nest: the placed object drops nothing when destroyed (Eikthyr's skull pile)
     }
@@ -145,6 +146,7 @@ namespace ExtendedBosses
         public ConfigEntry<float> CfgLifesteal;
         public ConfigEntry<float> CfgHealPercent;      // healers of this boss, % of max HP per second (null = 09 Raid default)
         public ConfigEntry<float> CfgMarkInterval;     // this boss's marks, seconds (null = 04 Marks / Interval)
+        public ConfigEntry<float> CfgRoarInterval, CfgRoarRadius, CfgRoarDamage;   // the roar (Yagluth)
         public string FlyerPrefab;                     // flyers: adds coming all fight long, own cap (Moder: drakes)
         public ConfigEntry<float> CfgFlyerInterval;
         public ConfigEntry<int> CfgFlyerMax;
@@ -547,15 +549,17 @@ namespace ExtendedBosses
             const string totem = "goblin_totempole";
             string[] fulings = { "Goblin", "Goblin", "GoblinArcher" };
 
-            Phase(b, 85f, "yagluth.85").Acts.Add(new Act { Kind = ActKind.Totem, Prop = totem, Count = 1f, Prefabs = fulings, Interval = 12f, MaxAlive = 3, Fallback = null });
+            Phase(b, 85f, "yagluth.85").Acts.Add(new Act { Kind = ActKind.Totem, Prop = totem, Count = 1f, Prefabs = fulings, Interval = 12f, MaxAlive = 3, AlivePerPlayer = 2, NoDrop = true, Fallback = null });
 
             PhaseDef p = Phase(b, 70f, "yagluth.70");
-            p.Acts.Add(new Act { Kind = ActKind.Totem, Prop = totem, Count = 2f, Prefabs = fulings, Interval = 12f, MaxAlive = 3, Fallback = null });
+            p.Acts.Add(new Act { Kind = ActKind.Totem, Prop = totem, Count = 2f, Prefabs = fulings, Interval = 12f, MaxAlive = 3, AlivePerPlayer = 2, NoDrop = true, Fallback = null });
             // his own meteor shower, dropped around a marked player (its own vanilla damage)
-            p.Acts.Add(new Act { Kind = ActKind.Marks, Prefabs = new[] { "spawn_meteors" }, Prop = "vfx_prespawn", MarkKey = "yagluth.mark", Count = 1f });
+            p.Acts.Add(new Act { Kind = ActKind.Marks, Prefabs = new[] { "spawn_meteors" }, Prop = "vfx_prespawn", MarkKey = "yagluth.mark", MarkRange = 40f, Count = 1f });
 
             p = Phase(b, 55f, "yagluth.55");
-            p.Acts.Add(new Act { Kind = ActKind.Totem, Prop = totem, Count = 3f, Prefabs = fulings, Interval = 12f, MaxAlive = 3, Fallback = null });
+            p.Acts.Add(new Act { Kind = ActKind.Totem, Prop = totem, Count = 3f, Prefabs = fulings, Interval = 12f, MaxAlive = 3, AlivePerPlayer = 2, NoDrop = true, Fallback = null });
+            // a roar over everyone around him: knocked off balance and tarred - step back or block
+            p.Acts.Add(new Act { Kind = ActKind.Roar, Interval = 45f, Radius = 30f, Damage = 30f, Effect = "Tared", MarkKey = "yagluth.roar" });
             p.Acts.Add(new Act { Kind = ActKind.Shield });
             p.Acts.Add(new Act { Kind = ActKind.Wave, Prefabs = new[] { "GoblinShaman" }, Count = 1f, Role = RoleHealer });
             p.Acts.Add(new Act
@@ -615,6 +619,13 @@ namespace ExtendedBosses
                     "Adaptation: damage of the type he adapted to (x).", "Адаптация: урон того типа, к которому он приспособился (×).");
                 d.CfgAdaptOthers = pl.F(d.Section, "AdaptOthers", 1.1f, 1f, 2f,
                     "Adaptation: damage of every other type (x).", "Адаптация: урон всех остальных типов (×).");
+                d.CfgRoarInterval = pl.F(d.Section, "RoarInterval", 45f, 10f, 300f,
+                    "From 55%: seconds between his roars (x0.75 in Hard).", "С 55 %: секунд между его рёвами (×0.75 в Hard).");
+                d.CfgRoarRadius = pl.F(d.Section, "RoarRadius", 30f, 3f, 60f,
+                    "The roar hits every player within this distance of him (m).", "Рёв бьёт всех игроков ближе этого расстояния к нему (м).");
+                d.CfgRoarDamage = pl.F(d.Section, "RoarDamage", 30f, 0f, 200f,
+                    "Blunt damage of the roar; it also staggers (a block takes it) and tars (slows).",
+                    "Дробящий урон рёва; он ещё и сбивает с ног (блок принимает его) и покрывает смолой (замедляет).");
                 d.Gates["EchoOfModer"] = pl.B(d.Section, "EchoOfModer", false,
                     "Experiment: at 10% Yagluth calls the echo of Moder (Aspect_Moder, half HP). Off by default.",
                     "Эксперимент: на 10 % Яглут призывает эхо Модер (Aspect_Moder, половина HP). По умолчанию выкл.");

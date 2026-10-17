@@ -5,6 +5,53 @@
 The version is set in one place — `ExtendedBossesPlugin.Version` in
 `src/ExtendedBossesPlugin.cs`.
 
+## 0.8.13 — real boss HP, one targeted attack at a time; Yagluth made safe (not tested in game)
+
+- **Boss HP is real HP now (every boss).** The group's HP (`02 Scaling`, same table as
+  before) is set as the boss's max HP while it is untouched - before the first hit, by the
+  group within 100 m at that moment - and vanilla's own per-player damage cut is undone.
+  The fight takes as long as before, but the HP bar and the damage numbers are true. If the
+  group changes mid-fight, the damage scaling still covers the difference; bloodthirst
+  heals in proportion; a boss switched to `Vanilla` gets its vanilla HP back (the same
+  share left).
+- **Targeted mod attacks never overlap**: marks, choosing a victim, Eikthyr's charge,
+  Fader's wall of fire - while one runs (and 2 s after), the others wait.
+- **Choosing a victim means something**: while Moder (landed) or Yagluth hunts the chosen
+  player, its hits on that player deal +10% (`09 Raid / FixateDamageBonus`); the message
+  says so instead of promising a beam.
+- Fader's wall of fire is looked up the new way too (it was "not found" as well).
+- **Yagluth roars** (from 55%, every 45 s, Hard ~34 s): a 2 s warning with a circle around
+  him, then everyone within 30 m is knocked off balance and tarred (30 blunt). Step back
+  or raise your shield. Takes its turn with the other targeted attacks
+  (`14 Yagluth / RoarInterval`, `RoarRadius`, `RoarDamage`).
+- **Pressure on the whole group, not just the tank.** Marks hit half the group at once
+  (rounded down; was 1, 2 from 5 players) and pick players the boss is not fighting first;
+  the victim is never the current tank; half of the new adds go for the farthest player
+  within 30 m of the boss who is not the tank (`09 Raid / AddsAimAtOthersChance`,
+  `AddsAimRange`).
+- **Yagluth's meteors fall at all.** The mark prefab `spawn_meteors` is not registered
+  in the network scene - it lives only inside his `GoblinKing_Meteors` attack - so the
+  lookup failed: the mark was announced and nothing came (the self-check said "not
+  found"). Prefabs are now also looked up in the attacks of the bosses' items and of every
+  item, so the same fix should cover Fader's `spawn_fader_meteors` and
+  `Fader_WallOfFire_Spawn`. Run `eb check` in game to confirm.
+- **The visual copy of a strike never spawns anything**: the harmless copy sent to other
+  players with the mod has its spawners and projectiles removed too - with the meteors
+  found, each of them would otherwise have dropped a real shower of their own.
+- **Fulings capped like Moder's drakes**: up to 3 alive per totem, but all six totems
+  together at most 2 per player (was up to 18 in a group of 4).
+- **His totems drop nothing** and his meteor marks pick only players within 40 m of him.
+- **The meteors of a mark fall into its circle.** A spawner aims its projectiles at the target
+  it finds around its owner - the boss - so they would have flown from above the marked player
+  to whoever stood next to Yagluth (usually the tank, whom marks never pick). The mark's
+  spawner now aims at the marked spot.
+- **The warning on a marked player is seen at all.** The default mark effect `vfx_prespawn` is
+  a networked prefab, and those were never shown; it is now spawned once by the boss owner, so
+  every player sees it - those without the mod too. The self-check no longer calls it a problem.
+- **The roar no longer staggers a player who dodged or blocked it.** The extra stagger after
+  the hit ignored a dodge and read the block from a lagging network flag; the hit's own stagger,
+  decided on the player's client, is what remains.
+
 ## 0.8.12 — Moder: fewer drakes, abilities more often; the reward on the ground (not tested in game)
 
 - **A threshold never fires twice when the boss changes owner.** Every client with the

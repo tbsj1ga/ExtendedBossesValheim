@@ -13,6 +13,8 @@ namespace ExtendedBosses
         // ZDO keys
         internal static readonly int KPhase = "j1ga.extendedbosses.phase".GetStableHashCode();        // boss: int bitmask of fired phases
         internal static readonly int KResets = "j1ga.extendedbosses.resets".GetStableHashCode();      // boss: int, +1 on every fight reset (tells a stale phase memo from a reset)
+        internal static readonly int KBaseMax = "j1ga.extendedbosses.basemax".GetStableHashCode();    // boss: float, its vanilla max HP before ours
+        internal static readonly int KHpScale = "j1ga.extendedbosses.hpscale".GetStableHashCode();    // boss: float, the factor its max HP was raised by (0 = untouched)
         internal static readonly int KTotems = "j1ga.extendedbosses.totems".GetStableHashCode();      // boss: number of totem slots
         internal static readonly int KShieldAct = "j1ga.extendedbosses.shield".GetStableHashCode();   // boss: act code + 1 of the armed shield
         internal static readonly int KResistAct = "j1ga.extendedbosses.resist".GetStableHashCode();   // boss: act code + 1 of the resist phase
@@ -54,6 +56,7 @@ namespace ExtendedBosses
             public bool Seen;
             public float NextMark;
             public float NextFlyer;
+            public float BusyUntil;         // a targeted mod attack (mark, fixation, charge, wall) runs until then: the others wait
             public readonly List<Strike> Strikes = new List<Strike>();
             public float NextCharge;
             public float ChargeEnd;
@@ -81,6 +84,7 @@ namespace ExtendedBosses
             public float NextFix, FixUntil; // Fixate (local time)
             public ZDOID FixTarget = ZDOID.None;
             public float NextHazard;        // Hazard (local time)
+            public float NextRoar, RoarAt;  // Roar (local time): next one, the pending blast (0 = none)
             public float NextSeed;          // Seeds: no new seed nest before this (local time)
             public float CocoonUntil, CocoonReady; // Cocoon (local time)
             public bool CocoonActive;
@@ -209,6 +213,7 @@ namespace ExtendedBosses
 
             if (!IsModMode(def))
             {
+                RestoreHealth(boss, z);
                 StopCharge(rt);
                 rt.Strikes.Clear();
                 rt.ShieldActive = rt.WindowActive = false;
@@ -236,6 +241,7 @@ namespace ExtendedBosses
             long net = NetTicks();
 
             if (TickReset(boss, rt, mask, pct, now)) return;
+            TickHealth(boss, def, z, mask, players);
 
             // phases: mark first, then run - an exception never makes a phase fire twice
             for (int i = 0; i < def.Phases.Count && i < 31; i++)
@@ -261,6 +267,7 @@ namespace ExtendedBosses
             TickMarks(boss, rt, mask, players, now);
             TickCharge(boss, rt, mask, now);
             TickFixate(boss, rt, mask, now);
+            TickRoar(boss, rt, mask, now);
             TickHazard(boss, rt, mask, now);
             TickCocoon(boss, rt, mask, players, now);
             TickThreat(boss, rt);
@@ -317,7 +324,7 @@ namespace ExtendedBosses
                                 c = SpawnCreatureAt(rt.BossId, prefabs[p], level, act.HpMul, wp, 0, act.Role, act.Lifetime);
                             }
                             else c = SpawnCreature(rt.BossId, prefabs[p], level, act.HpMul, center, 0, Sv(_cfgSpawnRadiusMin), Sv(_cfgSpawnRadiusMax), act.Role, act.Lifetime);
-                            if (c != null) spawned++;
+                            if (c != null) { spawned++; if (act.Role == 0) AimAdd(boss, c); }
                         }
                     if (act.InWater && spawned == 0) Debug(rt.Def.Prefab + ": no water around for " + act.Prefabs[0]);
                     return spawned > 0;
@@ -354,6 +361,9 @@ namespace ExtendedBosses
                     return true;        // passive: read while the fight runs
                 case ActKind.Fixate:
                     rt.NextFix = now + 5f;
+                    return true;
+                case ActKind.Roar:
+                    rt.NextRoar = now + 8f;
                     return true;
                 case ActKind.Hazard:
                     rt.NextHazard = now + 5f;
@@ -416,11 +426,55 @@ namespace ExtendedBosses
                 float s = g.GetDifficultyDamageScaleEnemy(boss.transform.position);
                 if (s > 0.0001f) vanillaHp = 1f / s;
             }
+            // the part of our HP already put into its max HP is not taken off the damage again:
+            // with the group size unchanged since the pull this is just "undo vanilla"
+            return vanillaHp * HpScaleOf(boss) / OurHpFactor(def, n);
+        }
+
+        internal float OurHpFactor(BossDef def, int n)
+        {
             float ours = Sv(_cfgBaseHealth) * (1f + Sv(_cfgHealthPerPlayer) * (n - 1));
             if (n <= 1) ours *= Sv(_cfgSoloHealth);
             if (ProfileOf(def) == ProfileHard) ours *= Sv(_cfgHardHealth);
-            if (ours < 0.01f) ours = 0.01f;
-            return vanillaHp / ours;
+            return Mathf.Max(0.01f, ours);
+        }
+
+        internal static float HpScaleOf(Character boss)
+        {
+            ZDO z = Zdo(boss);
+            float s = z != null ? z.GetFloat(KHpScale, 0f) : 0f;
+            return s > 0.0001f ? s : 1f;
+        }
+
+        // The group's HP is real max HP: set while the boss is untouched (before the first hit,
+        // again after a reset), frozen once the fight is on. Vanilla rebuilds max HP from the
+        // prefab when an untouched boss loads - noticed (max differs from what we set) and taken
+        // as the new base. If the group changes mid-fight, ScaleFactor covers the difference.
+        private void TickHealth(Character boss, BossDef def, ZDO z, int mask, int players)
+        {
+            float max = boss.GetMaxHealth();
+            if (mask != 0 || boss.GetHealth() < max - 0.5f) return;        // the fight is on: frozen
+            float baseMax = z.GetFloat(KBaseMax, 0f);
+            float applied = z.GetFloat(KHpScale, 0f);
+            if (baseMax <= 0f || applied <= 0f || Mathf.Abs(max - baseMax * applied) > 1f) { baseMax = max; z.Set(KBaseMax, baseMax); }
+            float want = OurHpFactor(def, players);
+            if (applied > 0f && Mathf.Abs(want - applied) < 0.001f && Mathf.Abs(max - baseMax * want) <= 1f) return;
+            boss.SetMaxHealth(baseMax * want);
+            boss.SetHealth(baseMax * want);
+            z.Set(KHpScale, want);
+            Debug(def.Prefab + ": max HP " + F1(baseMax) + " x" + F1(want) + " = " + F1(baseMax * want) + " (" + players + " player(s))");
+        }
+
+        // back to vanilla: the vanilla max HP, the same share of it left
+        private void RestoreHealth(Character boss, ZDO z)
+        {
+            float applied = z.GetFloat(KHpScale, 0f);
+            float baseMax = z.GetFloat(KBaseMax, 0f);
+            if (applied <= 0f || baseMax <= 0f) return;
+            float frac = boss.GetHealthPercentage();
+            boss.SetMaxHealth(baseMax);
+            boss.SetHealth(Mathf.Max(1f, baseMax * frac));
+            z.Set(KHpScale, 0f);
         }
 
         // Mechanics: shield / cocoon, burn window. Resist and cycle phases are per type (applied
@@ -719,7 +773,8 @@ namespace ExtendedBosses
             FightRt rt = RtIfRunning(boss);
             if (rt == null || rt.CycleAct == null || rt.CycleVar == null || rt.CycleVar.Lifesteal <= 0f) return;
             float pct = rt.Def.CfgLifesteal != null ? Sv(rt.Def.CfgLifesteal) : rt.CycleVar.Lifesteal;
-            float amount = hit.GetTotalDamage() * pct / 100f;
+            // the boss's HP is raised by the group factor: so is what its bite takes back
+            float amount = hit.GetTotalDamage() * pct / 100f * HpScaleOf(boss);
             if (amount > 0f && boss.GetHealth() < boss.GetMaxHealth()) boss.Heal(amount, true);
         }
 
@@ -1015,7 +1070,8 @@ namespace ExtendedBosses
                 if (act.AlivePerPlayer > 0 && CountTotemAdds(rt, bz, slots) >= act.AlivePerPlayer * players) continue;
                 if (AtCap(boss)) continue;
                 string prefab = act.Prefabs[UnityEngine.Random.Range(0, act.Prefabs.Length)];
-                SpawnCreature(rt.BossId, prefab, AddLevel(rt.Def, act.Level, players), act.HpMul, totem.transform.position, i + 1, 1.5f, 4f, act.Role, act.Lifetime);
+                Character hatched = SpawnCreature(rt.BossId, prefab, AddLevel(rt.Def, act.Level, players), act.HpMul, totem.transform.position, i + 1, 1.5f, 4f, act.Role, act.Lifetime);
+                if (hatched != null && act.Role == 0) AimAdd(boss, hatched);
             }
         }
 
@@ -1049,18 +1105,26 @@ namespace ExtendedBosses
             if (act == null || !MechanicOn(rt.Def, ActKind.Marks)) return;
             if (rt.NextMark <= 0f) rt.NextMark = now + 3f;
             if (now < rt.NextMark) return;
+            if (now < rt.BusyUntil) { rt.NextMark = rt.BusyUntil + 1f; return; }   // one targeted attack at a time
             float interval = (rt.Def.CfgMarkInterval != null ? Sv(rt.Def.CfgMarkInterval) : Sv(_cfgMarkInterval)) * (ProfileOf(rt.Def) == ProfileHard ? 0.75f : 1f);
             rt.NextMark = now + interval;
 
             List<Player> targets = PlayersNear(boss.transform.position, act.MarkRange > 0f ? act.MarkRange : Sv(_cfgScalingRange));
             if (targets.Count == 0) return;
-            int count = Mathf.Max(1, Mathf.RoundToInt(act.Count)) + (players >= 5 ? 1 : 0);
+            rt.BusyUntil = Mathf.Max(rt.BusyUntil, now + Sv(_cfgMarkDelay) + 2f);
+            // more marks in a bigger group, never more than half of it (one when alone or a pair)
+            int count = Mathf.Max(Mathf.Max(1, Mathf.RoundToInt(act.Count)), players / 2);
+            Character tank = BossTarget(boss);
             float delay = Sv(_cfgMarkDelay);
             float radius = MarkRadius(rt.Def, act);
             string effect = rt.Def.CfgMarkEffect != null ? Ss(rt.Def.CfgMarkEffect) : act.Prop;
+            // a networked effect (vfx_prespawn) is spawned once here and every player sees it, the
+            // ones without the mod too; a local one travels in the fx packet
+            GameObject effectPf = !string.IsNullOrEmpty(effect) ? ResolvePrefab(effect) : null;
+            bool netEffect = effectPf != null && effectPf.GetComponent<ZNetView>() != null;
             for (int k = 0; k < count && targets.Count > 0; k++)
             {
-                int pick = UnityEngine.Random.Range(0, targets.Count);
+                int pick = PickNotTank(targets, tank);
                 Player p = targets[pick];
                 targets.RemoveAt(pick);
                 Strike s = new Strike();
@@ -1069,7 +1133,8 @@ namespace ExtendedBosses
                 s.Act = act;
                 rt.Strikes.Add(s);
                 if (!string.IsNullOrEmpty(act.MarkKey)) Announce(act.MarkKey, NameToken(boss), p.GetPlayerName());
-                SendFx(FxMark, s.Target, p.transform.position, radius, delay, effect);
+                if (netEffect) UnityEngine.Object.Instantiate(effectPf, p.transform.position, Quaternion.identity);
+                SendFx(FxMark, s.Target, p.transform.position, radius, delay, netEffect ? null : effect);
                 Debug(rt.Def.Prefab + ": marked " + p.GetPlayerName() + " (radius " + F1(radius) + ")");
             }
         }
@@ -1083,7 +1148,7 @@ namespace ExtendedBosses
         private float MarkRadius(BossDef def, Act act)
         {
             if (act.Creature != null) return act.RingRadius + 1f;
-            GameObject pf = ZNetScene.instance.GetPrefab(MarkPrefab(def, act));
+            GameObject pf = ResolvePrefab(MarkPrefab(def, act));
             Aoe aoe = pf != null ? pf.GetComponentInChildren<Aoe>(true) : null;
             if (aoe != null && aoe.m_radius > 0.1f) return aoe.m_radius;
             SpawnAbility sa = pf != null ? pf.GetComponentInChildren<SpawnAbility>(true) : null;
@@ -1109,14 +1174,21 @@ namespace ExtendedBosses
                 return;
             }
 
-            GameObject pf = ZNetScene.instance.GetPrefab(prefab);
+            GameObject pf = ResolvePrefab(prefab);
             if (pf == null) { Warn(rt.Def.Prefab + ": mark prefab '" + prefab + "' not found."); return; }
             float dmg = (rt.Def.CfgMarkDamage != null ? Sv(rt.Def.CfgMarkDamage) : s.Act.Damage) * Sv(_cfgMarkDamage);
             GameObject go = UnityEngine.Object.Instantiate(pf, pos, Quaternion.identity);
             // a spawner of projectiles (Yagluth's meteors) drops them around itself - here, the
             // marked player - not at whoever is closest to the boss
             SpawnAbility[] sas = go.GetComponentsInChildren<SpawnAbility>(true);
-            for (int i = 0; i < sas.Length; i++) sas[i].m_spawnAtTarget = false;
+            // and aimed at the marked spot: a spawner aims its projectiles at the target it finds,
+            // which for "closest/random enemy" is searched around its owner - the boss - so the
+            // meteors would fly from above the marked player to whoever stands next to the boss
+            for (int i = 0; i < sas.Length; i++)
+            {
+                sas[i].m_spawnAtTarget = false;
+                sas[i].m_targetType = SpawnAbility.TargetType.Position;
+            }
             // Aoe, SpawnAbility, Projectile: the boss as owner - its adds (same group) are friends
             IProjectile[] ps = go.GetComponentsInChildren<IProjectile>(true);
             for (int i = 0; i < ps.Length; i++) ps[i].Setup(boss, Vector3.zero, 0f, null, null, null);
@@ -1135,7 +1207,7 @@ namespace ExtendedBosses
         // and sent to the other players with the mod
         private void PlayFx(BossDef def, string prefab, Vector3 pos)
         {
-            GameObject pf = ZNetScene.instance.GetPrefab(prefab);
+            GameObject pf = ResolvePrefab(prefab);
             if (pf == null) { Warn(def.Prefab + ": effect prefab '" + prefab + "' not found."); return; }
             if (pf.GetComponent<ZNetView>() != null) { UnityEngine.Object.Instantiate(pf, pos, Quaternion.identity); return; }
             SpawnVisual(prefab, pos);
@@ -1172,6 +1244,7 @@ namespace ExtendedBosses
                 return;
             }
             if (now < rt.NextCharge) return;
+            if (now < rt.BusyUntil) { rt.NextCharge = rt.BusyUntil + 1f; return; }
             MonsterAI ai = boss.GetComponent<MonsterAI>();
             Character target = ai != null ? ai.GetTargetCreature() : null;
             float dist = target != null ? Vector3.Distance(target.transform.position, boss.transform.position) : 0f;
@@ -1184,6 +1257,7 @@ namespace ExtendedBosses
             boss.m_runSpeed = rt.BaseRun * mul;
             rt.Charging = true;
             rt.ChargeEnd = now + Sv(rt.Def.CfgChargeDuration);
+            rt.BusyUntil = Mathf.Max(rt.BusyUntil, rt.ChargeEnd + 2f);
             rt.NextCharge = now + Sv(rt.Def.CfgChargeInterval);
             Debug(rt.Def.Prefab + ": charge at " + target.m_name + " (" + F1(dist) + " m)");
         }
@@ -1245,6 +1319,8 @@ namespace ExtendedBosses
             rt.ThreatTarget = ZDOID.None;
             rt.NextMark = 0f;
             rt.NextFlyer = 0f;
+            rt.BusyUntil = 0f;
+            rt.NextRoar = rt.RoarAt = 0f;
             rt.NoPlayersSince = -1f;
             rt.ShieldActive = rt.WindowActive = false;
             rt.ResistAct = null;
@@ -1313,7 +1389,10 @@ namespace ExtendedBosses
             int n = Mathf.Min(room, UnityEngine.Random.Range(1, 3));
             // they come from afar, not out of thin air next to the group
             for (int i = 0; i < n; i++)
-                SpawnCreature(rt.BossId, d.FlyerPrefab, AddLevel(d, 1, players), 1f, boss.transform.position, FlyerSrc, 25f, 35f, 0, 0f);
+            {
+                Character f = SpawnCreature(rt.BossId, d.FlyerPrefab, AddLevel(d, 1, players), 1f, boss.transform.position, FlyerSrc, 25f, 35f, 0, 0f);
+                if (f != null) AimAdd(boss, f);
+            }
             Debug(d.Prefab + ": " + n + " flyer(s) " + d.FlyerPrefab);
         }
 

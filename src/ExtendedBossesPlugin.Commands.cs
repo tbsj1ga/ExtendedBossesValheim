@@ -132,7 +132,7 @@ namespace ExtendedBosses
         {
             if (string.IsNullOrEmpty(prefab)) return "eb probe <prefab>";
             if (ZNetScene.instance == null) return L("cmd.noworld");
-            GameObject pf = ZNetScene.instance.GetPrefab(prefab);
+            GameObject pf = ResolvePrefab(prefab);
             if (pf == null) return "Prefab '" + prefab + "' not found.";
             StringBuilder sb = new StringBuilder();
             ZNetView nv = pf.GetComponent<ZNetView>();
