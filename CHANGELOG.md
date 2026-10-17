@@ -5,7 +5,7 @@
 The version is set in one place — `ExtendedBossesPlugin.Version` in
 `src/ExtendedBossesPlugin.cs`.
 
-## 0.8.13 — real boss HP, one targeted attack at a time; Yagluth made safe (not tested in game)
+## 0.8.13 — real boss HP, one targeted attack at a time; Yagluth made safe
 
 - **Boss HP is real HP now (every boss).** The group's HP (`02 Scaling`, same table as
   before) is set as the boss's max HP while it is untouched - before the first hit, by the
@@ -54,7 +54,7 @@ The version is set in one place — `ExtendedBossesPlugin.Version` in
   the block from a lagging network flag. That extra stagger is gone; the hit's own, decided on
   the player's client, remains.
 
-## 0.8.12 — Moder: fewer drakes, abilities more often; the reward on the ground (not tested in game)
+## 0.8.12 — Moder: fewer drakes, abilities more often; the reward on the ground
 
 - **A threshold never fires twice when the boss changes owner.** Every client with the
   mod remembers which thresholds of a boss have fired; a client that takes the boss over
@@ -87,7 +87,7 @@ The version is set in one place — `ExtendedBossesPlugin.Version` in
   reward was dropped where she hung - the gear could fall off the cliffs and be lost. A
   boss more than 3 m above the ground now drops it at ground level.
 
-## 0.8.11 — the skull pile: owned by the fight, not cleaned up after (not tested in game)
+## 0.8.11 — the skull pile: owned by the fight, not cleaned up after
 
 - The 0.8.10 clean-up of items left on the broken pile's spot is removed: items are
   picked up instantly, so they would already be in an inventory. Instead the client
@@ -95,7 +95,7 @@ The version is set in one place — `ExtendedBossesPlugin.Version` in
   with the mod, where the drop is switched off - also when a player without the mod breaks
   it.
 
-## 0.8.10 — after a group test (not tested in game)
+## 0.8.10 — after a group test
 
 - **Eikthyr's skull pile really drops nothing.** `skull_pile` is a build piece, and a
   destroyed piece gives its resources (the skulls) back - the drop table was never the
@@ -108,7 +108,7 @@ The version is set in one place — `ExtendedBossesPlugin.Version` in
 - **A boss mid-fight without a target takes the nearest player** instead of idling and
   wandering off its arena (Bonemass walked away while the group fought lieutenants).
 
-## 0.8.9 — Fix for 0.8.8 (not tested in game)
+## 0.8.9 — Fix for 0.8.8
 
 - The skull pile's drops are now switched off by emptying its drop table. 0.8.8 removed
   the drop component, whose subscription to the pile's destruction stayed and would fail
@@ -116,7 +116,7 @@ The version is set in one place — `ExtendedBossesPlugin.Version` in
 - The boss tag of adds and nests is read with a pre-hashed key in the per-tick and
   per-second scans (no string work per object).
 
-## 0.8.8 — Bonemass's slime, the Elder's shamans, rewards (not tested in game)
+## 0.8.8 — Bonemass's slime, the Elder's shamans, rewards
 
 - **Bonemass**: slime comes every 45 s (was 25) and in smaller waves (base 1, was 2); the
   setting `12 Bonemass / SlimeInterval` is updated once in an existing config.
@@ -151,7 +151,7 @@ The version is set in one place — `ExtendedBossesPlugin.Version` in
   (-RU.md); a real Thunderstore README; code and build-script comments in English.
 - No gameplay changes.
 
-## 0.8.3 — Balance after reviewing every boss (not tested in game)
+## 0.8.3 — Balance after reviewing every boss
 
 - Phase cycles **do not start under the shield or the cocoon**; all mechanics together
   never cut damage to the boss below ×0.1 (`09 Raid / MinDamageFactor`).
@@ -184,14 +184,14 @@ The version is set in one place — `ExtendedBossesPlugin.Version` in
 - **Messages** in the centre of the screen stay ×1.5 longer (`07 Client /
   MessageDurationMultiplier`, only for players with the mod).
 
-## 0.8.1 — Config without a restart on a dedicated server (not tested in game)
+## 0.8.1 — Config without a restart on a dedicated server
 
 - Saved `j1ga.extendedbosses.cfg` — the mod rereads it a second later (file watch) and
   on the server sends the new values to clients with the mod right away. Switch —
   `08 Sync / WatchConfigFile`. The mod's own saves (settings window) are not reread; the
   file is never rewritten on a reread.
 
-## 0.8.0 — Postponed mechanics (not tested in game)
+## 0.8.0 — Postponed mechanics
 
 - **The Elder's seeds** (from 70%): where his projectile lands, a nest grows with a 30%
   chance (at most 4 standing nests).
@@ -211,7 +211,7 @@ The version is set in one place — `ExtendedBossesPlugin.Version` in
 - Self-check: status effects (`Wet`, `Tared`), hazard spawners.
 - `eb status`: `COCOON`, `FIXATION`.
 
-## 0.7.0 — Fader (not tested in game)
+## 0.7.0 — Fader
 
 - **Fader** (`16 Fader`):
   - 85 / 70 / 55% — 1 / 2 / 3 charred spawner stones (`Spawner_CharredStone`,
@@ -224,7 +224,7 @@ The version is set in one place — `ExtendedBossesPlugin.Version` in
   - reward: coins, gemstones, flametal ore, molten cores; Ashlands gear, with a chance —
     frozen cores.
 
-## 0.6.0 — The Queen (not tested in game)
+## 0.6.0 — The Queen
 
 - **The Queen** (`15 Queen`):
   - 85 / 70 / 55% — egg clutches (`SeekerEgg_alwayshatch`, 2 / 2 / 3, growing with the
@@ -240,7 +240,7 @@ The version is set in one place — `ExtendedBossesPlugin.Version` in
 - Nests can be any networked object, not only destructibles (eggs), and grow with the
   group like adds.
 
-## 0.5.0 — Yagluth (not tested in game)
+## 0.5.0 — Yagluth
 
 - **Yagluth** (`14 Yagluth`):
   - 85 / 70 / 55% — 1 / 2 / 3 fuling totems (`goblin_totempole`), fulings and archers
@@ -261,7 +261,7 @@ The version is set in one place — `ExtendedBossesPlugin.Version` in
   player, not around whoever is nearest the boss); mark damage with no setting is vanilla.
 - Actions with an experiment flag (`Gate`), HP multiplier below 1.
 
-## 0.4.0 — Moder (not tested in game)
+## 0.4.0 — Moder
 
 - **Moder** (`13 Moder`):
   - 85 / 70 / 55% — 1 / 2 / 3 ice stalagmites (`caverock_ice_stalagmite`): drakes hatch
@@ -279,7 +279,7 @@ The version is set in one place — `ExtendedBossesPlugin.Version` in
 - Waves can have a night composition (`NightPrefabs`); a totem can have its own fallback
   nest or none.
 
-## 0.3.1 — Bonemass alternates two phases (not tested in game)
+## 0.3.1 — Bonemass alternates two phases
 
 - A new cycle variant for Bonemass — **rot vapour** (`Rot`): hits closer than 5 m ×0.5,
   and every such hit poisons the attacker (12 poison, at most once per second per
@@ -289,7 +289,7 @@ The version is set in one place — `ExtendedBossesPlugin.Version` in
 - Bonemass settings renamed: `Harden*` → `Cycle*` (duration, cooldown, start delay), plus
   `RotMeleeFactor`, `RotPoisonDamage`.
 
-## 0.3.0 — Bonemass, a shared resistance cycle (not tested in game)
+## 0.3.0 — Bonemass, a shared resistance cycle
 
 - **Bonemass** per table B3:
   - 85 / 70 / 55% — 1 / 2 / 3 bone piles (`Spawner_DraugrPile`), at 55% — the shield
@@ -315,7 +315,7 @@ The version is set in one place — `ExtendedBossesPlugin.Version` in
 - `11 Elder / BarkVariant = Random` (the new default): before each bark the variant `Sap`
   or `Back` is picked again, 50/50. `Sap`, `Back`, `Auto` remain for a fixed variant.
 
-## 0.2.1 — The Elder's living bark reworked (not tested in game)
+## 0.2.1 — The Elder's living bark reworked
 
 - The bark is no longer tied to the nests' shield: a cycle "30 s of bark → cooldown
   50–70 s (random) → bark again" until death. The first bark comes right after the
@@ -332,7 +332,7 @@ The version is set in one place — `ExtendedBossesPlugin.Version` in
 - All bark parameters are in `11 Elder`; `eb status` shows `BARK (sap)` / `BARK (back)`;
   `eb probe` — the creature's vanilla resistances.
 
-## 0.2.0 — The Elder, languages, self-check (not tested in game)
+## 0.2.0 — The Elder, languages, self-check
 
 - **Two languages.** All of the mod's text is in Russian and English. Players with the
   mod see messages in their game's language; to players without the mod the server sends
@@ -359,7 +359,7 @@ The version is set in one place — `ExtendedBossesPlugin.Version` in
   with ghosts; reward — bronze and troll hide, with a chance iron.
 - Temporary adds (lifetime in the ZDO), add roles.
 
-## 0.1.0 — Skeleton and Eikthyr (not tested in game)
+## 0.1.0 — Skeleton and Eikthyr
 
 - The fight skeleton on the boss's owner: phases by HP threshold, the fight state in the
   boss's ZDO (a phase bitmask, totem slots) — a phase never repeats after a rejoin or an
