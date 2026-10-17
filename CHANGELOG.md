@@ -20,7 +20,7 @@ The version is set in one place — `ExtendedBossesPlugin.Version` in
   player, its hits on that player deal +10% (`09 Raid / FixateDamageBonus`); the message
   says so instead of promising a beam.
 - Fader's wall of fire is looked up the new way too (it was "not found" as well).
-- **Yagluth roars** (from 55%, every 45 s, Hard ~34 s): a 2 s warning with a circle around
+- **Yagluth roars** (from 55%, every 45 s, Hard ~34 s): a 4 s warning with a circle around
   him, then everyone within 30 m is knocked off balance and tarred (30 blunt). Step back
   or raise your shield. Takes its turn with the other targeted attacks
   (`14 Yagluth / RoarInterval`, `RoarRadius`, `RoarDamage`).

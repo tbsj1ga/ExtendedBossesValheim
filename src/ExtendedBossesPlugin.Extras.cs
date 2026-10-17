@@ -57,7 +57,7 @@ namespace ExtendedBosses
         // vanilla) but not dodged: a roll does not help, stepping out of the circle does. A new
         // HitData is neither blockable nor dodgeable until told so.
         // ------------------------------------------------------------------
-        private const float RoarWarn = 2f;
+        private const float RoarWarn = 4f;
 
         private void TickRoar(Character boss, FightRt rt, int mask, float now)
         {
