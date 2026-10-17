@@ -51,10 +51,11 @@ namespace ExtendedBosses
 
         // ------------------------------------------------------------------
         // roar (Yagluth): a warning, then every player around the boss is knocked off balance
-        // and gets the act's status (tar: slowed). A plain vanilla hit from the boss: a raised
-        // shield blocks it and a dodge avoids it like any other hit, and its stagger comes through
-        // the hit itself, decided on the player's own client - players without the mod get it the
-        // same.
+        // and gets the act's status (tar: slowed). A plain vanilla hit from the boss, decided on the
+        // player's own client - players without the mod get it the same. It can be blocked (a
+        // shield whose block power is enough holds it; too weak a block breaks and staggers, as in
+        // vanilla) but not dodged: a roll does not help, stepping out of the circle does. A new
+        // HitData is neither blockable nor dodgeable until told so.
         // ------------------------------------------------------------------
         private const float RoarWarn = 2f;
 
@@ -98,6 +99,8 @@ namespace ExtendedBosses
             hit.m_dir = dir;
             hit.m_pushForce = 60f;
             hit.m_staggerMultiplier = 20f;
+            hit.m_blockable = true;
+            hit.m_dodgeable = false;
             if (!string.IsNullOrEmpty(effect)) hit.m_statusEffectHash = effect.GetStableHashCode();
             hit.SetAttacker(boss);
             p.Damage(hit);

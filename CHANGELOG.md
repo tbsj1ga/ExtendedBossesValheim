@@ -48,9 +48,11 @@ The version is set in one place — `ExtendedBossesPlugin.Version` in
 - **The warning on a marked player is seen at all.** The default mark effect `vfx_prespawn` is
   a networked prefab, and those were never shown; it is now spawned once by the boss owner, so
   every player sees it - those without the mod too. The self-check no longer calls it a problem.
-- **The roar no longer staggers a player who dodged or blocked it.** The extra stagger after
-  the hit ignored a dodge and read the block from a lagging network flag; the hit's own stagger,
-  decided on the player's client, is what remains.
+- **The roar can be blocked, not dodged.** A shield with enough block power holds it (too weak
+  a block breaks and staggers, as in vanilla); a roll does not help - step out of the circle.
+  It was neither: a new hit is not blockable until told so, and an extra stagger after it read
+  the block from a lagging network flag. That extra stagger is gone; the hit's own, decided on
+  the player's client, remains.
 
 ## 0.8.12 — Moder: fewer drakes, abilities more often; the reward on the ground (not tested in game)
 

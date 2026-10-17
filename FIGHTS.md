@@ -223,7 +223,7 @@ metal, padded.
 |---|---|---|---|
 | 85% | 1 fuling totem: fulings and archers every 12 s, up to 3 alive per totem and **at most 2 per player from all totems together** | the same | every 9 s, +1★ |
 | 70% | 2 more totems; his **meteors** around a marked player within 40 m of him (vanilla damage) | totems | meteors more often |
-| 55% | 3 more totems, **shield**, fuling **shamans** (base 1) heal him; **roar** every 45 s: a 2 s warning, then everyone within 30 m is knocked off balance and tarred (30 blunt; a raised shield or a dodge avoids it); after the window — phase cycles | totems and shamans without healing | shield ×0.1, roar every 34 s |
+| 55% | 3 more totems, **shield**, fuling **shamans** (base 1) heal him; **roar** every 45 s: a 2 s warning, then everyone within 30 m is knocked off balance and tarred (30 blunt; a shield block holds it if strong enough, a roll does not help - step out); after the window — phase cycles | totems and shamans without healing | shield ×0.1, roar every 34 s |
 | 45% | brutes (base 1); **chooses a victim**: every 30 s for 8 s hunts that player and hits him +10%; his hits make you **tared** | brutes | beam more often |
 | 30% | an unbjorn | the same | the same |
 | 20% | three skeletons (plain, archer, poison — base 1) | the same | more, +1★ |
