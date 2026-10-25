@@ -44,6 +44,10 @@
       <HintPath>$(ValheimManaged)\UnityEngine.CoreModule.dll</HintPath>
       <Private>false</Private>
     </Reference>
+    <Reference Include="UnityEngine.PhysicsModule">
+      <HintPath>$(ValheimManaged)\UnityEngine.PhysicsModule.dll</HintPath>
+      <Private>false</Private>
+    </Reference>
     <Reference Include="UnityEngine.UI">
       <HintPath>$(ValheimManaged)\UnityEngine.UI.dll</HintPath>
       <Private>false</Private>

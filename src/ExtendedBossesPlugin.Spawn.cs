@@ -18,6 +18,9 @@ namespace ExtendedBosses
         internal Vector3 RingPoint(Vector3 center, float rMin, float rMax)
         {
             if (rMax < rMin) rMax = rMin;
+            // an interior (the Queen's arena) sits ~5000 m above the world: the terrain under it
+            // is the world below, so the floor is looked for with rays from the boss's height
+            if (Character.InInterior(center)) return InteriorRingPoint(center, rMin, rMax);
             ZoneSystem zs = ZoneSystem.instance;
             // a flying boss (Moder) is far above the ground: measure from the ground under it,
             // or every point fails the cliff test and the fallback hangs the object in the air
@@ -43,6 +46,45 @@ namespace ExtendedBosses
             p.y = zs != null ? zs.GetGroundHeight(p) : center.y;
             if (Mathf.Abs(p.y - center.y) > 12f) p.y = center.y;
             return p;
+        }
+
+        // A point in the ring on the floor of an interior. ZoneSystem's ground and solid heights
+        // are cast from the sky and see the world below or the roof, so: a clear line from the
+        // boss (no wall or pillar in between), a floor within 3 m of the boss's height, and room
+        // for a body. Up to 12 tries; then the boss's own spot.
+        private static int _interiorMask;
+
+        internal static Vector3 InteriorRingPoint(Vector3 center, float rMin, float rMax)
+        {
+            Vector3 eye = center + Vector3.up * 1.5f;
+            for (int tries = 0; tries < 12; tries++)
+            {
+                float ang = UnityEngine.Random.Range(0f, Mathf.PI * 2f);
+                float dist = UnityEngine.Random.Range(rMin, rMax);
+                Vector3 p = center + new Vector3(Mathf.Cos(ang) * dist, 0f, Mathf.Sin(ang) * dist);
+                if (Physics.Linecast(eye, p + Vector3.up * 1.5f, InteriorMask())) continue;      // wall or pillar between
+                float floor;
+                if (!InteriorFloor(p, out floor) || Mathf.Abs(floor - center.y) > 3f) continue;   // pit, ledge
+                p.y = floor;
+                if (Physics.CheckCapsule(p + Vector3.up * 0.6f, p + Vector3.up * 1.6f, 0.4f, InteriorMask())) continue;   // something stands here
+                return p;
+            }
+            return center;
+        }
+
+        // the floor under a point of an interior: a ray down from 1.5 m above it, at most 6 m
+        internal static bool InteriorFloor(Vector3 p, out float y)
+        {
+            RaycastHit hit;
+            if (Physics.Raycast(p + Vector3.up * 1.5f, Vector3.down, out hit, 6f, InteriorMask())) { y = hit.point.y; return true; }
+            y = p.y;
+            return false;
+        }
+
+        private static int InteriorMask()
+        {
+            if (_interiorMask == 0) _interiorMask = LayerMask.GetMask("Default", "static_solid", "Default_small", "piece", "terrain");
+            return _interiorMask;
         }
 
         // A prefab by name. Most are in ZNetScene; some local ones are not registered there and
@@ -160,9 +202,9 @@ namespace ExtendedBosses
             int n = GroupSize(boss);
             Vector3 pos = boss.transform.position;
             // a boss killed in the air (Moder) would scatter the reward down the slopes: put it on
-            // the ground under the body
+            // the ground under the body (not in an interior: the terrain there is the world below)
             ZoneSystem zsr = ZoneSystem.instance;
-            if (zsr != null)
+            if (zsr != null && !Character.InInterior(pos))
             {
                 float ground = zsr.GetGroundHeight(pos);
                 if (pos.y - ground > 3f) pos.y = ground;
@@ -371,7 +413,8 @@ namespace ExtendedBosses
                     float a = s * Mathf.PI * 2f / CircleSegments;
                     Vector3 p = center + new Vector3(Mathf.Cos(a) * ci.Radius, 0f, Mathf.Sin(a) * ci.Radius);
                     float h;
-                    if (ZoneSystem.instance != null && ZoneSystem.instance.GetGroundHeight(p, out h)) p.y = Mathf.Max(h, center.y - 2f) + 0.15f;
+                    if (Character.InInterior(center)) p.y = (InteriorFloor(p, out h) && Mathf.Abs(h - center.y) < 2f ? h : center.y) + 0.15f;
+                    else if (ZoneSystem.instance != null && ZoneSystem.instance.GetGroundHeight(p, out h)) p.y = Mathf.Max(h, center.y - 2f) + 0.15f;
                     else p.y = center.y + 0.15f;
                     ci.Line.SetPosition(s, p);
                 }

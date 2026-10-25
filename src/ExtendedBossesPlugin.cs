@@ -20,7 +20,7 @@ namespace ExtendedBosses
     {
         public const string Guid = "j1ga.extendedbosses";
         public const string Name = "Extended Bosses";
-        public const string Version = "0.8.14";
+        public const string Version = "0.8.15";
 
         public static ExtendedBossesPlugin Instance;
 

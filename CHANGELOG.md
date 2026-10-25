@@ -5,6 +5,15 @@
 The version is set in one place — `ExtendedBossesPlugin.Version` in
 `src/ExtendedBossesPlugin.cs`.
 
+## 0.8.15 — the Queen's arena
+
+- **Spawns inside interiors.** The Queen fights in an interior ~5000 m above the world, and the
+  spawn ring measured the ground from the terrain - the world below. Her eggs, brutes, cocoon
+  guards, gjall, ticks and brood now stand on the arena floor: a clear line from her (no wall
+  or pillar in between), the floor near her height, room for a body.
+- The Queen's reward drops where she dies, not onto the terrain under the citadel.
+- Mark circles in an interior lie on the floor.
+
 ## 0.8.14
 
 - The changelog is tidied up: the version headings carry only what changed. No code changes.
