@@ -123,9 +123,10 @@ namespace ExtendedBosses
             { "reset", new[] { "{0} regains strength...", "{0} восстанавливает силы…" } },
 
             // ---- console
-            { "cmd.help", new[] { "eb status | check | phase <n> | reset | probe <prefab> | players <n|0>", "eb status | check | phase <n> | reset | probe <префаб> | players <n|0>" } },
+            { "cmd.help", new[] { "eb status | check | phase <n> | reset | clear | probe <prefab> | players <n|0>", "eb status | check | phase <n> | reset | clear | probe <префаб> | players <n|0>" } },
             { "cmd.noboss", new[] { "No boss owned by this client nearby (the mechanics run on the owner).", "Рядом нет босса, которым владеет этот клиент (механики работают у владельца)." } },
             { "cmd.reset", new[] { "{0}: fight reset.", "{0}: бой сброшен." } },
+            { "cmd.clear", new[] { "Killed {0} monster(s) within 60 m (bosses, players and tamed ones spared).", "Убито монстров в радиусе 60 м: {0} (боссы, игроки и прирученные не тронуты)." } },
             { "cmd.phase", new[] { "{0}: phase {1} ({2}%) forced.", "{0}: фаза {1} ({2} %) запущена." } },
             { "cmd.phaseusage", new[] { "eb phase <0..{0}>", "eb phase <0..{0}>" } },
             { "cmd.players", new[] { "eb players <n>  (0 = count real players)", "eb players <n>  (0 — считать реальных игроков)" } },

@@ -144,6 +144,10 @@ namespace ExtendedBosses
         public ConfigEntry<float> CfgAdaptFactor;
         public ConfigEntry<float> CfgAdaptOthers;
         public ConfigEntry<float> CfgLifesteal;
+        public ConfigEntry<float> CfgHealthPerPlayer;  // this boss's HP per extra player (null = 02 Scaling / HealthPerPlayer)
+        public ConfigEntry<int> CfgCapSolo, CfgCapPerPlayer;   // this boss's crowd cap (null = 09 Raid)
+        public ConfigEntry<float> CfgEggHatch;         // its eggs hatch this many seconds after being laid
+        public bool CapSummons;                         // its own vanilla creature summons stop at the crowd cap
         public ConfigEntry<float> CfgHealPercent;      // healers of this boss, % of max HP per second (null = 09 Raid default)
         public ConfigEntry<float> CfgMarkInterval;     // this boss's marks, seconds (null = 04 Marks / Interval)
         public ConfigEntry<float> CfgRoarInterval, CfgRoarRadius, CfgRoarDamage;   // the roar (Yagluth)
@@ -161,6 +165,7 @@ namespace ExtendedBosses
         internal const int RoleHealer = 1;
         internal const int RoleFuse = 2;
         internal const int RoleGuard = 3;
+        internal const int RoleLieutenant = 4;
         internal const string CycleRandom = "Random";
         internal const string CycleAuto = "Auto";
 
@@ -640,10 +645,10 @@ namespace ExtendedBosses
         // ------------------------------------------------------------------
         private static BossDef Queen()
         {
-            BossDef b = new BossDef { Prefab = "SeekerQueen", Section = "15 Queen" };
+            BossDef b = new BossDef { Prefab = "SeekerQueen", Section = "15 Queen", CapSummons = true };
             const string egg = "SeekerEgg_alwayshatch";
 
-            Phase(b, 85f, "queen.85").Acts.Add(new Act { Kind = ActKind.Nest, Prefabs = new[] { egg }, Count = 2f, AnyProp = true });
+            Phase(b, 85f, "queen.85").Acts.Add(new Act { Kind = ActKind.Nest, Prefabs = new[] { egg }, Count = 1f, AnyProp = true });
 
             PhaseDef p = Phase(b, 70f, "queen.70");
             p.Acts.Add(new Act { Kind = ActKind.Nest, Prefabs = new[] { egg }, Count = 2f, AnyProp = true });
@@ -654,7 +659,7 @@ namespace ExtendedBosses
             });
 
             p = Phase(b, 55f, "queen.55");
-            p.Acts.Add(new Act { Kind = ActKind.Nest, Prefabs = new[] { egg }, Count = 3f, AnyProp = true });
+            p.Acts.Add(new Act { Kind = ActKind.Nest, Prefabs = new[] { egg }, Count = 2f, AnyProp = true });
             p.Acts.Add(new Act { Kind = ActKind.Shield });
             p.Acts.Add(new Act
             {
@@ -671,10 +676,11 @@ namespace ExtendedBosses
 
             p = Phase(b, 45f, "queen.45");
             p.Acts.Add(new Act { Kind = ActKind.Wave, Prefabs = new[] { "SeekerBrute" }, Count = 1f });
-            // cocoon: after each of her teleports guards appear; while they live she takes x0.1
-            p.Acts.Add(new Act { Kind = ActKind.Cocoon, Prefabs = new[] { "Seeker", "SeekerBrood" }, Count = 1f, Duration = 20f, Interval = 30f, MarkKey = "queen.cocoon" });
+            // cocoon: after a teleport of hers seekers guard her (one per two players, within the
+            // crowd cap); while they live she takes x0.1; they leave 30 s after it ends
+            p.Acts.Add(new Act { Kind = ActKind.Cocoon, Prefabs = new[] { "Seeker" }, Count = 0.5f, Duration = 20f, Interval = 30f, Lifetime = 50f, MarkKey = "queen.cocoon" });
             Phase(b, 30f, "queen.30").Acts.Add(new Act { Kind = ActKind.Lieutenant, Prefabs = new[] { "Gjall" } });
-            Phase(b, 20f, "queen.20").Acts.Add(new Act { Kind = ActKind.Wave, Prefabs = new[] { "Tick", "SeekerBrood" }, Count = 2f });
+            Phase(b, 20f, "queen.20").Acts.Add(new Act { Kind = ActKind.Wave, Prefabs = new[] { "Tick" }, Count = 2f });
 
             b.Reward.Valuables.Add(new Loot("Coins", 720, 1080, true));
             b.Reward.Valuables.Add(new Loot("Ruby", 2, 3, false));
@@ -696,8 +702,19 @@ namespace ExtendedBosses
             b.BindExtra = delegate(ExtendedBossesPlugin pl, BossDef d)
             {
                 d.CfgNestPrefab = pl.S(d.Section, "EggPrefab", egg,
-                    "Vanilla egg laid in clutches at 85/70/55%: they hatch seekers on their own and hold her shield until smashed or hatched.",
-                    "Ванильное яйцо, кладки на 85/70/55 %: сами вылупляются ищущими и держат её щит, пока не разбиты или не вылупились.");
+                    "Vanilla egg laid in clutches at 85/70/55%: they hatch on a timer and hold her shield until smashed or hatched.",
+                    "Ванильное яйцо, кладки на 85/70/55 %: вылупляются по таймеру и держат её щит, пока не разбиты или не вылупились.");
+                d.CfgEggHatch = pl.F(d.Section, "EggHatchSeconds", 40f, 5f, 600f,
+                    "An egg hatches this long after it was laid (not when a player steps close), and only while the crowd around her is under the cap.",
+                    "Яйцо вылупляется через столько секунд после кладки (не от подхода игрока) и только пока монстров вокруг неё меньше лимита.");
+                d.CfgHealthPerPlayer = pl.F(d.Section, "HealthPerPlayer", 0.3f, 0f, 2f,
+                    "Her HP grows by this per player beyond the first (instead of 02 Scaling / HealthPerPlayer): her fight is long and crowded as it is.",
+                    "Её HP растёт на столько за каждого игрока сверх первого (вместо 02 Scaling / HealthPerPlayer): её бой и так долгий и людный.");
+                d.CfgCapSolo = pl.I(d.Section, "AddsCapSolo", 6, 1, 100,
+                    "At most this many monsters around her for a single player (instead of 09 Raid): seekers are fast and heavy on effects.",
+                    "Не больше стольких монстров вокруг неё для одного игрока (вместо 09 Raid): ищущие быстрые и тяжёлые по эффектам.");
+                d.CfgCapPerPlayer = pl.I(d.Section, "AddsCapPerPlayer", 2, 0, 50,
+                    "Her cap grows by this for every player beyond the first.", "Её лимит растёт на столько за каждого игрока сверх первого.");
                 d.CfgMarkPrefab = pl.S(d.Section, "MarkPrefab", "SeekerQueen_spithit",
                     "Vanilla AoE prefab of the acid splash under a marked player from 70%.", "Ванильный AoE-префаб кислотного всплеска под отмеченным игроком с 70 %.");
                 d.CfgMarkEffect = pl.S(d.Section, "MarkEffect", "vfx_prespawn",
@@ -707,8 +724,8 @@ namespace ExtendedBosses
                 pl.BindCycle(d, "Cycle", "Bloodthirst: her hits on players heal her; AcidThorns: every hit on her is paid back with poison",
                     "Bloodthirst — кровожадность: её удары по игрокам лечат её; AcidThorns — кислотные шипы: каждый удар по ней возвращается ядом", "Bloodthirst", "AcidThorns");
                 d.CfgLifesteal = pl.F(d.Section, "BloodthirstPercent", 40f, 0f, 200f,
-                    "Bloodthirst: % of the raw damage of her hits on players she heals (before armor and block).",
-                    "Кровожадность: сколько % сырого урона её ударов по игрокам она лечит (до брони и блока).");
+                    "Bloodthirst: % of the damage her hits really deal to players (after block and armor; a blocked or dodged hit heals nothing) she heals.",
+                    "Кровожадность: сколько % урона, реально прошедшего по игрокам (после блока и брони; заблокированный или увёрнутый удар не лечит), она лечит.");
                 d.CfgCycleThorns = pl.F(d.Section, "AcidThornsPercent", 10f, 0f, 100f,
                     "Acid thorns: % of each hit's damage dealt back as poison to the attacker (at least 5, at most once a second per player).",
                     "Кислотные шипы: % урона удара, который возвращается атакующему ядом (не меньше 5, не чаще раза в секунду на игрока).");

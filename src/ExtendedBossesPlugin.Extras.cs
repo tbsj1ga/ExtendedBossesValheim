@@ -174,13 +174,18 @@ namespace ExtendedBosses
             if (!on || !jumped || now < rt.CocoonReady) return;
 
             rt.CocoonReady = now + act.Interval;
-            rt.CocoonUntil = now + act.Duration;
+            // guards count towards the crowd cap: at the cap no guards and no cocoon this time
+            int room = CapRoom(boss);
+            if (room <= 0) { Debug(rt.Def.Prefab + ": teleported, no cocoon - the crowd is at the cap"); return; }
             int count = ScaledCount(rt.Def, act.Count, players);
             int level = AddLevel(rt.Def, act.Level, players);
+            int spawned = 0;
             for (int p = 0; p < act.Prefabs.Length; p++)
-                for (int k = 0; k < count; k++)
-                    SpawnCreature(rt.BossId, act.Prefabs[p], level, 1f, pos, 0, 3f, 7f, RoleGuard, 0f);
-            rt.Guards = count * act.Prefabs.Length;
+                for (int k = 0; k < count && spawned < room; k++)
+                    if (SpawnCreature(rt.BossId, act.Prefabs[p], level, 1f, pos, 0, 3f, 7f, RoleGuard, act.Lifetime) != null) spawned++;
+            if (spawned == 0) return;
+            rt.CocoonUntil = now + act.Duration;
+            rt.Guards = spawned;
             rt.CocoonActive = true;
             if (!string.IsNullOrEmpty(act.MarkKey)) Announce(act.MarkKey, NameToken(boss));
             Debug(rt.Def.Prefab + ": teleported, cocoon for up to " + F1(act.Duration) + " s");

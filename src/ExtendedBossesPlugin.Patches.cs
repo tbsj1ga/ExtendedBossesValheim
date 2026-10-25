@@ -27,7 +27,15 @@ namespace ExtendedBosses
                 if (p == null || !p.Active || __instance == null || hit == null) return;
                 try
                 {
-                    if (__instance.IsPlayer() || !IsOwner(__instance)) return;
+                    if (__instance.IsPlayer())
+                    {
+                        // bloodthirst: the local player notes its HP, the postfix heals the boss by what was lost
+                        if (__instance != Player.m_localPlayer) return;
+                        Character a = hit.GetAttacker();
+                        if (a != null && a.IsBoss() && p.LifestealPct(a) > 0f) __state = __instance.GetHealth();
+                        return;
+                    }
+                    if (!IsOwner(__instance)) return;
                     ZDO z = Zdo(__instance);
                     if (z == null) return;
                     float mul = 1f;
@@ -62,14 +70,19 @@ namespace ExtendedBosses
                 if (__state < 0f) return;
                 ExtendedBossesPlugin p = Instance;
                 if (p == null || __instance == null || hit == null) return;
-                try { p.AddThreat(__instance, hit.GetAttacker(), __state - __instance.GetHealth()); }
+                try
+                {
+                    float lost = __state - __instance.GetHealth();
+                    if (__instance.IsPlayer()) { Character a = hit.GetAttacker(); if (a != null && lost > 0f) p.Lifesteal(a, lost); }
+                    else p.AddThreat(__instance, hit.GetAttacker(), lost);
+                }
                 catch (Exception e) { p.Fail("RPC_Damage threat", e); }
             }
         }
 
         // ------------------------------------------------------------------
         // the boss hits a player: Character.Damage runs on the attacker's side (the boss owner)
-        // before the hit is sent to the player - bloodthirst reads the raw damage here
+        // before the hit is sent to the player - its status effect and the victim bonus go in here
         // ------------------------------------------------------------------
         [HarmonyPatch(typeof(Character), "Damage")]
         private static class Character_Damage_Patch
@@ -84,7 +97,6 @@ namespace ExtendedBosses
                     Character a = hit.GetAttacker();
                     if (a == null || !a.IsBoss() || !IsOwner(a)) return;
                     p.ApplyHitEffect(a, hit);
-                    p.Lifesteal(a, hit);
                     p.FixateBonus(a, __instance, hit);
                 }
                 catch (Exception e) { p.Fail("Character.Damage", e); }

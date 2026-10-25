@@ -5,6 +5,36 @@
 The version is set in one place — `ExtendedBossesPlugin.Version` in
 `src/ExtendedBossesPlugin.cs`.
 
+## 0.8.16 — the Queen made lighter; no endless crowd
+
+From a 4-player Queen fight: an hour long, dozens of seekers and brood, 9 FPS on the host,
+eggs nobody saw, and a queen healing without landing a hit.
+
+- **One cap for the whole crowd.** Cocoon guards, the Queen's eggs and her own vanilla
+  brood summon now stop at the crowd cap like nests and waves. At the cap a teleport brings
+  no cocoon, an egg waits, and her summon does nothing.
+- **Adds leave.** Cocoon guards leave 30 s after the cocoon ends; a wave add nobody killed
+  leaves after 90 s (`09 Raid / WaveLifetime`, every boss; lieutenants, healers and slime
+  stay).
+- **Emergency trim (every boss).** When the monsters around a boss reach 1.5× the cap
+  (`09 Raid / AddsTrimAt`), the oldest of its own adds leave until the cap. Vanilla monsters
+  and lieutenants are never removed.
+- **Eggs are a target, not a trap.** They no longer hatch when a player steps within 3 m
+  (they burst under the melee before anyone saw them); they hatch 40 s after being laid
+  (`15 Queen / EggHatchSeconds`), and only under the cap. An egg is never laid inside the
+  Queen: with no free floor around her it goes next to a player.
+- **Bloodthirst heals by the damage that went through** - after block and armor; a blocked
+  or dodged bite heals nothing. It no longer counts raw damage and is no longer multiplied
+  by the group's HP.
+- **No vanilla regeneration during a fight (every boss).** Vanilla gives back the whole HP
+  in an hour; over a long group fight that was most of the Queen's bar.
+- **The Queen is lighter:** HP +0.3 per extra player instead of +0.5 (`15 Queen /
+  HealthPerPlayer`; 4 players: ×1.9 instead of ×2.5); her crowd cap is 6 +2 per extra player
+  (12 for 4) instead of 8 +3; clutches of 1/2/2 eggs instead of 2/2/3; the cocoon is one
+  seeker per two players, no brood; the 20% wave is ticks only.
+- New console command `eb clear`: kills every monster within 60 m except bosses, players
+  and tamed ones - for a crowd that got out of hand.
+
 ## 0.8.15 — the Queen's arena; the boss stays with a modded player
 
 - **The boss is not left to a player without the mod.** When the host dies or walks away,

@@ -34,6 +34,8 @@ namespace ExtendedBosses
         internal static readonly int KSrc = "j1ga.extendedbosses.src".GetStableHashCode();            // add: totem slot + 1 (0 = none, -3 = flyer)
         internal static readonly int KRole = "j1ga.extendedbosses.role".GetStableHashCode();          // add: RoleHealer, ...
         internal static readonly int KExpire = "j1ga.extendedbosses.expire".GetStableHashCode();      // add: net ticks to remove it at
+        internal static readonly int KBorn = "j1ga.extendedbosses.born".GetStableHashCode();          // add: net ticks it was spawned at (the oldest go first in a trim)
+        internal static readonly int KHatchAt = "j1ga.extendedbosses.hatchat".GetStableHashCode();    // egg of a boss: net ticks it hatches at (not on approach)
         internal static readonly int KFuseHeal = "j1ga.extendedbosses.fuseheal".GetStableHashCode();  // fusing add: % of boss max HP it heals on arrival
 
         private static string TotemKey(int i) { return "j1ga.extendedbosses.totem" + i; }
@@ -74,6 +76,7 @@ namespace ExtendedBosses
             public Act CycleAct;            // non-null while a resistance cycle is up
             public CycleVariant CycleVar;   // and its variant
             public float NextFusion;        // Fusion: next slime wave (local time)
+            public float NextTrim;          // emergency trim of the crowd: next check (local time)
             public readonly Dictionary<ZDOID, float> RetaliateAt = new Dictionary<ZDOID, float>(); // per player, local time
             public readonly Dictionary<HitData.DamageType, float> TypeDmg = new Dictionary<HitData.DamageType, float>();   // recent damage by type (decays)
             public readonly Dictionary<HitData.DamageType, float> LastHitBy = new Dictionary<HitData.DamageType, float>();  // local time of the last hit with the type
@@ -312,6 +315,8 @@ namespace ExtendedBosses
                     int level = AddLevel(rt.Def, act.Level, players);
                     int spawned = 0;
                     string[] prefabs = act.NightPrefabs != null && EnvMan.IsNight() ? act.NightPrefabs : act.Prefabs;
+                    // a plain wave nobody killed leaves after a while instead of piling up
+                    float life = act.Lifetime > 0f ? act.Lifetime : act.Role == 0 ? Sv(_cfgWaveLifetime) : 0f;
                     for (int p = 0; p < prefabs.Length; p++)
                         for (int k = 0; k < count; k++)
                         {
@@ -321,9 +326,9 @@ namespace ExtendedBosses
                             {
                                 Vector3 wp;
                                 if (!WaterPoint(center, Sv(_cfgSpawnRadiusMin), Sv(_cfgSpawnRadiusMax), out wp)) continue;
-                                c = SpawnCreatureAt(rt.BossId, prefabs[p], level, act.HpMul, wp, 0, act.Role, act.Lifetime);
+                                c = SpawnCreatureAt(rt.BossId, prefabs[p], level, act.HpMul, wp, 0, act.Role, life);
                             }
-                            else c = SpawnCreature(rt.BossId, prefabs[p], level, act.HpMul, center, 0, Sv(_cfgSpawnRadiusMin), Sv(_cfgSpawnRadiusMax), act.Role, act.Lifetime);
+                            else c = SpawnCreature(rt.BossId, prefabs[p], level, act.HpMul, center, 0, Sv(_cfgSpawnRadiusMin), Sv(_cfgSpawnRadiusMax), act.Role, life);
                             if (c != null) { spawned++; if (act.Role == 0) AimAdd(boss, c); }
                         }
                     if (act.InWater && spawned == 0) Debug(rt.Def.Prefab + ": no water around for " + act.Prefabs[0]);
@@ -337,7 +342,7 @@ namespace ExtendedBosses
                     int spawned = 0;
                     for (int p = 0; p < act.Prefabs.Length; p++)
                         for (int k = 0; k < count; k++)
-                            if (SpawnCreature(rt.BossId, act.Prefabs[p], level, ltHp, center, 0, Sv(_cfgSpawnRadiusMin), Sv(_cfgSpawnRadiusMax), act.Role, act.Lifetime) != null) spawned++;
+                            if (SpawnCreature(rt.BossId, act.Prefabs[p], level, ltHp, center, 0, Sv(_cfgSpawnRadiusMin), Sv(_cfgSpawnRadiusMax), act.Role != 0 ? act.Role : RoleLieutenant, act.Lifetime) != null) spawned++;
                     return spawned > 0;
                 }
                 case ActKind.Nest:
@@ -346,7 +351,7 @@ namespace ExtendedBosses
                     int count = act.ScaleAsAdds ? ScaledCount(rt.Def, act.Count, players) : NestCount(act.Count, players);
                     int placed = 0;
                     for (int k = 0; k < count; k++)
-                        if (PlaceTotem(boss, rt, act, phase, index, RingPoint(boss.transform.position, Sv(_cfgSpawnRadiusMin), Sv(_cfgSpawnRadiusMax)))) placed++;
+                        if (PlaceTotem(boss, rt, act, phase, index, NestPoint(boss))) placed++;
                     return placed > 0;
                 }
                 case ActKind.Marks:
@@ -433,7 +438,8 @@ namespace ExtendedBosses
 
         internal float OurHpFactor(BossDef def, int n)
         {
-            float ours = Sv(_cfgBaseHealth) * (1f + Sv(_cfgHealthPerPlayer) * (n - 1));
+            float per = def.CfgHealthPerPlayer != null ? Sv(def.CfgHealthPerPlayer) : Sv(_cfgHealthPerPlayer);
+            float ours = Sv(_cfgBaseHealth) * (1f + per * (n - 1));
             if (n <= 1) ours *= Sv(_cfgSoloHealth);
             if (ProfileOf(def) == ProfileHard) ours *= Sv(_cfgHardHealth);
             return Mathf.Max(0.01f, ours);
@@ -550,6 +556,7 @@ namespace ExtendedBosses
         private void TickAdds(Character boss, FightRt rt, long net)
         {
             _tmpExpired.Clear();
+            _tmpTrim.Clear();
             int healers = 0, guards = 0;
             float healRange = Sv(_cfgHealRange);
             Vector3 bp = boss.transform.position;
@@ -563,13 +570,40 @@ namespace ExtendedBosses
                 long exp = z.GetLong(KExpire, 0L);
                 if (exp > 0L && net >= exp) { _tmpExpired.Add(c.gameObject); continue; }
                 int role = z.GetInt(KRole);
+                if (role != RoleLieutenant && role != RoleFuse) _tmpTrim.Add(c);
                 if (role == RoleGuard) guards++;
                 if (role == RoleHealer && Vector3.Distance(c.transform.position, bp) <= healRange) healers++;
                 else if (role == RoleFuse && TryFuse(boss, rt, c)) _tmpExpired.Add(c.gameObject);
             }
             for (int i = 0; i < _tmpExpired.Count; i++) DestroyNetObject(_tmpExpired[i]);
+            TrimCrowd(boss, rt);
             rt.Healers = healers;
             rt.Guards = guards;
+        }
+
+        // Emergency: when the crowd around the boss is far past the cap (vanilla summons, eggs,
+        // whatever slipped through), the oldest of the boss's own adds leave until it is back at
+        // the cap. Lieutenants and fusing slime stay; vanilla monsters are never touched.
+        private readonly List<Character> _tmpTrim = new List<Character>();
+
+        private void TrimCrowd(Character boss, FightRt rt)
+        {
+            float now = Time.time;
+            if (now < rt.NextTrim || _tmpTrim.Count == 0) return;
+            rt.NextTrim = now + 5f;
+            int cap = AddsCap(boss);
+            int near = MonstersNear(boss);
+            if (near <= cap * Sv(_cfgTrimAt)) return;
+            _tmpTrim.Sort(delegate(Character a, Character b)
+            {
+                ZDO za = Zdo(a), zb = Zdo(b);
+                long ta = za != null ? za.GetLong(KBorn, 0L) : 0L, tb = zb != null ? zb.GetLong(KBorn, 0L) : 0L;
+                return ta.CompareTo(tb);
+            });
+            int removed = 0;
+            for (int i = 0; i < _tmpTrim.Count && near - removed > cap; i++)
+                if (DestroyNetObject(_tmpTrim[i].gameObject)) removed++;
+            if (removed > 0) Logger.LogInfo(rt.Def.Prefab + ": " + near + " monsters around (cap " + cap + "), removed " + removed + " of its oldest adds");
         }
 
         private void TickHeal(Character boss, FightRt rt)
@@ -766,16 +800,27 @@ namespace ExtendedBosses
             if (amount > 0f) boss.Heal(amount, false);
         }
 
-        // Bloodthirst: the boss's hit on a player is built on the boss owner (Character.Damage
-        // runs there before the RPC to the player), so the raw damage is known here.
-        internal void Lifesteal(Character boss, HitData hit)
+        // Bloodthirst, read on the struck player's side: what the bite really took (after block,
+        // armor and dodge) heals the boss - Heal() reaches the boss owner. A blocked or dodged
+        // bite heals nothing; a player without the mod feeds nothing.
+        internal float LifestealPct(Character boss)
         {
-            FightRt rt = RtIfRunning(boss);
-            if (rt == null || rt.CycleAct == null || rt.CycleVar == null || rt.CycleVar.Lifesteal <= 0f) return;
-            float pct = rt.Def.CfgLifesteal != null ? Sv(rt.Def.CfgLifesteal) : rt.CycleVar.Lifesteal;
-            // the boss's HP is raised by the group factor: so is what its bite takes back
-            float amount = hit.GetTotalDamage() * pct / 100f * HpScaleOf(boss);
-            if (amount > 0f && boss.GetHealth() < boss.GetMaxHealth()) boss.Heal(amount, true);
+            ZDO z = Zdo(boss);
+            if (z == null) return 0f;
+            BossDef def = BossOf(z);
+            if (def == null || !IsModMode(def) || !MechanicOn(def, ActKind.Resist)) return 0f;
+            int code = z.GetInt(KCycleAct);
+            if (code <= 0 || NetTicks() >= z.GetLong(KCycleUntil, 0L)) return 0f;
+            Act act = ActByCode(def, code - 1);
+            int vi = z.GetInt(KCycleKind) - 1;
+            if (act == null || act.Variants == null || vi < 0 || vi >= act.Variants.Count || act.Variants[vi].Lifesteal <= 0f) return 0f;
+            return def.CfgLifesteal != null ? Sv(def.CfgLifesteal) : act.Variants[vi].Lifesteal;
+        }
+
+        internal void Lifesteal(Character boss, float lost)
+        {
+            float amount = lost * LifestealPct(boss) / 100f;
+            if (amount > 0f && !boss.IsDead() && boss.GetHealth() < boss.GetMaxHealth()) boss.Heal(amount, true);
         }
 
         // Damage by type as it arrives (before any modifier), for adaptation and regen stops.
@@ -1023,6 +1068,8 @@ namespace ExtendedBosses
             ZDO tz = Zdo(go.transform);
             if (tz == null) return false;
             tz.Set(KBoss, rt.BossId);
+            // an egg hatches on a timer, not when a player steps close (EggHatch patch)
+            if (pf.GetComponent<EggHatch>() != null) tz.Set(KHatchAt, NetTicks() + Seconds(EggHatchSeconds(rt.Def)));
             if (act.NoDrop)
             {
                 tz.Set(KNoDrop, true);           // re-applied after a relog by the glow scan

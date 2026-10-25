@@ -1,4 +1,4 @@
-# ExtendedBosses — boss fights (version 0.8.13)
+# ExtendedBosses — boss fights (version 0.8.16)
 
 **English** · [Русский](FIGHTS-RU.md)
 
@@ -73,8 +73,11 @@ what actually comes:
 - the Elder's troll: two from 3 players;
 - positional phases (hit from behind) never come up for a single player;
 - **crowd cap**: at most 8 monsters within 50 m of the boss for one player and +3 for
-  each further player (`09 Raid / AddsCap*`); at the cap nests, totems, waves and slime
-  release nobody (lieutenants, cocoon guards and roots always spawn).
+  each further player (`09 Raid / AddsCap*`; the Queen 6 and +2); at the cap nests, totems,
+  waves, slime, cocoon guards, the Queen's eggs and her own brood summon release nobody
+  (lieutenants and roots always spawn); at 1.5× the cap the oldest of the boss's adds leave;
+- a wave add nobody killed leaves after 90 s (`09 Raid / WaveLifetime`);
+- no vanilla HP regeneration for a boss while its fight runs.
 - **highlight**: nests, totems and the slime crawling to Bonemass glow softly for players
   with the mod (`07 Client / HighlightObjects`), so they are easy to find in a crowd.
 
@@ -245,16 +248,18 @@ Mistlands.
 
 | HP | Raid | Light | Hard |
 |---|---|---|---|
-| 85% | a clutch of 2 eggs (solo 1, 3 from 6 players) — they hatch into seekers | the same | the same |
+| 85% | an egg (2 from 6 players) — it hatches 40 s after being laid, not when you step close | the same | the same |
 | 70% | 2 more eggs (solo 1, 3 from 6 players); **acid** on marks (30 poison) | eggs | acid more often |
-| 55% | 3 more eggs (solo 1, 4 from 6 players), **shield** — while any egg is whole (break them before they hatch); after the window — phase cycles | a clutch without a shield | shield ×0.1 |
-| 45% | brutes (base 1); **cocoon**: after her teleport — a seeker + a young one (base 1); while they live (up to 20 s) damage as under the shield; at most once per 30 s | brutes | guards +1★, shield ×0.1 |
+| 55% | 2 more eggs (solo 1, 3 from 6 players), **shield** — while any egg is whole (break them before they hatch); after the window — phase cycles | a clutch without a shield | shield ×0.1 |
+| 45% | brutes (base 1); **cocoon**: after her teleport — seekers (one per two players, within the crowd cap); while they live (up to 20 s) damage as under the shield; at most once per 30 s; they leave 30 s after it | brutes | guards +1★, shield ×0.1 |
 | 30% | a gjall | the same | the same |
-| 20% | ticks + young seekers (base 2) | the same | more, +1★ |
+| 20% | ticks (base 2) | the same | more, +1★ |
+
+Her HP grows by 0.3 per extra player, not 0.5 (`15 Queen / HealthPerPlayer`).
 
 **Phase cycles** (random variant):
-- **Bloodlust** — heals for 40% of the raw damage of her hits on players: do not get
-  hit, block;
+- **Bloodlust** — heals for 40% of the damage her hits really deal to players (after
+  block and armor): a blocked or dodged bite heals nothing;
 - **Acid spikes** — every hit returns 10% of the damage to the attacker as poison (at
   least 5, at most once per second).
 

@@ -13,13 +13,35 @@ namespace ExtendedBosses
         // ------------------------------------------------------------------
         private void RegisterCommands()
         {
-            new Terminal.ConsoleCommand("eb", "Extended Bosses: eb status | check | phase <n> | reset | probe <prefab> | players <n|0>",
+            new Terminal.ConsoleCommand("eb", "Extended Bosses: eb status | check | phase <n> | reset | clear | probe <prefab> | players <n|0>",
                 delegate(Terminal.ConsoleEventArgs args) { RunCommand(args); });
         }
 
         private static void Say(Terminal.ConsoleEventArgs args, string text)
         {
             if (args != null && args.Context != null) args.Context.AddString(text);
+        }
+
+        // Emergency: kills every monster within 60 m of the local player except bosses, players
+        // and tamed animals - for a crowd that got out of hand (Damage reaches remote owners).
+        private int ClearMonsters()
+        {
+            Player me = Player.m_localPlayer;
+            if (me == null) return 0;
+            int n = 0;
+            List<Character> all = new List<Character>(Character.GetAllCharacters());
+            for (int i = 0; i < all.Count; i++)
+            {
+                Character c = all[i];
+                if (c == null || c.IsPlayer() || c.IsBoss() || c.IsTamed() || c.IsDead()) continue;
+                if (Vector3.Distance(c.transform.position, me.transform.position) > 60f) continue;
+                HitData hit = new HitData();
+                hit.m_damage.m_damage = 1E+10f;
+                hit.m_point = c.transform.position;
+                c.Damage(hit);
+                n++;
+            }
+            return n;
         }
 
         private void RunCommand(Terminal.ConsoleEventArgs args)
@@ -30,6 +52,7 @@ namespace ExtendedBosses
                 string arg = args.Args.Length > 2 ? args.Args[2] : "";
                 if (sub == "status") { Say(args, Status()); return; }
                 if (sub == "probe") { Say(args, Probe(arg)); return; }
+                if (sub == "clear") { Say(args, L("cmd.clear", ClearMonsters().ToString())); return; }
                 if (sub == "check")
                 {
                     if (ZNetScene.instance == null) { Say(args, L("cmd.noworld")); return; }

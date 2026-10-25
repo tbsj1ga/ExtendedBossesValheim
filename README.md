@@ -199,7 +199,7 @@ guests do not need it. To keep the host owning the boss whoever hits it, set
 
 Console (F5, needs `devcommands` or a server): `eb status` — bosses nearby, phases,
 group, damage multiplier, shield/window/resistance; `eb check` — prefab self-check;
-`eb phase <n>` — force a phase; `eb reset`; `eb probe <prefab>` — what a prefab is made
+`eb phase <n>` — force a phase; `eb reset`; `eb clear` — kill every monster within 60 m except bosses, players and tamed ones; `eb probe <prefab>` — what a prefab is made
 of; `eb players <n>` — fake the group size for testing (0 — count for real).
 
 ## Languages

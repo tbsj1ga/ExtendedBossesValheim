@@ -148,6 +148,20 @@ namespace ExtendedBosses
             return SpawnCreatureAt(bossId, prefab, level, hpMul, RingPoint(center, rMin, rMax), src, role, lifetime);
         }
 
+        // A spot for a nest or an egg: the ring around the boss; if no free floor was found there
+        // (the ring point fell back to the boss's own spot - she clings to a wall, pillars all
+        // around) next to a random player of the group instead, never inside the boss.
+        internal Vector3 NestPoint(Character boss)
+        {
+            Vector3 bp = boss.transform.position;
+            Vector3 p = RingPoint(bp, Sv(_cfgSpawnRadiusMin), Sv(_cfgSpawnRadiusMax));
+            if (Flat(p - bp) > 1f) return p;
+            List<Player> players = PlayersNear(bp, Sv(_cfgScalingRange));
+            if (players.Count == 0) return p;
+            Vector3 pp = players[UnityEngine.Random.Range(0, players.Count)].transform.position;
+            return RingPoint(pp, 2f, 5f);
+        }
+
         // A spot under water in the ring (for leeches); false if there is no water around.
         internal bool WaterPoint(Vector3 center, float rMin, float rMax, out Vector3 pos)
         {
@@ -184,6 +198,7 @@ namespace ExtendedBosses
                 if (src != 0) z.Set(KSrc, src);
                 if (role != 0) z.Set(KRole, role);
                 if (lifetime > 0f) z.Set(KExpire, NetTicks() + Seconds(lifetime));
+                z.Set(KBorn, NetTicks());
             }
             if (level > 1) c.SetLevel(level);
             c.m_group = RaidGroup;

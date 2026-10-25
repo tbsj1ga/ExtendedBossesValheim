@@ -197,7 +197,7 @@ GitHub Issues: https://github.com/tbsj1ga/ExtendedBossesValheim/issues — пр�
 
 Консоль (F5, нужен `devcommands` или сервер): `eb status` — боссы рядом, фазы, группа,
 множитель урона, щит/окно/сопротивление; `eb check` — самопроверка префабов;
-`eb phase <n>` — форсировать фазу; `eb reset`; `eb probe <prefab>` — из чего сделан
+`eb phase <n>` — форсировать фазу; `eb reset`; `eb clear` — убить всех монстров в 60 м, кроме боссов, игроков и прирученных; `eb probe <prefab>` — из чего сделан
 префаб; `eb players <n>` — подменить размер группы для проверки (0 — считать
 по-настоящему).
 
