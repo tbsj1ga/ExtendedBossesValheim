@@ -228,6 +228,7 @@ namespace ExtendedBosses
                     p.ClearGlows();
                     p._helloSent = false;
                     p._moddedPeers.Clear();
+                    p._peerVersions.Clear();
                 }
                 catch (Exception e) { p.Fail("ZNet.OnDestroy", e); }
             }

@@ -5,8 +5,13 @@
 The version is set in one place — `ExtendedBossesPlugin.Version` in
 `src/ExtendedBossesPlugin.cs`.
 
-## 0.8.15 — the Queen's arena
+## 0.8.15 — the Queen's arena; the boss stays with a modded player
 
+- **The boss is not left to a player without the mod.** When the host dies or walks away,
+  vanilla hands the boss to any player near it; a player without the mod then ran it as a
+  vanilla boss with the raised HP and no mechanics. The host now hands such a boss, within
+  2 s, to a modded player near it with the newest version (an older version gives way to a
+  newer one too). A WeaponArts taunt keeps the boss for its window.
 - **Spawns inside interiors.** The Queen fights in an interior ~5000 m above the world, and the
   spawn ring measured the ground from the terrain - the world below. Her eggs, brutes, cocoon
   guards, gjall, ticks and brood now stand on the arena floor: a clear line from her (no wall

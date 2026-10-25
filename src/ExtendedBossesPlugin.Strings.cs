@@ -230,7 +230,9 @@ namespace ExtendedBosses
         {
             ZNet znet = ZNet.instance;
             if (znet == null || !znet.IsServer()) return;
-            if (_moddedPeers.Add(sender)) Debug("peer " + sender + " has the mod (" + (pkg != null ? pkg.ReadString() : "?") + ")");
+            string ver = pkg != null ? pkg.ReadString() : "?";
+            _peerVersions[sender] = ParseVersion(ver);
+            if (_moddedPeers.Add(sender)) Debug("peer " + sender + " has the mod (" + ver + ")");
         }
 
         private static ZPackage TextPacket(string key, string[] args)
@@ -351,6 +353,7 @@ namespace ExtendedBosses
                 ExtendedBossesPlugin p = Instance;
                 if (p == null || peer == null) return;
                 p._moddedPeers.Remove(peer.m_uid);
+                p._peerVersions.Remove(peer.m_uid);
             }
         }
     }

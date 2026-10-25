@@ -90,6 +90,7 @@ namespace ExtendedBosses
                     _nextTick = now + TickInterval;
                     TickFights(now);
                 }
+                TickHandoff(now);
                 if (now >= _nextOrphanScan)
                 {
                     _nextOrphanScan = now + 10f;
