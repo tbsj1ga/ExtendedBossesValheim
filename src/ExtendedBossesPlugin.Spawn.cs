@@ -383,24 +383,31 @@ namespace ExtendedBosses
         private Material _circleMat;
         private const int CircleSegments = 48;
 
-        private void AddCircle(Transform follow, Vector3 pos, float radius, float duration)
+        // a ground ring line: red for marks; nests and totems get a purple one of their own (Glow)
+        private LineRenderer NewRing(GameObject go, Color c, float width)
         {
             if (_circleMat == null)
             {
                 Shader sh = Shader.Find("Sprites/Default");
-                if (sh == null) return;
+                if (sh == null) return null;
                 _circleMat = new Material(sh);
             }
-            GameObject go = new GameObject("extendedbosses_circle");
             LineRenderer lr = go.AddComponent<LineRenderer>();
             lr.sharedMaterial = _circleMat;
             lr.loop = true;
             lr.useWorldSpace = true;
             lr.positionCount = CircleSegments;
-            lr.widthMultiplier = 0.15f;
-            Color c = new Color(1f, 0.15f, 0.1f, 0.9f);
+            lr.widthMultiplier = width;
             lr.startColor = c;
             lr.endColor = c;
+            return lr;
+        }
+
+        private void AddCircle(Transform follow, Vector3 pos, float radius, float duration)
+        {
+            GameObject go = new GameObject("extendedbosses_circle");
+            LineRenderer lr = NewRing(go, new Color(1f, 0.15f, 0.1f, 0.9f), 0.15f);
+            if (lr == null) { UnityEngine.Object.Destroy(go); return; }
             Circle ci = new Circle();
             ci.Go = go;
             ci.Line = lr;
@@ -422,17 +429,22 @@ namespace ExtendedBosses
                     _circles.RemoveAt(i);
                     continue;
                 }
-                Vector3 center = ci.Follow != null ? ci.Follow.position : ci.Pos;
-                for (int s = 0; s < CircleSegments; s++)
-                {
-                    float a = s * Mathf.PI * 2f / CircleSegments;
-                    Vector3 p = center + new Vector3(Mathf.Cos(a) * ci.Radius, 0f, Mathf.Sin(a) * ci.Radius);
-                    float h;
-                    if (Character.InInterior(center)) p.y = (InteriorFloor(p, out h) && Mathf.Abs(h - center.y) < 2f ? h : center.y) + 0.15f;
-                    else if (ZoneSystem.instance != null && ZoneSystem.instance.GetGroundHeight(p, out h)) p.y = Mathf.Max(h, center.y - 2f) + 0.15f;
-                    else p.y = center.y + 0.15f;
-                    ci.Line.SetPosition(s, p);
-                }
+                LayRing(ci.Line, ci.Follow != null ? ci.Follow.position : ci.Pos, ci.Radius);
+            }
+        }
+
+        // the ring's points on the ground (or the floor of an interior) around center
+        private static void LayRing(LineRenderer line, Vector3 center, float radius)
+        {
+            for (int s = 0; s < CircleSegments; s++)
+            {
+                float a = s * Mathf.PI * 2f / CircleSegments;
+                Vector3 p = center + new Vector3(Mathf.Cos(a) * radius, 0f, Mathf.Sin(a) * radius);
+                float h;
+                if (Character.InInterior(center)) p.y = (InteriorFloor(p, out h) && Mathf.Abs(h - center.y) < 2f ? h : center.y) + 0.15f;
+                else if (ZoneSystem.instance != null && ZoneSystem.instance.GetGroundHeight(p, out h)) p.y = Mathf.Max(h, center.y - 2f) + 0.15f;
+                else p.y = center.y + 0.15f;
+                line.SetPosition(s, p);
             }
         }
 

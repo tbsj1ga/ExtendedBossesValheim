@@ -120,12 +120,11 @@ No shield and no phases: every mechanic once, gently.
 - **Reinforcements:** seeker brutes, a gjall, ticks and young seekers.
 
 ### Fader
+- His vanilla fight is hard as it is - the mod adds no fire of its own.
 - **Charred spawner stones** hold his shield.
-- **Meteor mark** — meteors fall around the marked player.
-- **Wall of fire** — raised towards a random player again and again.
-- **Phases:** *Molten armor* — close hits are halved and burn the attacker: fight from
-  range. *Ash veil* — ranged hits do a quarter: everyone into melee.
-- **Reinforcements:** a morgen, a fallen valkyrie, Lord Reto, an asksvin and a lava blob.
+- **Phases** (windows, not penalties): *Molten armor* — ranged hits do 1.5× and close
+  attackers burn: fight from range. *Ash veil* — close hits do 1.5×: everyone into melee.
+- **Reinforcements:** a fallen valkyrie, a morgen, Lord Reto.
 
 ## Compatibility
 

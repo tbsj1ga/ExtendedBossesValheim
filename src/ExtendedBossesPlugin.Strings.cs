@@ -104,22 +104,24 @@ namespace ExtendedBosses
 
             // ---- Fader
             { "fader.85", new[] { "{0}: Rise, charred! (break the spawner stone)", "{0}: Встаньте, обугленные! (разбейте камень-спавнер)" } },
-            { "fader.70", new[] { "{0}: The sky burns! (more stones - meteors fall on the marked)", "{0}: Небо горит! (ещё камни — метеоры падают на отмеченных)" } },
+            { "fader.70", new[] { "{0} calls a fallen valkyrie! (and another stone)", "{0} призывает падшую валькирию! (и ещё камень)" } },
             { "fader.55", new[] { "{0}: The stones shield me! (break them all)", "{0}: Камни укроют меня! (разбейте их все)" } },
-            { "fader.molten", new[] { "{0}: molten armor - close blows sink in and burn you, strike from afar!", "{0}: раскалённая броня — удары вблизи вязнут и обжигают, бейте издалека!" } },
+            { "fader.molten", new[] { "{0}: molten armor - it cracks under blows from afar and burns those close, strike from range!", "{0}: раскалённая броня — трескается от ударов издалека и обжигает тех, кто рядом, бейте издалека!" } },
             { "fader.molten.end", new[] { "{0}: the armor cools", "{0}: броня остывает" } },
-            { "fader.ash", new[] { "{0}: ash veil - arrows and spells get lost, fight up close!", "{0}: пепельная завеса — стрелы и заклинания теряются, бейте вблизи!" } },
+            { "fader.ash", new[] { "{0}: ash veil - he is blind in the ash, strike up close!", "{0}: пепельная завеса — он слеп в пепле, бейте вблизи!" } },
             { "fader.ash.end", new[] { "{0}: the ash settles", "{0}: пепел оседает" } },
             { "fader.45", new[] { "{0} wakes a morgen!", "{0} будит моргена!" } },
-            { "fader.30", new[] { "{0} calls a fallen valkyrie!", "{0} призывает падшую валькирию!" } },
-            { "fader.20", new[] { "{0} calls Lord Reto!", "{0} призывает лорда Рето!" } },
-            { "fader.10", new[] { "{0}: Ashlands, devour them!", "{0}: Пепельные земли, пожрите их!" } },
-            { "fader.mark", new[] { "{0} calls meteors on {1} - run!", "{0} зовёт метеоры на игрока {1} — бегите!" } },
-            { "fader.wall", new[] { "{0} raises a wall of fire - split up!", "{0} поднимает стену огня — разделитесь!" } },
+            { "fader.30", new[] { "{0} calls Lord Reto!", "{0} призывает лорда Рето!" } },
 
             // ---- common
             { "window", new[] { "{0}: the shield has fallen - strike now!", "{0}: защита пала — бейте!" } },
             { "shield.fade", new[] { "{0}: the shield crumbles by itself", "{0}: щит рассыпается сам" } },
+            { "shield.left", new[] { "{0}: the shield holds - {1} left to break!", "{0}: щит держится — осталось разбить: {1}!" } },
+            { "status.shield", new[] { "Shield - left to break: {0}", "Щит — осталось разбить: {0}" } },
+            { "status.targets", new[] { "Break the glowing ones: {0}", "Разбейте подсвеченные: {0}" } },
+            { "status.window", new[] { "Burn window - strike! {0} s", "Окно уязвимости — бейте! {0} с" } },
+            { "status.cycle", new[] { "{0} ({1} s)", "{0} ({1} с)" } },
+            { "pin.target", new[] { "break", "разбить" } },
             { "reset", new[] { "{0} regains strength...", "{0} восстанавливает силы…" } },
 
             // ---- console
@@ -316,28 +318,58 @@ namespace ExtendedBosses
             catch (Exception e) { Fail("message", e); }
         }
 
+        // Vanilla has one centre message: a new one wipes the last. Ours that come close together
+        // stack instead - the last few, oldest on top - so one never hides another.
+        private const int CenterLines = 3;
+        private readonly List<string> _centerLines = new List<string>();
+        private string _centerShown;
+        private float _centerAt;
+
         private void ShowLocal(string key, string[] args)
         {
             MessageHud hud = MessageHud.instance;
             if (hud == null) return;
-            string text = L(key, args);
-            hud.ShowMessage(MessageHud.MessageType.Center, text);
             float mul = _cfgMessageDuration.Value;
-            if (mul > 1.01f || mul < 0.99f) StartCoroutine(StretchCenterMessage(hud, hud.m_messageCenterText.text, mul));
+            float now = Time.time;
+            bool ours = hud.m_messageCenterText != null && hud.m_messageCenterText.text == _centerShown;
+            float hold, fade;
+            CenterTiming(mul, out hold, out fade);
+            if (!ours || now - _centerAt > hold) _centerLines.Clear();      // the last ones are still bright: stack
+            _centerLines.Add(L(key, args));
+            while (_centerLines.Count > CenterLines) _centerLines.RemoveAt(0);
+            hud.ShowMessage(MessageHud.MessageType.Center, string.Join("\n", _centerLines.ToArray()));
+            _centerShown = hud.m_messageCenterText != null ? hud.m_messageCenterText.text : null;
+            _centerAt = now;
+            StartCoroutine(HoldCenterMessage(hud, _centerShown, hold, fade));
         }
 
-        // Vanilla fades a centre message out over 4 s (a constant in MessageHud.ShowMessage),
-        // applied in its next update. One frame later the fade is restarted with our length -
-        // only for our message, only on clients with the mod.
+        // Vanilla starts fading a centre message the moment it shows (to nothing over 4 s, a
+        // constant in MessageHud.ShowMessage, applied in its next update) - it is half gone
+        // before it is read. Ours stays fully bright, then fades only at the end: the whole
+        // time is 4 s x MessageDurationMultiplier. Only for our messages, only with the mod.
         private const float VanillaCenterFade = 4f;
 
-        private System.Collections.IEnumerator StretchCenterMessage(MessageHud hud, string text, float mul)
+        private static void CenterTiming(float mul, out float hold, out float fade)
+        {
+            float total = VanillaCenterFade * Mathf.Max(0.25f, mul);
+            fade = Mathf.Min(1.5f, total * 0.4f);
+            hold = total - fade;
+        }
+
+        private System.Collections.IEnumerator HoldCenterMessage(MessageHud hud, string text, float hold, float fade)
         {
             yield return null;
             yield return null;
             if (hud == null || hud.m_messageCenterText == null || hud.m_messageCenterText.text != text) yield break;
             hud.m_messageCenterText.CrossFadeAlpha(1f, 0f, true);
-            hud.m_messageCenterText.CrossFadeAlpha(0f, VanillaCenterFade * mul, true);
+            float until = Time.time + hold;
+            while (Time.time < until)
+            {
+                yield return null;
+                // replaced (by our next line, which holds on its own, or by a vanilla message)
+                if (hud == null || hud.m_messageCenterText == null || hud.m_messageCenterText.text != text) yield break;
+            }
+            hud.m_messageCenterText.CrossFadeAlpha(0f, fade, true);
         }
 
         // Boss name as a vanilla token, e.g. "$enemy_gdking" (resolved by each receiver).

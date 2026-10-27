@@ -138,12 +138,11 @@ No shield and no phases: every mechanic once, gently.
 - **Reinforcements:** seeker brutes, a gjall, ticks and young seekers.
 
 ### Fader
+- His vanilla fight is hard as it is - the mod adds no fire of its own.
 - **Charred spawner stones** hold his shield.
-- **Meteor mark** — meteors fall around the marked player.
-- **Wall of fire** — raised towards a random player again and again.
-- **Phases:** *Molten armor* — close hits are halved and burn the attacker: fight from
-  range. *Ash veil* — ranged hits do a quarter: everyone into melee.
-- **Reinforcements:** a morgen, a fallen valkyrie, Lord Reto, an asksvin and a lava blob.
+- **Phases** (windows, not penalties): *Molten armor* — ranged hits do 1.5× and close
+  attackers burn: fight from range. *Ash veil* — close hits do 1.5×: everyone into melee.
+- **Reinforcements:** a fallen valkyrie, a morgen, Lord Reto.
 
 ## Compatibility
 
@@ -186,7 +185,7 @@ guests do not need it. To keep the host owning the boss whoever hits it, set
 | 04 Marks | hit delay, interval, damage multiplier |
 | 05 Rewards | reward: gear quality, from how many players and how many items, amount multiplier |
 | 06 Reset | fight reset (off by default) |
-| 07 Client | mark circles on the ground, highlight of nests, totems and slime, how long messages stay (local only, not synced) |
+| 07 Client | mark circles on the ground, highlight of nests, totems and slime, status line under the boss bar, minimap pins, how long messages stay (local only, not synced) |
 | 08 Sync | the server hands its settings to modded clients; config file watch |
 | 09 Raid | shield (and its 90 s limit), burn window, healing, threat, damage floor, crowd cap — the numbers |
 | 10 Eikthyr | `Mode = Mod / Vanilla`, profile, totem, lightning, charge |
@@ -195,7 +194,7 @@ guests do not need it. To keep the host owning the boss whoever hits it, set
 | 13 Moder | `Mode`, profile, ice stalagmite, ice nova, ice armor / spikes, flash interval, drakes flying in |
 | 14 Yagluth | `Mode`, profile, totem, meteors, regeneration / adaptation, echo of Moder (experimental) |
 | 15 Queen | `Mode`, profile, egg, acid, bloodlust / acid spikes |
-| 16 Fader | `Mode`, profile, spawner stone, meteors, molten armor / ash veil |
+| 16 Fader | `Mode`, profile, spawner stone, HP per player, molten armor / ash veil |
 
 Console (F5, needs `devcommands` or a server): `eb status` — bosses nearby, phases,
 group, damage multiplier, shield/window/resistance; `eb check` — prefab self-check;

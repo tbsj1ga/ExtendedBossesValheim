@@ -226,6 +226,7 @@ namespace ExtendedBosses
                     p._fights.Clear();
                     p.ClearCircles();
                     p.ClearGlows();
+                    p.ClearPins();
                     p._helloSent = false;
                     p._moddedPeers.Clear();
                     p._peerVersions.Clear();

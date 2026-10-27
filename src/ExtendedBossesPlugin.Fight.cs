@@ -77,6 +77,7 @@ namespace ExtendedBosses
             public CycleVariant CycleVar;   // and its variant
             public float NextFusion;        // Fusion: next slime wave (local time)
             public float NextTrim;          // emergency trim of the crowd: next check (local time)
+            public float NextShieldReminder; // a reminder of the nests left while the shield stands (local time, 0 = not armed)
             public readonly Dictionary<ZDOID, float> RetaliateAt = new Dictionary<ZDOID, float>(); // per player, local time
             public readonly Dictionary<HitData.DamageType, float> TypeDmg = new Dictionary<HitData.DamageType, float>();   // recent damage by type (decays)
             public readonly Dictionary<HitData.DamageType, float> LastHitBy = new Dictionary<HitData.DamageType, float>();  // local time of the last hit with the type
@@ -724,6 +725,7 @@ namespace ExtendedBosses
             }
             rt.ShieldActive = armed && MechanicOn(rt.Def, ActKind.Shield);
             rt.WindowActive = net < z.GetLong(KWindowUntil, 0L);
+            ShieldReminder(boss, rt);
 
             rt.ResistAct = null;
             int rc = z.GetInt(KResistAct);
@@ -932,7 +934,7 @@ namespace ExtendedBosses
                 return;
             }
             if (v.GroundedOnly && boss.IsFlying()) return;       // e.g. Moder's ice armor: only on the ground
-            if (v.MeleeFactor < 1f || v.Retaliate > 0f || v.RangedFactor < 1f || v.ThornsPercent > 0f)
+            if (v.MeleeFactor != 1f || v.Retaliate > 0f || v.RangedFactor != 1f || v.ThornsPercent > 0f)
             {
                 Character a = hit.GetAttacker();
                 if (a != null && a.IsPlayer())
@@ -940,15 +942,15 @@ namespace ExtendedBosses
                     bool close = Flat(a.transform.position - boss.transform.position) <= v.MeleeRange + boss.GetRadius();
                     if (close)
                     {
-                        float mf = rt.Def.CfgCycleMelee != null && v.MeleeFactor < 1f ? Sv(rt.Def.CfgCycleMelee) : v.MeleeFactor;
-                        if (mf < 1f) hit.ApplyModifier(mf);
+                        float mf = rt.Def.CfgCycleMelee != null && v.MeleeFactor != 1f ? Sv(rt.Def.CfgCycleMelee) : v.MeleeFactor;
+                        if (mf != 1f) hit.ApplyModifier(mf);
                         float back = rt.Def.CfgCycleRetaliate != null && v.Retaliate > 0f ? Sv(rt.Def.CfgCycleRetaliate) : v.Retaliate;
                         if (back > 0f) Retaliate(boss, rt, a, back, v.RetaliateType);
                     }
                     else
                     {
-                        float rf = rt.Def.CfgCycleRanged != null && v.RangedFactor < 1f ? Sv(rt.Def.CfgCycleRanged) : v.RangedFactor;
-                        if (rf < 1f) hit.ApplyModifier(rf);
+                        float rf = rt.Def.CfgCycleRanged != null && v.RangedFactor != 1f ? Sv(rt.Def.CfgCycleRanged) : v.RangedFactor;
+                        if (rf != 1f) hit.ApplyModifier(rf);
                     }
                     float thorns = rt.Def.CfgCycleThorns != null && v.ThornsPercent > 0f ? Sv(rt.Def.CfgCycleThorns) : v.ThornsPercent;
                     if (thorns > 0f) Retaliate(boss, rt, a, Mathf.Max(v.ThornsMin, hit.GetTotalDamage() * thorns / 100f), v.RetaliateType);
@@ -1028,6 +1030,18 @@ namespace ExtendedBosses
         }
 
         // Nests and totems that hold the shield: the ones placed at the HP thresholds; seed nests do not.
+        // the centre message of the shield is easy to miss in a fight: repeated while it stands
+        private void ShieldReminder(Character boss, FightRt rt)
+        {
+            float every = Sv(_cfgShieldReminder);
+            if (!rt.ShieldActive || rt.TotemsAlive <= 0 || every <= 0f) { rt.NextShieldReminder = 0f; return; }
+            float now = Time.time;
+            if (rt.NextShieldReminder <= 0f) { rt.NextShieldReminder = now + every; return; }
+            if (now < rt.NextShieldReminder) return;
+            rt.NextShieldReminder = now + every;
+            Announce("shield.left", NameToken(boss), rt.TotemsAlive.ToString());
+        }
+
         private int TotemsAlive(ZDO bz) { return CountSlots(bz, false); }
         private int SeedsAlive(ZDO bz) { return CountSlots(bz, true); }
 

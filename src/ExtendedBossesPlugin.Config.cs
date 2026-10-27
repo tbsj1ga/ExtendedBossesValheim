@@ -88,6 +88,7 @@ namespace ExtendedBosses
         private ConfigEntry<float> _cfgThreatDecay;
         private ConfigEntry<float> _cfgOutOfLeashHalfLife;
         private ConfigEntry<float> _cfgShieldMax;
+        private ConfigEntry<float> _cfgShieldReminder;
         private ConfigEntry<float> _cfgMinDamage;
         private ConfigEntry<float> _cfgFixateBonus;
         private ConfigEntry<float> _cfgAimChance, _cfgAimRange;
@@ -209,9 +210,9 @@ namespace ExtendedBosses
             _cfgResetRadius = F(Rs, "Radius", 50f, 10f, 200f, "Players within this distance keep the fight going.", "Игроки ближе этого расстояния удерживают бой.");
             _cfgResetSeconds = F(Rs, "Seconds", 60f, 10f, 600f, "Seconds without players before the reset.", "Секунд без игроков до сброса.");
 
-            _cfgMessageDuration = F("07 Client", "MessageDurationMultiplier", 1.5f, 0.5f, 4f,
-                "How long the mod's centre messages stay on screen, x vanilla (4 s). Only on this client; players without the mod see the vanilla length.",
-                "Сколько сообщения мода держатся в центре экрана, × от ванильных 4 с. Только на этом клиенте; у игроков без мода — ванильная длительность.");
+            _cfgMessageDuration = F("07 Client", "MessageDurationMultiplier", 2f, 0.5f, 4f,
+                "How long the mod's centre messages stay on screen, x vanilla (4 s). They stay fully bright and fade only in the last 1.5 s (vanilla starts fading at once). Only on this client; players without the mod see the vanilla message.",
+                "Сколько сообщения мода держатся в центре экрана, × от ванильных 4 с. Держатся в полную яркость и гаснут только в последние 1,5 с (в ванили гаснут сразу). Только на этом клиенте; у игроков без мода — ванильное сообщение.");
             _cfgShowCircles = B("07 Client", "ShowMarkCircles", true,
                 "Draw the exact AoE radius of a mark on the ground (only players with the mod see it; not synced).",
                 "Рисовать на земле точный радиус удара метки (видят только игроки с модом; не синкается).");
@@ -233,6 +234,9 @@ namespace ExtendedBosses
             _cfgShieldMax = F(Rd, "ShieldMaxSeconds", 90f, 0f, 600f,
                 "A shield falls by itself after this many seconds even if nests still stand (no burn window then). 0 = never.",
                 "Щит спадает сам через столько секунд, даже если гнёзда стоят (окна уязвимости тогда нет). 0 — никогда.");
+            _cfgShieldReminder = F(Rd, "ShieldReminderSeconds", 30f, 0f, 300f,
+                "While a shield stands, a message every this many seconds tells how many nests are left - for players without the mod (players with it also see a line under the boss bar). 0 = never.",
+                "Пока стоит щит, раз в столько секунд сообщение, сколько гнёзд осталось разбить, — для игроков без мода (у игроков с модом есть ещё строка под полоской босса). 0 — никогда.");
             _cfgFixateBonus = F(Rd, "FixateDamageBonus", 10f, 0f, 100f,
                 "While a boss has chosen its victim (Moder's landing, Yagluth's gaze), its hits on that player deal this much more, %.",
                 "Пока босс выбрал жертву (посадка Модер, взгляд Яглута), его удары по этому игроку сильнее на столько %.");

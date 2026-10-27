@@ -5,9 +5,9 @@ using UnityEngine;
 
 namespace ExtendedBosses
 {
-    // Client side, players with the mod only: a soft light on everything a boss placed (nests,
-    // totems, Eikthyr's skull pile) and on the slime crawling to Bonemass, so they can be found in
-    // a crowd and under poison effects. Once a second the loaded network objects are scanned for
+    // Client side, players with the mod only: a soft light and a purple ring on the ground around
+    // everything a boss placed (nests, totems, eggs, Eikthyr's skull pile) and a light on the
+    // slime crawling to Bonemass, so they can be found in a crowd and under poison effects. Once a second the loaded network objects are scanned for
     // the boss tag. The same scan strips the drops of objects marked "no drop" (after a relog the
     // object is rebuilt from its prefab, drops included).
     public partial class ExtendedBossesPlugin
@@ -23,8 +23,8 @@ namespace ExtendedBosses
         private void BindGlowConfig()
         {
             _cfgHighlight = B("07 Client", "HighlightObjects", true,
-                "A soft light on boss nests, totems and the slime crawling to Bonemass, so they are easy to find (only players with the mod see it; not synced).",
-                "Мягкая подсветка гнёзд и тотемов боссов и слизи, ползущей к Массивному, чтобы их было легко найти (видят только игроки с модом; не синкается).");
+                "A soft light and a purple ring on the ground around boss nests, totems and eggs, a light on the slime crawling to Bonemass, so they are easy to find (only players with the mod see it; not synced).",
+                "Мягкая подсветка и фиолетовое кольцо на земле вокруг гнёзд, тотемов и яиц боссов, подсветка слизи, ползущей к Массивному, чтобы их было легко найти (видят только игроки с модом; не синкается).");
         }
 
         private void TickGlow(float now)
@@ -68,7 +68,9 @@ namespace ExtendedBosses
             }
         }
 
-        private static GameObject AddGlow(GameObject target, bool slime)
+        private const float NestRingRadius = 2.5f;
+
+        private GameObject AddGlow(GameObject target, bool slime)
         {
             GameObject g = new GameObject(GlowName);
             g.transform.SetParent(target.transform, false);
@@ -79,6 +81,14 @@ namespace ExtendedBosses
             l.range = slime ? 4f : 7f;
             l.intensity = slime ? 1.6f : 2f;
             l.shadows = LightShadows.None;
+            if (!slime)
+            {
+                // the object stands still: its ring is laid once, a child of the light, gone with it
+                GameObject r = new GameObject(GlowName + "_ring");
+                r.transform.SetParent(g.transform, false);
+                LineRenderer lr = NewRing(r, new Color(0.7f, 0.3f, 1f, 0.95f), 0.25f);
+                if (lr != null) LayRing(lr, target.transform.position, NestRingRadius);
+            }
             return g;
         }
 

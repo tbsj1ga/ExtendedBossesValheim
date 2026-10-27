@@ -5,6 +5,46 @@
 The version is set in one place — `ExtendedBossesPlugin.Version` in
 `src/ExtendedBossesPlugin.cs`.
 
+## 0.8.17 — Fader without the extra fire
+
+Vanilla Fader already drops meteors, rings players with walls of fire, opens fissures,
+calls his own charred and gets harder at 35% and 25%. The mod's additions doubled that.
+
+- **Removed:** the meteor mark (his own meteors around marked players, on top of his
+  vanilla ones), the mod's wall of fire every 45 s (he raises his own every 60 s) and the
+  10% wave of an asksvin and a lava blob.
+- **Fewer spawner stones:** 1 / 1 / 2 at 85 / 70 / 55% instead of 1 / 2 / 3 - his roar
+  calls charred too.
+- **His roar stops at the crowd cap**, like the Queen's brood summon.
+- **Lieutenants:** a fallen valkyrie at 70% (was 30%), Morgen at 45%, Lord Reto at 30%
+  (was 20%, right into his hardest vanilla phase).
+- **Phase cycles are windows now, not penalties**, and come half as often (100–140 s
+  apart instead of 50–70): *molten armor* - hits from farther than 6 m ×1.5, close
+  attackers still burn; *ash veil* - hits from within 6 m ×1.5. Settings `16 Fader /
+  MoltenRangedFactor`, `AshVeilMeleeFactor`. A config made before keeps
+  `CycleCooldownMin/Max` at 50/70 - set 100/140 by hand.
+- **HP +0.3 per extra player, as in vanilla,** instead of +0.5 (`16 Fader / HealthPerPlayer`; 4 players:
+  ×1.9 instead of ×2.5).
+- **His own crowd cap:** 6 +2 per extra player (12 for 4) instead of 8 +3 (`16 Fader /
+  AddsCapSolo`, `AddsCapPerPlayer`).
+
+What a message says no longer gets lost in a fight (every boss):
+
+- **A line under the boss's health bar** (players with the mod): nests/totems/eggs left to
+  break and whether they hold the shield, the burn window and the running phase with the
+  seconds left (`07 Client / BossStatusLine`).
+- **A purple ring on the ground** around every nest, totem and egg of a boss, next to the
+  soft light it already had (`07 Client / HighlightObjects`).
+- **Minimap pins** on every nest, totem and egg of a boss in a fight, gone once it is broken
+  (`07 Client / MapPins`, off by default).
+- **A reminder while the shield stands**, every 30 s: how many are left to break - for
+  players without the mod too (`09 Raid / ShieldReminderSeconds`, 0 = off).
+- **Messages stack instead of wiping each other:** two or three that come close together are
+  shown one under another (players with the mod).
+- **Messages can be read:** they stay fully bright and fade only in the last 1.5 s (vanilla
+  starts fading the moment one shows), 8 s in all (`07 Client / MessageDurationMultiplier`
+  now 2; a config made before keeps 1.5 - 6 s).
+
 ## 0.8.16 — the Queen made lighter; no endless crowd
 
 From a 4-player Queen fight: an hour long, dozens of seekers and brood, 9 FPS on the host,

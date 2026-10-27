@@ -734,45 +734,44 @@ namespace ExtendedBosses
         }
 
         // ------------------------------------------------------------------
-        // 7. Fader - Ashlands: charred spawner stones hold the shield, his own meteors on marks,
-        //    Morgen, a fallen valkyrie, Lord Reto, asksvins and lava blobs; molten armor (close
-        //    hits x0.5 and burn the attacker) alternating with an ash veil (hits from afar x0.25)
+        // 7. Fader - Ashlands. Vanilla already has meteors, a wall of fire, fissures, his own
+        //    charred (the roar) and gets harder at 35/25%, so the mod adds no fire of its own:
+        //    charred spawner stones hold the shield, a fallen valkyrie, Morgen and Lord Reto come
+        //    as lieutenants; molten armor (hits from afar x1.5, close attackers burn) alternates
+        //    with an ash veil (close hits x1.5) - windows to switch weapons, not penalties
         // ------------------------------------------------------------------
         private static BossDef Fader()
         {
-            BossDef b = new BossDef { Prefab = "Fader", Section = "16 Fader" };
+            BossDef b = new BossDef { Prefab = "Fader", Section = "16 Fader", CapSummons = true };
             const string stone = "Spawner_CharredStone";
+            b.CycleCdMinDefault = 100f;     // a heavy fight as it is: the windows come half as often
+            b.CycleCdMaxDefault = 140f;
 
             Phase(b, 85f, "fader.85").Acts.Add(new Act { Kind = ActKind.Nest, Prefabs = new[] { stone }, Count = 1f });
 
             PhaseDef p = Phase(b, 70f, "fader.70");
-            p.Acts.Add(new Act { Kind = ActKind.Nest, Prefabs = new[] { stone }, Count = 2f });
-            p.Acts.Add(new Act { Kind = ActKind.Marks, Prefabs = new[] { "spawn_fader_meteors" }, Prop = "vfx_prespawn", MarkKey = "fader.mark", Count = 1f });
+            p.Acts.Add(new Act { Kind = ActKind.Nest, Prefabs = new[] { stone }, Count = 1f });
+            p.Acts.Add(new Act { Kind = ActKind.Lieutenant, Prefabs = new[] { "FallenValkyrie" } });
 
             p = Phase(b, 55f, "fader.55");
-            p.Acts.Add(new Act { Kind = ActKind.Nest, Prefabs = new[] { stone }, Count = 3f });
+            p.Acts.Add(new Act { Kind = ActKind.Nest, Prefabs = new[] { stone }, Count = 2f });
             p.Acts.Add(new Act { Kind = ActKind.Shield });
             p.Acts.Add(new Act
             {
-                Kind = ActKind.Cycle, Duration = 30f, CooldownMin = 50f, CooldownMax = 70f, Delay = 60f,
+                Kind = ActKind.Cycle, Duration = 30f, CooldownMin = 100f, CooldownMax = 140f, Delay = 60f,
                 Variants = new List<CycleVariant>
                 {
-                    // molten armor: close hits sink into molten metal (x0.5) and burn the attacker
+                    // molten armor: hits from afar crack the glowing crust (x1.5); close attackers burn
                     new CycleVariant { Id = "Molten", Say = "fader.molten", EndKey = "fader.molten.end",
-                                       MeleeFactor = 0.5f, MeleeRange = 6f, Retaliate = 15f, RetaliateType = HitData.DamageType.Fire },
-                    // ash veil: hits from afar x0.25 - everyone in close
+                                       MeleeRange = 6f, RangedFactor = 1.5f, Retaliate = 15f, RetaliateType = HitData.DamageType.Fire },
+                    // ash veil: he is blind in the ash - close hits x1.5
                     new CycleVariant { Id = "AshVeil", Say = "fader.ash", EndKey = "fader.ash.end",
-                                       MeleeRange = 6f, RangedFactor = 0.25f },
+                                       MeleeRange = 6f, MeleeFactor = 1.5f },
                 }
             });
 
-            p = Phase(b, 45f, "fader.45");
-            p.Acts.Add(new Act { Kind = ActKind.Lieutenant, Prefabs = new[] { "Morgen" } });
-            // his own wall of fire, raised from where he stands every 45 s - the raid must split
-            p.Acts.Add(new Act { Kind = ActKind.Hazard, Prefabs = new[] { "Fader_WallOfFire_Spawn" }, Interval = 45f, MarkKey = "fader.wall" });
-            Phase(b, 30f, "fader.30").Acts.Add(new Act { Kind = ActKind.Lieutenant, Prefabs = new[] { "FallenValkyrie" } });
-            Phase(b, 20f, "fader.20").Acts.Add(new Act { Kind = ActKind.Lieutenant, Prefabs = new[] { "Charred_Melee_Dyrnwyn" } });
-            Phase(b, 10f, "fader.10").Acts.Add(new Act { Kind = ActKind.Wave, Prefabs = new[] { "Asksvin", "BlobLava" }, Count = 1f });
+            Phase(b, 45f, "fader.45").Acts.Add(new Act { Kind = ActKind.Lieutenant, Prefabs = new[] { "Morgen" } });
+            Phase(b, 30f, "fader.30").Acts.Add(new Act { Kind = ActKind.Lieutenant, Prefabs = new[] { "Charred_Melee_Dyrnwyn" } });
 
             b.Reward.Valuables.Add(new Loot("Coins", 900, 1500, true));
             b.Reward.Valuables.Add(new Loot("GemstoneRed", 1, 2, false));
@@ -790,20 +789,23 @@ namespace ExtendedBosses
                 d.CfgNestPrefab = pl.S(d.Section, "NestPrefab", stone,
                     "Vanilla destructible spawner of charred at 85/70/55%. Alternative: Spawner_CharredCross.",
                     "Ванильный разрушаемый спавнер обугленных на 85/70/55 %. Альтернатива — Spawner_CharredCross.");
-                d.CfgMarkPrefab = pl.S(d.Section, "MarkPrefab", "spawn_fader_meteors",
-                    "Vanilla prefab dropped at a marked player from 70%: spawn_fader_meteors (his meteors, own damage) or an AoE.",
-                    "Ванильный префаб под отмеченным игроком с 70 %: spawn_fader_meteors (его метеоры, урон свой) или AoE.");
-                d.CfgMarkEffect = pl.S(d.Section, "MarkEffect", "vfx_prespawn",
-                    "Vanilla effect on the marked player before the meteors (players with the mod).", "Ванильный эффект на отмеченном игроке до метеоров (у игроков с модом).");
-                pl.BindCycle(d, "Cycle", "Molten: close hits x0.5 and burn the attacker; AshVeil: hits from afar x0.25",
-                    "Molten — раскалённая броня: удары вблизи ×0.5 и обжигают атакующего; AshVeil — пепельная завеса: удары издалека ×0.25", "Molten", "AshVeil");
-                d.CfgCycleMelee = pl.F(d.Section, "MoltenMeleeFactor", 0.5f, 0f, 1f,
-                    "Molten armor: damage of hits from within 6 m (x).", "Раскалённая броня: урон ударов ближе 6 м (×).");
+                d.CfgHealthPerPlayer = pl.F(d.Section, "HealthPerPlayer", 0.3f, 0f, 2f,
+                    "His HP grows by this per player beyond the first (instead of 02 Scaling / HealthPerPlayer): 25000 HP and a vanilla fight that is hard as it is - 0.3 is the vanilla growth.",
+                    "Его HP растёт на столько за каждого игрока сверх первого (вместо 02 Scaling / HealthPerPlayer): 25000 HP и ванильный бой и так тяжёлый — 0.3 как в ванили.");
+                d.CfgCapSolo = pl.I(d.Section, "AddsCapSolo", 6, 1, 100,
+                    "At most this many monsters around him for a single player (instead of 09 Raid): his roar calls charred too, and the arena is in fire.",
+                    "Не больше стольких монстров вокруг него для одного игрока (вместо 09 Raid): его рёв тоже зовёт обугленных, а арена в огне.");
+                d.CfgCapPerPlayer = pl.I(d.Section, "AddsCapPerPlayer", 2, 0, 50,
+                    "His cap grows by this for every player beyond the first.", "Его лимит растёт на столько за каждого игрока сверх первого.");
+                pl.BindCycle(d, "Cycle", "Molten: hits from afar x1.5, close attackers burn; AshVeil: close hits x1.5",
+                    "Molten — раскалённая броня: удары издалека ×1.5, бьющие вблизи обжигаются; AshVeil — пепельная завеса: удары вблизи ×1.5", "Molten", "AshVeil");
+                d.CfgCycleRanged = pl.F(d.Section, "MoltenRangedFactor", 1.5f, 1f, 3f,
+                    "Molten armor: damage of hits from farther than 6 m (x).", "Раскалённая броня: урон ударов дальше 6 м (×).");
                 d.CfgCycleRetaliate = pl.F(d.Section, "MoltenFireDamage", 15f, 0f, 200f,
-                    "Molten armor: fire dealt back to a close attacker per hit (at most once a second per player).",
-                    "Раскалённая броня: огонь, который получает атакующий вблизи за удар (не чаще раза в секунду на игрока).");
-                d.CfgCycleRanged = pl.F(d.Section, "AshVeilRangedFactor", 0.25f, 0f, 1f,
-                    "Ash veil: damage of hits from farther than 6 m (x).", "Пепельная завеса: урон ударов дальше 6 м (×).");
+                    "Molten armor: fire dealt back to a close attacker per hit (at most once a second per player; 0 = none).",
+                    "Раскалённая броня: огонь, который получает атакующий вблизи за удар (не чаще раза в секунду на игрока; 0 — нет).");
+                d.CfgCycleMelee = pl.F(d.Section, "AshVeilMeleeFactor", 1.5f, 1f, 3f,
+                    "Ash veil: damage of hits from within 6 m (x).", "Пепельная завеса: урон ударов ближе 6 м (×).");
             };
             return b;
         }

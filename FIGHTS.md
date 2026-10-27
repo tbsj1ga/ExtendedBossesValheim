@@ -1,4 +1,4 @@
-# ExtendedBosses — boss fights (version 0.8.16)
+# ExtendedBosses — boss fights (version 0.8.17)
 
 **English** · [Русский](FIGHTS-RU.md)
 
@@ -25,7 +25,7 @@ The profile is `01 General / Profile` (for all) or `1x <Boss> / Profile` (for on
 | Shield from nests and burn window | **no** | shield ×0.2 damage | shield **×0.1** damage |
 | Phase cycles (bark, hardening…) | **no** | yes | yes |
 | Healers heal, slime heals Bonemass | **no** (shamans exist but do not heal; slime does not crawl) | yes | yes |
-| Marks, fixations, wall of fire | **no** | yes | 1.33× as often |
+| Marks, fixations | **no** | yes | 1.33× as often |
 | Eikthyr's charge, on-hit effects (Wet, Tared), the Queen's cocoon | **no** | yes | yes |
 | Threat table | **no** (vanilla target choice) | yes | yes |
 | Boss HP | as Raid | see below | ×1.25 of Raid |
@@ -73,13 +73,19 @@ what actually comes:
 - the Elder's troll: two from 3 players;
 - positional phases (hit from behind) never come up for a single player;
 - **crowd cap**: at most 8 monsters within 50 m of the boss for one player and +3 for
-  each further player (`09 Raid / AddsCap*`; the Queen 6 and +2); at the cap nests, totems,
-  waves, slime, cocoon guards, the Queen's eggs and her own brood summon release nobody
+  each further player (`09 Raid / AddsCap*`; the Queen and Fader 6 and +2); at the cap nests, totems,
+  waves, slime, cocoon guards, the Queen's eggs, her brood summon and Fader's roar release nobody
   (lieutenants and roots always spawn); at 1.5× the cap the oldest of the boss's adds leave;
 - a wave add nobody killed leaves after 90 s (`09 Raid / WaveLifetime`);
 - no vanilla HP regeneration for a boss while its fight runs.
-- **highlight**: nests, totems and the slime crawling to Bonemass glow softly for players
-  with the mod (`07 Client / HighlightObjects`), so they are easy to find in a crowd.
+- **highlight**: nests, totems and eggs glow softly and stand in a purple ring on the
+  ground, the slime crawling to Bonemass glows, for players with the mod (`07 Client /
+  HighlightObjects`), so they are easy to find in a crowd;
+- **status line and pins** (players with the mod): under the boss's health bar - how many
+  nests/totems/eggs are left to break and whether they hold the shield, the burn window,
+  the running phase and its seconds (`07 Client / BossStatusLine`); a pulsing minimap pin on
+  each of them if switched on (`07 Client / MapPins`, off by default); while the shield stands, every 30 s a message tells
+  everyone how many are left (`09 Raid / ShieldReminderSeconds`).
 
 ### The general shape of a fight (Raid)
 
@@ -107,14 +113,15 @@ a tree trunk or a pillar of the arena. A boss that has lost its target mid-fight
 is busy with lieutenants out of its sight) goes for the nearest player instead of
 wandering off.
 
-Messages stay in the centre of the screen ×1.5 as long as vanilla (`07 Client /
-MessageDurationMultiplier`, only for players with the mod).
+Messages stay in the centre of the screen 8 s, fully bright until the last 1.5 s (vanilla: 4 s, fading from the start; `07 Client /
+MessageDurationMultiplier`, only for players with the mod); two or three that come close
+together are shown one under another instead of wiping each other.
 
 Marks: an announcement with the name → a hit under the player 3 s later (players with
 the mod see a red circle of the radius); every 20 s (Hard 15 s).
 
-The boss's targeted mod attacks — marks, choosing a victim, Eikthyr's charge, Fader's wall
-of fire — never overlap: while one runs (and 2 s after), the others wait. While a boss has
+The boss's targeted mod attacks — marks, choosing a victim, Eikthyr's charge — never
+overlap: while one runs (and 2 s after), the others wait. While a boss has
 chosen its victim (Moder's landing, Yagluth's gaze), its hits on that player deal +10%
 (`09 Raid / FixateDamageBonus`).
 
@@ -273,18 +280,25 @@ Ashlands.
 
 | HP | Raid | Light | Hard |
 |---|---|---|---|
-| 85% | 1 charred spawner stone (`Spawner_CharredStone`) | the same | the same |
-| 70% | 2 more stones; his **meteors** around the marked player | stones | meteors more often |
-| 55% | 3 more stones, **shield**; after the window — phase cycles | stones without a shield | shield ×0.1 |
-| 45% | a morgen; **wall of fire** every 45 s towards a random player | morgen | wall every 34 s |
-| 30% | a fallen valkyrie | the same | the same |
-| 20% | Lord Reto | the same | the same |
-| 10% | an asksvin + a lava blob (base 1) | the same | more, +1★ |
+Vanilla Fader is hard on his own: 25000 HP, immune to fire and spirit, pierce halved; his
+meteors, wall of fire, fissures and flame breath cover the arena in fire, his roar calls
+charred from 55%, and he gets faster at 35% and 25%. The mod adds no fire of its own.
 
-**Phase cycles** (random variant):
-- **Molten armor** — hits closer than 6 m ×0.5 and burn the attacker (15 fire, at most
-  once per second): strike from afar;
-- **Ash veil** — hits from farther than 6 m ×0.25: everyone into melee.
+| HP | Raid | Light | Hard |
+|---|---|---|---|
+| 85% | 1 charred spawner stone (`Spawner_CharredStone`) | the same | the same |
+| 70% | 1 more stone; a fallen valkyrie | the same | the same |
+| 55% | 2 more stones, **shield**; after the window — phase cycles | stones without a shield | shield ×0.1 |
+| 45% | a morgen | the same | the same |
+| 30% | Lord Reto | the same | the same |
+
+**Phase cycles** (random variant, 30 s, every 100–140 s) — windows to switch weapons:
+- **Molten armor** — hits from farther than 6 m ×1.5; close attackers burn (15 fire, at
+  most once per second): strike from afar;
+- **Ash veil** — hits from within 6 m ×1.5: everyone into melee.
+
+His HP grows by 0.3 per extra player as in vanilla, not 0.5 (`16 Fader / HealthPerPlayer`); his roar
+stops at the crowd cap.
 
 Reward: coins 900–1500 ×N, gemstones; about a stack each of flametal ore and molten
 cores, about half a stack of frost cores; gear (2+ players) — Ashlands.
