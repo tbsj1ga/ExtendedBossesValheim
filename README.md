@@ -12,8 +12,7 @@ The idea grew out of `HardBosses` (Nexus #877, long unmaintained): the same "HP
 threshold → vanilla spawn" principle, with a much wider set of mechanics, tuned for a
 group of 1–8 players.
 
-**Status: 0.8.7 — every boss from Eikthyr to Fader is implemented; only partly tested
-in game.** The fight with each boss, by phase, profile and group size — `FIGHTS.md`;
+**Status: 0.8.17 — every boss from Eikthyr to Fader is implemented.** The fight with each boss, by phase, profile and group size — `FIGHTS.md`;
 plans — `ROADMAP.md`; history — `CHANGELOG.md`.
 
 ## Principle
